@@ -1,0 +1,105 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+enum CheckInStatus {
+  PENDING
+  CONFIRMED
+  REMINDER_SENT
+  ESCALATED
+  EXPIRED
+}
+
+enum AlertJobStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model Subscriber {
+  id                   String             @id @default(cuid())
+  email                String             @unique
+  fullName             String
+  phoneNumber          String
+  stripeCustomerId     String?            @unique
+  stripeSubscriptionId String?            @unique
+  subscriptionStatus   SubscriptionStatus @default(TRIAL)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  seniors              Senior[]
+  contacts             Contact[]
+  checkIns             CheckIn[]
+}
+
+model Senior {
+  id           String     @id @default(cuid())
+  subscriberId String
+  firstName    String
+  lastName     String
+  phoneNumber  String
+  timezone     String     @default("America/New_York")
+  checkInHour  Int        @default(9)
+  active       Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  subscriber   Subscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  contacts     Contact[]
+  checkIns     CheckIn[]
+}
+
+model Contact {
+  id           String     @id @default(cuid())
+  subscriberId String
+  seniorId     String
+  fullName     String
+  relationship String
+  phoneNumber  String
+  priority     Int        @default(1)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  subscriber   Subscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  senior       Senior     @relation(fields: [seniorId], references: [id], onDelete: Cascade)
+}
+
+model CheckIn {
+  id           String        @id @default(cuid())
+  subscriberId String
+  seniorId     String
+  token        String        @unique
+  status       CheckInStatus @default(PENDING)
+  scheduledFor DateTime
+  reminderAt   DateTime
+  escalationAt DateTime
+  confirmedAt  DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  subscriber   Subscriber    @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  senior       Senior        @relation(fields: [seniorId], references: [id], onDelete: Cascade)
+  alertJobs    AlertJob[]
+}
+
+model AlertJob {
+  id                String         @id @default(cuid())
+  checkInId         String
+  kind              String
+  status            AlertJobStatus @default(PENDING)
+  providerMessageId String?
+  payload           Json
+  runAt             DateTime
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  checkIn           CheckIn        @relation(fields: [checkInId], references: [id], onDelete: Cascade)
+}
