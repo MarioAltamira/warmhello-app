@@ -3,6 +3,7 @@
 import type { Route } from "next";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
 const allowedRedirects = new Set<Route>(["/onboard", "/dashboard"]);
 
@@ -38,7 +39,7 @@ function getHeading(source: string | null, redirectPath: Route) {
   };
 }
 
-export default function AuthPage() {
+function AuthPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -119,5 +120,13 @@ export default function AuthPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense fallback={<main className="shell" />}>
+      <AuthPageContent />
+    </Suspense>
   );
 }
