@@ -1,19 +1,20 @@
 "use client";
 
+import type { Route } from "next";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
-const allowedRedirects = new Set(["/onboard", "/dashboard"]);
+const allowedRedirects = new Set<Route>(["/onboard", "/dashboard"]);
 
-function getSafeRedirect(redirect: string | null) {
-  if (redirect && allowedRedirects.has(redirect)) {
-    return redirect;
+function getSafeRedirect(redirect: string | null): Route {
+  if (redirect && allowedRedirects.has(redirect as Route)) {
+    return redirect as Route;
   }
 
   return "/onboard";
 }
 
-function getHeading(source: string | null, redirectPath: string) {
+function getHeading(source: string | null, redirectPath: Route) {
   if (source === "dashboard" || redirectPath === "/dashboard") {
     return {
       eyebrow: "Welcome Back",
