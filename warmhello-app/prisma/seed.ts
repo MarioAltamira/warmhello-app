@@ -1,5 +1,5 @@
-import { addDays, addHours, subDays } from "date-fns";
 import { PrismaClient } from "@prisma/client";
+import { addDays, addHours, subDays } from "../lib/dates";
 import { createCheckInToken } from "../lib/tokens";
 
 const prisma = new PrismaClient();

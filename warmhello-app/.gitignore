@@ -10,4 +10,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+.dev-server.log
+.dev-server.err.log
 prisma/dev.db

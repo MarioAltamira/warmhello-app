@@ -1,10 +1,8 @@
-import { addHours, format } from "date-fns";
+import { addHours, formatDateTime } from "@/lib/dates";
 import { demoCheckIn, demoDashboard } from "@/lib/demo-data";
 import { getIntegrationStatus } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
-import { enqueueJsonJob } from "@/lib/qstash";
 import { createCheckInToken } from "@/lib/tokens";
-import { sendSms } from "@/lib/twilio";
 
 function formatEnumLabel(status: string) {
   return status
@@ -53,14 +51,14 @@ export async function getDashboardSnapshot() {
       subscriptionStatus: formatEnumLabel(subscriber.subscriptionStatus),
       seniorName: `${senior.firstName} ${senior.lastName}`,
       nextCheckInLabel: latestCheckIn
-        ? format(latestCheckIn.scheduledFor, "PPP p")
+        ? formatDateTime(latestCheckIn.scheduledFor)
         : "No check-in scheduled yet",
       latestCheckInStatus: latestCheckIn
         ? formatEnumLabel(latestCheckIn.status)
         : "Not scheduled",
       latestCheckInToken: latestCheckIn?.token,
       latestConfirmedLabel: latestCheckIn?.confirmedAt
-        ? format(latestCheckIn.confirmedAt, "PPP p")
+        ? formatDateTime(latestCheckIn.confirmedAt)
         : undefined,
       billingCustomerLabel: subscriber.stripeCustomerId
         ? `Stripe customer ${subscriber.stripeCustomerId}`
@@ -113,14 +111,16 @@ export async function getCheckInPageData(token: string) {
     return {
       token,
       seniorName: checkIn.senior.firstName,
-      scheduledLabel: format(checkIn.scheduledFor, "PPP p"),
+      scheduledLabel: formatDateTime(checkIn.scheduledFor),
       status:
         checkIn.status === "CONFIRMED"
           ? ("confirmed" as const)
           : checkIn.status === "EXPIRED"
             ? ("expired" as const)
             : ("pending" as const),
-      confirmedLabel: checkIn.confirmedAt ? format(checkIn.confirmedAt, "PPP p") : undefined,
+      confirmedLabel: checkIn.confirmedAt
+        ? formatDateTime(checkIn.confirmedAt)
+        : undefined,
     };
   } catch {
     if (token === demoCheckIn.token) {
@@ -210,6 +210,10 @@ export async function createCheckInSession(input: {
     const appUrl =
       process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL ?? "http://localhost:8080";
     const checkInUrl = `${appUrl}/checkin/${checkIn.token}`;
+    const [{ enqueueJsonJob }, { sendSms }] = await Promise.all([
+      import("@/lib/qstash"),
+      import("@/lib/twilio"),
+    ]);
 
     await sendSms(senior.phoneNumber, `WarmHello check-in for ${senior.firstName}: ${checkInUrl}`);
     await enqueueJsonJob("/api/jobs/reminder", { checkInId: checkIn.id }, 3);
@@ -227,6 +231,7 @@ export async function markReminderSent(checkInId: string) {
   }
 
   try {
+    const { sendSms } = await import("@/lib/twilio");
     const checkIn = await prisma.checkIn.findUnique({
       where: { id: checkInId },
       include: { senior: true },
@@ -269,6 +274,7 @@ export async function markEscalationSent(checkInId: string) {
   }
 
   try {
+    const { sendSms } = await import("@/lib/twilio");
     const checkIn = await prisma.checkIn.findUnique({
       where: { id: checkInId },
       include: {
