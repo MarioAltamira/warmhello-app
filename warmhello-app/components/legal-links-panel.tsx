@@ -23,7 +23,7 @@ export function LegalLinksPanel() {
   return (
     <section className="section">
       <div className="card footer-links-card">
-        <h3 className="footer-brand">StillGood</h3>
+        <h3 className="footer-brand">WarmHello</h3>
         <p className="footer-links-heading">
           <strong>Quick Links</strong>
         </p>
@@ -52,7 +52,7 @@ export function LegalLinksPanel() {
                   <strong>Last Updated:</strong> June 12, 2026
                 </p>
                 <p>
-                  At <strong>StillGood</strong>, we provide automated status check-in
+                  At <strong>WarmHello</strong>, we provide automated status check-in
                   services to ensure your safety and give your loved ones peace of
                   mind. Because our service relies on checking in on your well-being,
                   we treat your personal data with the highest level of security,
@@ -87,16 +87,16 @@ export function LegalLinksPanel() {
                   <strong>Effective Date:</strong> June 12, 2026
                 </p>
                 <blockquote className="notice-block">
-                  <strong>IMPORTANT DISCLAIMER:</strong> StillGood is an automated
+                  <strong>IMPORTANT DISCLAIMER:</strong> WarmHello is an automated
                   text-message check-in notification tool designed to facilitate
                   routine monitoring between individuals and their trusted personal
-                  contacts. <strong>StillGood is NOT a medical alert system, emergency
+                  contacts. <strong>WarmHello is NOT a medical alert system, emergency
                   dispatch line, or a replacement for professional healthcare or 911
                   services.</strong>
                 </blockquote>
                 <ul className="longform-list">
                   <li>
-                    <strong>Service Description:</strong> StillGood sends automated SMS
+                    <strong>Service Description:</strong> WarmHello sends automated SMS
                     prompts and alerts designated contacts when a check-in window is
                     missed.
                   </li>
@@ -109,7 +109,7 @@ export function LegalLinksPanel() {
                     depends on carrier service, device power, and cellular reception.
                   </li>
                   <li>
-                    <strong>Limitation of Liability:</strong> StillGood is not liable
+                    <strong>Limitation of Liability:</strong> WarmHello is not liable
                     for missed escalations or damages caused by outages, delays, or
                     user errors to the fullest extent allowed by law.
                   </li>
@@ -123,7 +123,7 @@ export function LegalLinksPanel() {
                   <strong>Simple check-ins. Absolute peace of mind.</strong>
                 </p>
                 <p>
-                  StillGood was created to help families make sure loved ones living
+                  WarmHello was created to help families make sure loved ones living
                   independently are okay every day without being intrusive.
                 </p>
                 <p>
@@ -166,7 +166,7 @@ export function LegalLinksPanel() {
                   the secure validation link.
                 </li>
                 <li>
-                  <strong>4. Escalation:</strong> If no reply arrives in time, StillGood
+                  <strong>4. Escalation:</strong> If no reply arrives in time, WarmHello
                   notifies your trusted contacts.
                 </li>
               </ul>
@@ -175,18 +175,18 @@ export function LegalLinksPanel() {
             {activeSection === "faq" ? (
               <ul className="longform-list">
                 <li>
-                  <strong>How does check-in monitoring work?</strong> StillGood sends a
+                  <strong>How does check-in monitoring work?</strong> WarmHello sends a
                   daily SMS and updates your status when you respond. If you miss the
                   window, alerts go out automatically.
                 </li>
                 <li>
-                  <strong>How much does it cost?</strong> StillGood costs{" "}
+                  <strong>How much does it cost?</strong> WarmHello costs{" "}
                   <strong>$0.10 per day</strong> with secure recurring billing through
                   Stripe.
                 </li>
                 <li>
                   <strong>What devices work?</strong> Any phone capable of sending and
-                  receiving SMS messages can use StillGood.
+                  receiving SMS messages can use WarmHello.
                 </li>
                 <li>
                   <strong>What if I forget to reply?</strong> The system allows a grace
@@ -200,10 +200,10 @@ export function LegalLinksPanel() {
         <hr className="footer-divider" />
 
         <p className="footer-disclaimer">
-          &copy; 2026 StillGood. All rights reserved. | <strong>Disclaimer:</strong>{" "}
-          StillGood is an automated text-message check-in notification tool designed to
+          &copy; 2026 WarmHello. All rights reserved. | <strong>Disclaimer:</strong>{" "}
+          WarmHello is an automated text-message check-in notification tool designed to
           facilitate routine monitoring between individuals and their trusted personal
-          contacts. StillGood is NOT a medical alert system, emergency dispatch line,
+          contacts. WarmHello is NOT a medical alert system, emergency dispatch line,
           or a replacement for professional healthcare or 911 services. Standard
           cellular carrier SMS messaging rates may apply.
         </p>

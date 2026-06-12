@@ -22,12 +22,7 @@ export function FloatingReturnButton() {
       return;
     }
 
-    if (pathname !== "/") {
-      router.push("/");
-      return;
-    }
-
-    router.push("/dashboard");
+    router.push("/");
   }
 
   return (

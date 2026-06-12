@@ -35,7 +35,7 @@ function getHeading(source: string | null, redirectPath: Route) {
   return {
     eyebrow: "Start Your Trial",
     title: "Create an account or log in to begin the 7-day trial.",
-    lede: "Set up your StillGood household, choose a morning check-in time, and invite the right contacts.",
+    lede: "Set up your WarmHello household, choose a morning check-in time, and invite the right contacts.",
   };
 }
 
@@ -61,7 +61,7 @@ function AuthPageContent() {
 
       <section className="auth-grid">
         <article className={`card auth-panel ${mode === "signup" ? "auth-panel-active" : ""}`}>
-          <p className="auth-kicker">New to StillGood?</p>
+          <p className="auth-kicker">New to WarmHello?</p>
           <h2>Sign Up</h2>
           <p className="auth-copy">
             Create your account, then continue into the setup flow for your family.
@@ -89,7 +89,7 @@ function AuthPageContent() {
           <p className="auth-kicker">Already have an account?</p>
           <h2>Log In</h2>
           <p className="auth-copy">
-            Sign in to continue where you left off and manage your household.
+            Log in to continue where you left off and manage your household.
           </p>
           <div className="form-grid">
             <label>

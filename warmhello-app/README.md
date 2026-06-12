@@ -1,6 +1,6 @@
-# StillGood
+# WarmHello
 
-StillGood is a clean rebuild around this stack:
+WarmHello is a clean rebuild around this stack:
 
 - TypeScript
 - Next.js App Router

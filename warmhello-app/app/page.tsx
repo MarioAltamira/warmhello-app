@@ -2,6 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { LegalLinksPanel } from "@/components/legal-links-panel";
 import { getIntegrationStatus } from "@/lib/env";
+import {
+  dashboardAuthHref,
+  protectAuthHref,
+  trialAuthHref,
+} from "@/lib/routes";
 
 export default function HomePage() {
   const integrations = getIntegrationStatus();
@@ -10,9 +15,6 @@ export default function HomePage() {
     integrations.stripe &&
     integrations.twilio &&
     integrations.qstash;
-  const trialAuthHref = "/auth?mode=signup&redirect=%2Fonboard&source=trial";
-  const protectAuthHref = "/auth?mode=signup&redirect=%2Fonboard&source=protect";
-  const dashboardAuthHref = "/auth?mode=login&redirect=%2Fdashboard&source=dashboard";
 
   return (
     <main className="shell">
@@ -21,7 +23,7 @@ export default function HomePage() {
           <p className="eyebrow">Daily Peace Of Mind For Families</p>
           <h1>They love their independence. You love knowing they&apos;re okay.</h1>
           <p className="lede">
-            StillGood is the zero-friction daily check-in for seniors who live alone. No
+            WarmHello is the zero-friction daily check-in for seniors who live alone. No
             intrusive phone calls, no complicated apps to download. Just a single tap
             that says, &quot;I&apos;m doing great this morning.&quot;
           </p>
@@ -41,8 +43,8 @@ export default function HomePage() {
         <div className="hero-visual card">
           <div className="hero-photo">
             <Image
-              src="/hero-morning.jpg.png"
-              alt="A senior holding a phone with the StillGood daily check-in screen open during a peaceful morning at home."
+              src="/hero-warmhello.png"
+              alt="A senior holding a phone with the WarmHello daily check-in screen open during a peaceful morning at home."
               fill
               priority
               className="hero-photo-image"
@@ -86,7 +88,7 @@ export default function HomePage() {
       <section className="section">
         <div className="section-heading">
           <p className="eyebrow">The Solution</p>
-          <h2>How StillGood Works</h2>
+          <h2>How WarmHello Works</h2>
           <p className="section-copy">It&apos;s beautifully simple for seniors and reassuringly automatic for families.</p>
         </div>
         <div className="grid three-up">
@@ -94,7 +96,7 @@ export default function HomePage() {
             <span className="step-number">1</span>
             <h3>The Morning Greeting</h3>
             <p>
-              Every morning at a time you choose, StillGood sends your loved one a
+              Every morning at a time you choose, WarmHello sends your loved one a
               gentle text message. No app to install, no password to remember. Just a
               text.
             </p>
@@ -113,7 +115,7 @@ export default function HomePage() {
             <h3>Automated Safety Net</h3>
             <p>
               If they&apos;re busy or forget, the system gently reminds them 3 hours later.
-              If there&apos;s still no response after another hour, StillGood immediately
+              If there&apos;s still no response after another hour, WarmHello immediately
               alerts you by text and email so you can check in.
             </p>
           </article>
@@ -129,7 +131,7 @@ export default function HomePage() {
           <article className="card">
             <h3>Zero Learning Curve</h3>
             <p>
-              If they can open a text message, they can use StillGood. It works on any
+              If they can open a text message, they can use WarmHello. It works on any
               smartphone without downloads or logins.
             </p>
           </article>
@@ -215,7 +217,7 @@ export default function HomePage() {
         <div>
           <h2>Respect their independence without carrying the daily worry alone.</h2>
           <p className="section-copy">
-            Start with a free trial, set the morning time, and let StillGood handle the
+            Start with a free trial, set the morning time, and let WarmHello handle the
             gentle daily rhythm.
           </p>
         </div>

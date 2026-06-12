@@ -6,15 +6,7 @@ import { enqueueJsonJob } from "@/lib/qstash";
 import { createCheckInToken } from "@/lib/tokens";
 import { sendSms } from "@/lib/twilio";
 
-function formatSubscriptionStatus(status: string) {
-  return status
-    .toLowerCase()
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
-
-function formatCheckInStatus(status: string) {
+function formatEnumLabel(status: string) {
   return status
     .toLowerCase()
     .split("_")
@@ -58,13 +50,13 @@ export async function getDashboardSnapshot() {
       subscriberName: subscriber.fullName,
       subscriberEmail: subscriber.email,
       subscriberPhone: subscriber.phoneNumber,
-      subscriptionStatus: formatSubscriptionStatus(subscriber.subscriptionStatus),
+      subscriptionStatus: formatEnumLabel(subscriber.subscriptionStatus),
       seniorName: `${senior.firstName} ${senior.lastName}`,
       nextCheckInLabel: latestCheckIn
         ? format(latestCheckIn.scheduledFor, "PPP p")
         : "No check-in scheduled yet",
       latestCheckInStatus: latestCheckIn
-        ? formatCheckInStatus(latestCheckIn.status)
+        ? formatEnumLabel(latestCheckIn.status)
         : "Not scheduled",
       latestCheckInToken: latestCheckIn?.token,
       latestConfirmedLabel: latestCheckIn?.confirmedAt
@@ -163,6 +155,10 @@ export async function confirmCheckInToken(token: string) {
       return { ok: true as const, message: "Already confirmed." };
     }
 
+    if (existing.status === "EXPIRED") {
+      return { ok: false as const, message: "This check-in window has expired." };
+    }
+
     await prisma.checkIn.update({
       where: { token },
       data: {
@@ -215,7 +211,7 @@ export async function createCheckInSession(input: {
       process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL ?? "http://localhost:8080";
     const checkInUrl = `${appUrl}/checkin/${checkIn.token}`;
 
-    await sendSms(senior.phoneNumber, `StillGood check-in for ${senior.firstName}: ${checkInUrl}`);
+    await sendSms(senior.phoneNumber, `WarmHello check-in for ${senior.firstName}: ${checkInUrl}`);
     await enqueueJsonJob("/api/jobs/reminder", { checkInId: checkIn.id }, 3);
     await enqueueJsonJob("/api/jobs/escalation", { checkInId: checkIn.id }, 4);
 
@@ -242,7 +238,7 @@ export async function markReminderSent(checkInId: string) {
 
     const sms = await sendSms(
       checkIn.senior.phoneNumber,
-      "StillGood reminder: please tap your secure check-in link if you are okay.",
+      "WarmHello reminder: please tap your secure check-in link if you are okay.",
     );
 
     await prisma.checkIn.update({
@@ -293,7 +289,7 @@ export async function markEscalationSent(checkInId: string) {
       contacts.map((contact) =>
         sendSms(
           contact.phoneNumber,
-          `StillGood escalation: ${checkIn.senior.firstName} has not confirmed their scheduled check-in.`,
+          `WarmHello escalation: ${checkIn.senior.firstName} has not confirmed their scheduled check-in.`,
         ),
       ),
     );

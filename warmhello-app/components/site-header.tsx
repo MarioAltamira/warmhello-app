@@ -1,19 +1,20 @@
 import Image from "next/image";
 import Link from "next/link";
+import {
+  dashboardAuthHref,
+  signInUpHref,
+  trialAuthHref,
+} from "@/lib/routes";
 import { ThemeToggle } from "@/components/theme-toggle";
-
-const trialAuthHref = "/auth?mode=signup&redirect=%2Fonboard&source=trial";
-const dashboardAuthHref = "/auth?mode=login&redirect=%2Fdashboard&source=dashboard";
-const signInUpHref = "/auth?mode=signup&redirect=%2Fonboard&source=header";
 
 export function SiteHeader() {
   return (
     <header className="site-header">
       <div className="site-header-inner">
-        <Link href="/" className="site-header-brand" aria-label="StillGood home">
+        <Link href="/" className="site-header-brand" aria-label="WarmHello home">
           <Image
-            src="/StillGood Logo.png"
-            alt="StillGood"
+            src="/warmhello-logo.png"
+            alt="WarmHello"
             width={160}
             height={42}
             priority
@@ -26,13 +27,13 @@ export function SiteHeader() {
             Home
           </Link>
           <Link href={trialAuthHref} className="button primary site-header-button">
-            Start FREE Trial
+            Start Free Trial
           </Link>
           <Link href={dashboardAuthHref} className="button secondary site-header-button">
             View Family Dashboard
           </Link>
           <Link href={signInUpHref} className="button secondary site-header-button">
-            Sign In/Up
+            Log In / Sign Up
           </Link>
           <ThemeToggle />
         </nav>

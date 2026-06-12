@@ -4,7 +4,7 @@ import { FloatingReturnButton } from "@/components/floating-return-button";
 import { SiteHeader } from "@/components/site-header";
 
 export const metadata: Metadata = {
-  title: "StillGood",
+  title: "WarmHello",
   description: "Daily senior check-ins with Stripe, Twilio, Prisma, and Supabase.",
 };
 

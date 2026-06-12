@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 
 declare global {
-  var __stillgood_prisma__: PrismaClient | undefined;
+  var __warmhello_prisma__: PrismaClient | undefined;
 }
 
 function createClient() {
@@ -11,9 +11,9 @@ function createClient() {
 }
 
 export const prisma = process.env.DATABASE_URL
-  ? globalThis.__stillgood_prisma__ ?? createClient()
+  ? globalThis.__warmhello_prisma__ ?? createClient()
   : null;
 
 if (process.env.NODE_ENV !== "production" && prisma) {
-  globalThis.__stillgood_prisma__ = prisma;
+  globalThis.__warmhello_prisma__ = prisma;
 }

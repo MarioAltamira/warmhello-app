@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-const THEME_STORAGE_KEY = "stillgood-theme";
+const THEME_STORAGE_KEY = "warmhello-theme";
 
 export function ThemeToggle() {
   const [isDark, setIsDark] = useState(false);
