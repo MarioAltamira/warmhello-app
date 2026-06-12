@@ -34,7 +34,7 @@ function getHeading(source: string | null, redirectPath: Route) {
 
   return {
     eyebrow: "Start Your Trial",
-    title: "Create an account or log in to begin the 14-day trial.",
+    title: "Create an account or log in to begin the 7-day trial.",
     lede: "Set up your StillGood household, choose a morning check-in time, and invite the right contacts.",
   };
 }

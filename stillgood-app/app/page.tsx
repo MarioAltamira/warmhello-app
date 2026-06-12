@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { LegalLinksPanel } from "@/components/legal-links-panel";
 import { getIntegrationStatus } from "@/lib/env";
 
 export default function HomePage() {
@@ -26,7 +27,7 @@ export default function HomePage() {
           </p>
           <div className="actions">
             <Link href={trialAuthHref} className="button primary">
-              Start Their Free 14-Day Trial
+              Start Their Free 7-Day Trial
             </Link>
             <Link href={dashboardAuthHref} className="button secondary">
               View Family Dashboard
@@ -66,8 +67,8 @@ export default function HomePage() {
         <div className="card story-card">
           <p>
             You love your parents, but you also want to respect their space. You
-            don&apos;t want to be the overbearing child calling every single morning at
-            8:00 AM just to make sure they&apos;re awake.
+            don&apos;t want to be overbearing calling every single morning at 8:00 AM
+            just to make sure they&apos;re awake.
           </p>
           <p>But when a few hours pass without a text back, the anxiety creeps in:</p>
           <ul className="prompt-list">
@@ -167,7 +168,7 @@ export default function HomePage() {
             </p>
           </div>
           <div className="card pricing-includes">
-            <p className="pricing-badge">14-Day Free Trial</p>
+            <p className="pricing-badge">7-Day Free Trial</p>
             <ul className="check-list">
               <li>Unlimited daily SMS check-ins</li>
               <li>Automated escalation alerts to your phone</li>
@@ -194,7 +195,7 @@ export default function HomePage() {
             </p>
           </article>
           <article className="card">
-            <h3>What if they are going on vacation or have a doctor&apos;s appointment?</h3>
+            <h3>What if you need to pause for a special occasion?</h3>
             <p>
               You or your loved one can pause daily check-ins for specific dates from
               the dashboard so no false alarms are triggered.
@@ -220,13 +221,15 @@ export default function HomePage() {
         </div>
         <div className="actions">
           <Link href={trialAuthHref} className="button primary">
-            Start Their Free 14-Day Trial
+            Start Their Free 7-Day Trial
           </Link>
           <Link href="/checkin/demo-token" className="button secondary">
             See The Check-In Experience
           </Link>
         </div>
       </section>
+
+      <LegalLinksPanel />
     </main>
   );
 }

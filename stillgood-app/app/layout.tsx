@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { FloatingReturnButton } from "@/components/floating-return-button";
+import { SiteHeader } from "@/components/site-header";
 
 export const metadata: Metadata = {
   title: "StillGood",
@@ -13,15 +14,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-theme="light">
       <body>
-        <div className="site-logo">
-          <img
-            src="/StillGood%20Logo.png?v=2"
-            alt="StillGood"
-            className="site-logo-image"
-          />
-        </div>
+        <SiteHeader />
         {children}
         <FloatingReturnButton />
       </body>
