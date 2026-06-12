@@ -161,7 +161,12 @@ export default function HomePage() {
             <p className="eyebrow">Simple Pricing</p>
             <h2>Peace of mind costs less than a cup of coffee.</h2>
             <p className="pricing-amount">
-              $3 <span>/ month</span>
+              <span className="pricing-amount-item">
+                $0.10 <span className="pricing-amount-label">/ day</span>
+              </span>
+              <span className="pricing-amount-item">
+                $3 <span className="pricing-amount-label">/ month</span>
+              </span>
             </p>
             <p className="pricing-copy">(Billed at $36 annually)</p>
             <p className="pricing-copy">

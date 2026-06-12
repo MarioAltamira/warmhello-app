@@ -368,12 +368,21 @@ h1 {
 
 .pricing-amount {
   margin-bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 56px;
   font-size: 52px;
   font-weight: 700;
   line-height: 1;
 }
 
-.pricing-amount span {
+.pricing-amount-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.pricing-amount-label {
   font-size: 22px;
   font-weight: 600;
   color: var(--muted);
