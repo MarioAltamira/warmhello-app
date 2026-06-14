@@ -164,9 +164,6 @@ export default function HomePage() {
               <span className="pricing-amount-item">
                 $0.10 <span className="pricing-amount-label">/ day</span>
               </span>
-              <span className="pricing-amount-item">
-                $3 <span className="pricing-amount-label">/ month</span>
-              </span>
             </p>
             <p className="pricing-copy">(Billed at $36 annually)</p>
             <p className="pricing-copy">
