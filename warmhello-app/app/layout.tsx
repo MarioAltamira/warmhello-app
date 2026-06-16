@@ -5,7 +5,7 @@ import { SiteHeader } from "@/components/site-header";
 
 export const metadata: Metadata = {
   title: "WarmHello",
-  description: "Daily senior check-ins with Stripe, Twilio, Prisma, and Supabase.",
+  description: "Daily senior check-ins with Stripe, Telnyx, Prisma, and Supabase.",
 };
 
 export default function RootLayout({

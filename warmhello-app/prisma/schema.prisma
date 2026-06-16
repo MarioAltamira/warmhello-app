@@ -37,6 +37,7 @@ model Subscriber {
   stripeCustomerId     String?            @unique
   stripeSubscriptionId String?            @unique
   subscriptionStatus   SubscriptionStatus @default(TRIAL)
+  created              DateTime           @default(now()) @map("Created")
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
   seniors              Senior[]
@@ -52,6 +53,7 @@ model Senior {
   phoneNumber  String
   timezone     String     @default("America/New_York")
   checkInHour  Int        @default(9)
+  secondAttemptHours Int  @default(1)
   active       Boolean    @default(true)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt

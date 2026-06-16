@@ -6,7 +6,7 @@ WarmHello is a clean rebuild around this stack:
 - Next.js App Router
 - PostgreSQL via Supabase
 - Prisma ORM
-- Twilio SMS
+- Telnyx SMS
 - Stripe Billing
 - Upstash QStash-style delayed jobs
 

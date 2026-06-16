@@ -13,6 +13,7 @@ export type CreateHouseholdInput = {
     phoneNumber: string;
     timezone: string;
     checkInHour: number;
+    secondAttemptHours: number;
   };
   primaryContact: {
     fullName: string;
@@ -45,6 +46,7 @@ export async function createHousehold(input: CreateHouseholdInput) {
           fullName: input.subscriber.fullName,
           phoneNumber: input.subscriber.phoneNumber,
           subscriptionStatus: "TRIAL",
+          created: new Date(),
         },
       });
 
@@ -56,6 +58,7 @@ export async function createHousehold(input: CreateHouseholdInput) {
           phoneNumber: input.senior.phoneNumber,
           timezone: input.senior.timezone,
           checkInHour: input.senior.checkInHour,
+          secondAttemptHours: input.senior.secondAttemptHours,
         },
       });
 
@@ -85,6 +88,10 @@ export async function createHousehold(input: CreateHouseholdInput) {
       seniorId: result.senior.id,
       scheduledFor: firstScheduledFor,
     });
+
+    const { enqueueJsonJob } = await import("@/lib/qstash");
+    await enqueueJsonJob("/api/jobs/trial-nudge", { subscriberId: result.subscriber.id }, 72);
+    await enqueueJsonJob("/api/jobs/trial-final", { subscriberId: result.subscriber.id }, 168);
 
     return {
       ok: true as const,

@@ -23,6 +23,7 @@ async function main() {
       fullName: "Caregiver Demo",
       phoneNumber: "+15551230001",
       subscriptionStatus: "TRIAL",
+      created: new Date(),
     },
   });
 
@@ -34,6 +35,7 @@ async function main() {
       phoneNumber: "+15551230002",
       timezone: "America/New_York",
       checkInHour: 9,
+      secondAttemptHours: 1,
     },
   });
 
@@ -68,8 +70,8 @@ async function main() {
       token: createCheckInToken(),
       status: "CONFIRMED",
       scheduledFor: previousScheduledFor,
-      reminderAt: addHours(previousScheduledFor, 3),
-      escalationAt: addHours(previousScheduledFor, 4),
+      reminderAt: addHours(previousScheduledFor, 1),
+      escalationAt: addHours(previousScheduledFor, 2),
       confirmedAt: addHours(previousScheduledFor, 1),
     },
   });
@@ -81,8 +83,8 @@ async function main() {
       token: "demo-token",
       status: "PENDING",
       scheduledFor: upcomingScheduledFor,
-      reminderAt: addHours(upcomingScheduledFor, 3),
-      escalationAt: addHours(upcomingScheduledFor, 4),
+      reminderAt: addHours(upcomingScheduledFor, 1),
+      escalationAt: addHours(upcomingScheduledFor, 2),
     },
   });
 

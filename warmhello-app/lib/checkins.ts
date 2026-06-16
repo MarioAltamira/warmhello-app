@@ -68,7 +68,7 @@ export async function getDashboardSnapshot() {
         relationship: contact.relationship,
         phoneNumber: contact.phoneNumber,
       })),
-      escalationPolicy: "Reminder after 3 hours, contact alerts after 4 hours.",
+      escalationPolicy: `Second attempt after ${senior.secondAttemptHours} hour${senior.secondAttemptHours === 1 ? "" : "s"}, contact alerts after another ${senior.secondAttemptHours} hour${senior.secondAttemptHours === 1 ? "" : "s"}.`,
       integrationStatus: getIntegrationStatus(),
     };
   } catch {
@@ -146,7 +146,13 @@ export async function confirmCheckInToken(token: string) {
   }
 
   try {
-    const existing = await prisma.checkIn.findUnique({ where: { token } });
+    const existing = await prisma.checkIn.findUnique({
+      where: { token },
+      include: {
+        senior: true,
+        subscriber: true,
+      },
+    });
     if (!existing) {
       return { ok: false as const, message: "Check-in link not found." };
     }
@@ -166,6 +172,33 @@ export async function confirmCheckInToken(token: string) {
         confirmedAt: new Date(),
       },
     });
+
+    try {
+      const contacts = await prisma.contact.findMany({
+        where: { seniorId: existing.seniorId },
+        orderBy: { priority: "asc" },
+      });
+      const { sendSms } = await import("@/lib/sms");
+      const message = `${existing.senior.firstName} is okay and has completed today's WarmHello check-in.`;
+      const notifications = await Promise.all(
+        contacts.map((contact) => sendSms(contact.phoneNumber, message)),
+      );
+
+      if (contacts.length > 0) {
+        await prisma.alertJob.createMany({
+          data: contacts.map((contact, index) => ({
+            checkInId: existing.id,
+            kind: "confirmation_sms",
+            status: notifications[index]?.ok ? "SENT" : "FAILED",
+            providerMessageId: notifications[index]?.ok ? notifications[index].sid : null,
+            payload: { contactId: contact.id, phoneNumber: contact.phoneNumber },
+            runAt: new Date(),
+          })),
+        });
+      }
+    } catch {
+      // Confirmation itself should still succeed even if notifications are not configured yet.
+    }
 
     return { ok: true as const, message: "Check-in confirmed successfully." };
   } catch {
@@ -193,8 +226,10 @@ export async function createCheckInSession(input: {
     }
 
     const scheduledFor = input.scheduledFor ?? new Date();
-    const reminderAt = addHours(scheduledFor, 3);
-    const escalationAt = addHours(scheduledFor, 4);
+    const reminderDelayHours = senior.secondAttemptHours;
+    const escalationDelayHours = senior.secondAttemptHours * 2;
+    const reminderAt = addHours(scheduledFor, reminderDelayHours);
+    const escalationAt = addHours(scheduledFor, escalationDelayHours);
 
     const checkIn = await prisma.checkIn.create({
       data: {
@@ -212,12 +247,16 @@ export async function createCheckInSession(input: {
     const checkInUrl = `${appUrl}/checkin/${checkIn.token}`;
     const [{ enqueueJsonJob }, { sendSms }] = await Promise.all([
       import("@/lib/qstash"),
-      import("@/lib/twilio"),
+      import("@/lib/sms"),
     ]);
 
     await sendSms(senior.phoneNumber, `WarmHello check-in for ${senior.firstName}: ${checkInUrl}`);
-    await enqueueJsonJob("/api/jobs/reminder", { checkInId: checkIn.id }, 3);
-    await enqueueJsonJob("/api/jobs/escalation", { checkInId: checkIn.id }, 4);
+    await enqueueJsonJob("/api/jobs/reminder", { checkInId: checkIn.id }, reminderDelayHours);
+    await enqueueJsonJob(
+      "/api/jobs/escalation",
+      { checkInId: checkIn.id },
+      escalationDelayHours,
+    );
 
     return { ok: true as const, checkIn };
   } catch {
@@ -231,7 +270,7 @@ export async function markReminderSent(checkInId: string) {
   }
 
   try {
-    const { sendSms } = await import("@/lib/twilio");
+    const { sendSms } = await import("@/lib/sms");
     const checkIn = await prisma.checkIn.findUnique({
       where: { id: checkInId },
       include: { senior: true },
@@ -274,7 +313,7 @@ export async function markEscalationSent(checkInId: string) {
   }
 
   try {
-    const { sendSms } = await import("@/lib/twilio");
+    const { sendSms } = await import("@/lib/sms");
     const checkIn = await prisma.checkIn.findUnique({
       where: { id: checkInId },
       include: {
@@ -295,7 +334,7 @@ export async function markEscalationSent(checkInId: string) {
       contacts.map((contact) =>
         sendSms(
           contact.phoneNumber,
-          `WarmHello escalation: ${checkIn.senior.firstName} has not confirmed their scheduled check-in.`,
+          `WarmHello alert: ${checkIn.senior.firstName} has not responded to today's check-in.`,
         ),
       ),
     );

@@ -21,6 +21,7 @@
   --notice-bg: #f4f7ff;
   --footer-panel-bg: #fbfcff;
   --code-bg: #eef1f8;
+  --field-bg: #eef2f8;
 }
 
 html[data-theme="dark"] {
@@ -46,6 +47,7 @@ html[data-theme="dark"] {
   --notice-bg: #1d2940;
   --footer-panel-bg: #111b2d;
   --code-bg: #202b40;
+  --field-bg: #22304a;
 }
 
 * {
@@ -476,6 +478,56 @@ h1 {
   color: var(--primary);
 }
 
+.inline-link {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.contact-form {
+  display: grid;
+  gap: 14px;
+}
+
+.contact-form label {
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.contact-form input,
+.contact-form textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text);
+  caret-color: var(--text);
+  font: inherit;
+}
+
+.contact-form textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.contact-form input::placeholder,
+.contact-form textarea::placeholder {
+  color: var(--muted);
+}
+
+.contact-form-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.contact-form-status {
+  margin: 0;
+  color: var(--muted);
+}
+
 .legal-panel {
   display: grid;
   gap: 14px;
@@ -661,14 +713,39 @@ h1 {
   gap: 8px;
   font-size: 14px;
   font-weight: 600;
+  min-width: 0;
 }
 
-.form-grid input {
+.form-grid input,
+.form-grid select {
   min-height: 46px;
   padding: 0 14px;
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: #fff;
+  background: var(--field-bg);
+  color: var(--text);
+  caret-color: var(--text);
+  font: inherit;
+  min-width: 0;
+}
+
+.form-grid input:focus,
+.form-grid select:focus {
+  outline: 2px solid color-mix(in srgb, var(--primary) 30%, transparent);
+  outline-offset: 2px;
+  border-color: var(--primary);
+}
+
+.form-grid input::placeholder {
+  color: var(--muted);
+}
+
+.form-grid-wide {
+  grid-column: span 2;
+}
+
+.form-grid-compact {
+  max-width: 180px;
 }
 
 .form-actions {
@@ -695,6 +772,14 @@ code {
 }
 
 @media (max-width: 720px) {
+  .form-grid-wide {
+    grid-column: auto;
+  }
+
+  .form-grid-compact {
+    max-width: none;
+  }
+
   body {
     padding-top: 148px;
   }

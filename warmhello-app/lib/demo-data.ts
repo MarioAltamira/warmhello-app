@@ -1,7 +1,8 @@
 export type IntegrationStatus = {
   database: boolean;
   stripe: boolean;
-  twilio: boolean;
+  sms: boolean;
+  email: boolean;
   qstash: boolean;
 };
 
@@ -55,11 +56,12 @@ export const demoDashboard: DashboardSnapshot = {
       phoneNumber: "+15551230004",
     },
   ],
-  escalationPolicy: "Reminder after 3 hours, contact alerts after 4 hours.",
+  escalationPolicy: "Reminder after 60 minutes, contact alerts after another 60 minutes.",
   integrationStatus: {
     database: false,
     stripe: false,
-    twilio: false,
+    sms: false,
+    email: false,
     qstash: false,
   },
 };

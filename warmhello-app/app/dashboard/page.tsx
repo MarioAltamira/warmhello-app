@@ -39,8 +39,8 @@ export default async function DashboardPage() {
           <h2>Escalation policy</h2>
           <p>{snapshot.escalationPolicy}</p>
           <p>
-            Reminder and escalation jobs are designed to be triggered via delayed
-            QStash delivery.
+            Reminder, escalation, and trial follow-up jobs are designed to be triggered
+            via delayed QStash delivery.
           </p>
           <p>
             <strong>Billing:</strong> {snapshot.billingCustomerLabel}
@@ -112,7 +112,7 @@ export default async function DashboardPage() {
           <li>Add Supabase Postgres URLs to <code>.env</code>.</li>
           <li>Run <code>npx pnpm run prisma:generate</code> and <code>npx pnpm run prisma:push</code>.</li>
           <li>Run <code>npx pnpm run db:seed</code> to load the starter household into Supabase.</li>
-          <li>Add Stripe, Twilio, and QStash secrets to enable live integrations.</li>
+          <li>Add Stripe, Telnyx, email, and QStash secrets to enable live integrations.</li>
         </ul>
         <div className="actions" style={{ marginTop: 16 }}>
           <Link href="/onboard" className="button primary">

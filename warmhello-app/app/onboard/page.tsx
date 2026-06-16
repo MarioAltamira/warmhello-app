@@ -6,14 +6,12 @@ export default function OnboardPage() {
     <main className="shell">
       <section className="card">
         <p className="eyebrow">Subscriber Setup</p>
-        <h1>Create a household and launch billing.</h1>
+        <h1>Create a household and launch your free trial.</h1>
         <p className="lede">
-          Use this page to create a real subscriber, senior, and primary emergency
-          contact, then open Stripe checkout for the new household.
+          Use the form below to setup your household and click the Create Household.
         </p>
         <p>
-          Seed a Supabase database later with <code>npx pnpm run db:seed</code> once
-          your Postgres connection is configured.
+          That's all no need for a credit card or anything else.
         </p>
         <div className="actions">
           <Link href="/dashboard" className="button secondary">

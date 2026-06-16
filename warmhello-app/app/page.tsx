@@ -13,7 +13,8 @@ export default function HomePage() {
   const allSystemsReady =
     integrations.database &&
     integrations.stripe &&
-    integrations.twilio &&
+    integrations.sms &&
+    integrations.email &&
     integrations.qstash;
 
   return (
@@ -114,7 +115,7 @@ export default function HomePage() {
             <span className="step-number">3</span>
             <h3>Automated Safety Net</h3>
             <p>
-              If they&apos;re busy or forget, the system gently reminds them 3 hours later.
+              If they&apos;re busy or forget, the system gently reminds them 60 minutes later.
               If there&apos;s still no response after another hour, WarmHello immediately
               alerts you by text and email so you can check in.
             </p>

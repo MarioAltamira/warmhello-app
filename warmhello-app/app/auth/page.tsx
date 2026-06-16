@@ -3,7 +3,7 @@
 import type { Route } from "next";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 
 const allowedRedirects = new Set<Route>(["/onboard", "/dashboard"]);
 
@@ -20,7 +20,7 @@ function getHeading(source: string | null, redirectPath: Route) {
     return {
       eyebrow: "Welcome Back",
       title: "Log in or create an account to view your family dashboard.",
-      lede: "Use one secure entry point before opening your household overview and check-in activity.",
+      lede: "",
     };
   }
 
@@ -46,6 +46,33 @@ function AuthPageContent() {
   const redirectPath = getSafeRedirect(searchParams.get("redirect"));
   const mode = searchParams.get("mode") === "login" ? "login" : "signup";
   const heading = getHeading(searchParams.get("source"), redirectPath);
+
+  useEffect(() => {
+    // #region debug-point A:auth-css-links
+    const report = (phase: string) =>
+      fetch("http://127.0.0.1:7777/event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId: "auth-css-chunk",
+          runId: "pre-fix",
+          hypothesisId: "A",
+          location: "app/auth/page.tsx",
+          msg: `[DEBUG] auth css links ${phase}`,
+          data: {
+            mode,
+            hrefs: Array.from(document.querySelectorAll('link[rel="stylesheet"]')).map((link) =>
+              link.getAttribute("href"),
+            ),
+          },
+          ts: Date.now(),
+        }),
+      }).catch(() => {});
+    report("mount");
+    const timeoutId = window.setTimeout(() => report("after-timeout"), 1200);
+    return () => window.clearTimeout(timeoutId);
+    // #endregion
+  }, [mode]);
 
   function handleContinue() {
     router.push(redirectPath);
@@ -105,19 +132,6 @@ function AuthPageContent() {
             Log In
           </button>
         </article>
-      </section>
-
-      <section className="card auth-footnote">
-        <p className="auth-note">
-          This screen is ready to connect to a real authentication provider next. For now,
-          it routes users through a dedicated sign-up or log-in step before entering the
-          selected experience.
-        </p>
-        <div className="actions">
-          <Link href="/" className="button secondary">
-            Return To Landing Page
-          </Link>
-        </div>
       </section>
     </main>
   );
