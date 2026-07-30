@@ -1,6 +1,8 @@
 import { createCheckInSession } from "@/lib/checkins";
+import { getNextOccurrenceAtHourInTimeZone } from "@/lib/dates";
 import { prisma } from "@/lib/prisma";
 import { getSubscriberPlanSummary } from "@/lib/subscriber-plan";
+import { normalizeTimeZone } from "@/lib/timezones";
 import { sendTrialWelcomeEmail } from "@/lib/trial-emails";
 
 export type CreateHouseholdInput = {
@@ -138,12 +140,11 @@ export async function createHousehold(input: CreateHouseholdInput) {
       return { subscriber, senior, contact };
     });
 
-    const firstScheduledFor = new Date();
-    firstScheduledFor.setMinutes(0, 0, 0);
-    firstScheduledFor.setHours(input.senior.checkInHour);
-    if (firstScheduledFor <= new Date()) {
-      firstScheduledFor.setDate(firstScheduledFor.getDate() + 1);
-    }
+    const timeZone = normalizeTimeZone(input.senior.timezone);
+    const firstScheduledFor = getNextOccurrenceAtHourInTimeZone({
+      timeZone,
+      hour: input.senior.checkInHour,
+    });
 
     const firstCheckIn = await createCheckInSession({
       subscriberId: result.subscriber.id,

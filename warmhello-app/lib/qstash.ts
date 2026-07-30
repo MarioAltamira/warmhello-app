@@ -10,6 +10,24 @@ export async function enqueueJsonJob(
     return { ok: false as const, message: "QStash is not configured." };
   }
 
+  const runAt = addHours(new Date(), delayHours);
+  return enqueueJsonJobAt(path, payload, runAt, `${delayHours}h`);
+}
+
+export async function enqueueJsonJobAt(
+  path: string,
+  payload: Record<string, unknown>,
+  runAt: Date,
+  delayOverride?: string,
+) {
+  if (!env.QSTASH_TOKEN) {
+    return { ok: false as const, message: "QStash is not configured." };
+  }
+
+  const delaySeconds = Math.max(0, Math.floor((runAt.getTime() - Date.now()) / 1000));
+  const delayHeader =
+    delayOverride ?? (delaySeconds > 0 ? `${delaySeconds}s` : undefined);
+
   const response = await fetch(
     `${env.QSTASH_URL}/v2/publish/${encodeURIComponent(`${env.APP_URL}${path}`)}`,
     {
@@ -17,12 +35,12 @@ export async function enqueueJsonJob(
       headers: {
         Authorization: `Bearer ${env.QSTASH_TOKEN}`,
         "Content-Type": "application/json",
-        "Upstash-Delay": `${delayHours}h`,
+        ...(delayHeader ? { "Upstash-Delay": delayHeader } : {}),
         "X-Job-Secret": env.JOB_SIGNING_SECRET,
       },
       body: JSON.stringify({
         ...payload,
-        scheduledFor: addHours(new Date(), delayHours).toISOString(),
+        scheduledFor: runAt.toISOString(),
       }),
     },
   );

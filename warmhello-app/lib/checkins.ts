@@ -3,6 +3,7 @@ import { demoCheckIn, demoDashboard } from "@/lib/demo-data";
 import { getIntegrationStatus } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { getSubscriberPlanSummary } from "@/lib/subscriber-plan";
+import { normalizeTimeZone } from "@/lib/timezones";
 import { createCheckInToken } from "@/lib/tokens";
 
 function formatEnumLabel(status: string) {
@@ -25,6 +26,7 @@ function buildDashboardSnapshot(subscriber: {
     firstName: string;
     lastName: string;
     secondAttemptHours: number;
+    timezone: string;
   }>;
   contacts: Array<{
     fullName: string;
@@ -39,6 +41,7 @@ function buildDashboardSnapshot(subscriber: {
   }>;
 }) {
   const senior = subscriber.seniors[0];
+  const timeZone = normalizeTimeZone(senior.timezone);
   const latestCheckIn = subscriber.checkIns[0];
   const plan = getSubscriberPlanSummary({
     created: subscriber.created,
@@ -57,14 +60,14 @@ function buildDashboardSnapshot(subscriber: {
     hasHousehold: true,
     seniorName: `${senior.firstName} ${senior.lastName}`,
     nextCheckInLabel: latestCheckIn
-      ? formatDateTime(latestCheckIn.scheduledFor)
+      ? formatDateTime(latestCheckIn.scheduledFor, timeZone)
       : "No check-in scheduled yet",
     latestCheckInStatus: latestCheckIn
       ? formatEnumLabel(latestCheckIn.status)
       : "Not scheduled",
     latestCheckInToken: latestCheckIn?.token,
     latestConfirmedLabel: latestCheckIn?.confirmedAt
-      ? formatDateTime(latestCheckIn.confirmedAt)
+      ? formatDateTime(latestCheckIn.confirmedAt, timeZone)
       : undefined,
     billingCustomerLabel: subscriber.stripeCustomerId
       ? `Stripe customer ${subscriber.stripeCustomerId}`
@@ -160,10 +163,11 @@ export async function getCheckInPageData(token: string) {
       };
     }
 
+    const timeZone = normalizeTimeZone(checkIn.senior.timezone);
     return {
       token,
       seniorName: checkIn.senior.firstName,
-      scheduledLabel: formatDateTime(checkIn.scheduledFor),
+      scheduledLabel: formatDateTime(checkIn.scheduledFor, timeZone),
       status:
         checkIn.status === "CONFIRMED"
           ? ("confirmed" as const)
@@ -171,7 +175,7 @@ export async function getCheckInPageData(token: string) {
             ? ("expired" as const)
             : ("pending" as const),
       confirmedLabel: checkIn.confirmedAt
-        ? formatDateTime(checkIn.confirmedAt)
+        ? formatDateTime(checkIn.confirmedAt, timeZone)
         : undefined,
     };
   } catch {
@@ -258,6 +262,46 @@ export async function confirmCheckInToken(token: string) {
   }
 }
 
+export async function markInitialSent(checkInId: string) {
+  if (!prisma) {
+    return { ok: false as const, message: "Database is not configured yet." };
+  }
+
+  try {
+    const { sendSms } = await import("@/lib/sms");
+    const checkIn = await prisma.checkIn.findUnique({
+      where: { id: checkInId },
+      include: { senior: true },
+    });
+
+    if (!checkIn || checkIn.status === "CONFIRMED" || checkIn.status === "EXPIRED") {
+      return { ok: false as const, message: "No check-in needed." };
+    }
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL ?? "http://localhost:8080";
+    const checkInUrl = `${appUrl}/checkin/${checkIn.token}`;
+    const sms = await sendSms(
+      checkIn.senior.phoneNumber,
+      `WarmHello check-in for ${checkIn.senior.firstName}: ${checkInUrl}`,
+    );
+
+    await prisma.alertJob.create({
+      data: {
+        checkInId,
+        kind: "initial_sms",
+        status: sms.ok ? "SENT" : "FAILED",
+        providerMessageId: sms.ok ? sms.sid : null,
+        payload: { phoneNumber: checkIn.senior.phoneNumber },
+        runAt: new Date(),
+      },
+    });
+
+    return { ok: true as const, message: "Check-in sent." };
+  } catch {
+    return { ok: false as const, message: "Database is not reachable right now." };
+  }
+}
+
 export async function createCheckInSession(input: {
   subscriberId: string;
   seniorId: string;
@@ -277,7 +321,9 @@ export async function createCheckInSession(input: {
       return { ok: false as const, message: "Subscriber or senior record was not found." };
     }
 
-    const scheduledFor = input.scheduledFor ?? new Date();
+    const now = new Date();
+    const scheduledForInput = input.scheduledFor ?? now;
+    const scheduledFor = scheduledForInput > now ? scheduledForInput : now;
     const reminderDelayHours = senior.secondAttemptHours;
     const escalationDelayHours = senior.secondAttemptHours * 2;
     const reminderAt = addHours(scheduledFor, reminderDelayHours);
@@ -294,21 +340,25 @@ export async function createCheckInSession(input: {
       },
     });
 
-    const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL ?? "http://localhost:8080";
-    const checkInUrl = `${appUrl}/checkin/${checkIn.token}`;
-    const [{ enqueueJsonJob }, { sendSms }] = await Promise.all([
-      import("@/lib/qstash"),
-      import("@/lib/sms"),
-    ]);
+    const { enqueueJsonJobAt } = await import("@/lib/qstash");
+    const shouldSendNow = scheduledFor.getTime() - now.getTime() <= 30_000;
+    if (shouldSendNow) {
+      await markInitialSent(checkIn.id);
+    } else {
+      const scheduled = await enqueueJsonJobAt(
+        "/api/jobs/checkin",
+        { checkInId: checkIn.id },
+        scheduledFor,
+      );
+      if (!scheduled.ok) {
+        await markInitialSent(checkIn.id);
+      }
+    }
 
-    await sendSms(senior.phoneNumber, `WarmHello check-in for ${senior.firstName}: ${checkInUrl}`);
-    await enqueueJsonJob("/api/jobs/reminder", { checkInId: checkIn.id }, reminderDelayHours);
-    await enqueueJsonJob(
-      "/api/jobs/escalation",
-      { checkInId: checkIn.id },
-      escalationDelayHours,
-    );
+    await Promise.all([
+      enqueueJsonJobAt("/api/jobs/reminder", { checkInId: checkIn.id }, reminderAt),
+      enqueueJsonJobAt("/api/jobs/escalation", { checkInId: checkIn.id }, escalationAt),
+    ]);
 
     return { ok: true as const, checkIn };
   } catch {

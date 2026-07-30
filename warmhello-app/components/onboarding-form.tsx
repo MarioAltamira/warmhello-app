@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { CheckoutButton } from "@/components/checkout-button";
+import { normalizeTimeZone, timeZoneOptions } from "@/lib/timezones";
 
 type HouseholdResponse = {
   ok: boolean;
@@ -77,43 +78,6 @@ type OnboardingFormProps = {
   };
 };
 
-const timezoneOptions = [
-  "Baker Island (US)",
-  "Samoa, American Samoa, Midway Atoll",
-  "Hawaii, Tahiti, Cook Islands",
-  "Alaska",
-  "Pacific Time (US/Canada/Mexico)",
-  "Mountain Time (US/Canada/Mexico)",
-  "Central Time (US/Canada/Mexico), Central America",
-  "Eastern Time (US/Canada), Peru, Colombia, Panama",
-  "Atlantic Time (Canada), Venezuela, Bolivia, Chile",
-  "Newfoundland (Canada)",
-  "Argentina, Brazil (Brasilia), Uruguay",
-  "South Georgia, Fernando de Noronha",
-  "Azores, Cape Verde",
-  "Greenwich Mean Time (UK), Portugal, Iceland, West Africa",
-  "Central European Time (Germany, France, Italy, etc.), Nigeria",
-  "Eastern European Time, South Africa, Israel, Egypt",
-  "Moscow, Saudi Arabia, East Africa (Kenya, Ethiopia)",
-  "Iran",
-  "UAE, Azerbaijan, Armenia, Mauritius",
-  "Afghanistan",
-  "Pakistan, Uzbekistan, Maldives",
-  "India, Sri Lanka",
-  "Nepal",
-  "Bangladesh, Kazakhstan",
-  "Myanmar",
-  "Thailand, Indonesia (West), Vietnam",
-  "China, Singapore, Philippines, Western Australia",
-  "Japan, South Korea",
-  "Northern Territory / South Australia",
-  "Eastern Australia (Sydney/Melbourne), Papua New Guinea",
-  "Solomon Islands, New Caledonia",
-  "New Zealand, Fiji, Marshall Islands",
-  "Samoa (Independent State), Tonga",
-  "Kiribati (Line Islands)",
-] as const;
-
 const checkInHourOptions = [
   { value: "0", label: "12:00 AM" },
   { value: "1", label: "01:00 AM" },
@@ -148,7 +112,7 @@ const initialForm = {
   seniorFirstName: "Margaret",
   seniorLastName: "Johnson",
   seniorPhone: "+15551230002",
-  timezone: "Eastern Time (US/Canada), Peru, Colombia, Panama",
+  timezone: "America/Toronto",
   checkInHour: "9",
   secondAttemptHours: "1",
   contactName: "David Johnson",
@@ -168,7 +132,7 @@ function buildInitialForm(
       seniorFirstName: currentHousehold.senior.firstName,
       seniorLastName: currentHousehold.senior.lastName,
       seniorPhone: currentHousehold.senior.phoneNumber,
-      timezone: currentHousehold.senior.timezone,
+      timezone: normalizeTimeZone(currentHousehold.senior.timezone),
       checkInHour: String(currentHousehold.senior.checkInHour),
       secondAttemptHours: String(currentHousehold.senior.secondAttemptHours),
       contactName: currentHousehold.contact.fullName,
@@ -184,7 +148,7 @@ function buildInitialForm(
   };
 }
 
-function formatScheduledFor(value?: string) {
+function formatScheduledFor(value?: string, timeZone?: string) {
   if (!value) {
     return null;
   }
@@ -195,9 +159,11 @@ function formatScheduledFor(value?: string) {
     return value;
   }
 
+  const resolvedTimeZone = timeZone ? normalizeTimeZone(timeZone) : undefined;
   return new Intl.DateTimeFormat(undefined, {
     dateStyle: "medium",
     timeStyle: "short",
+    ...(resolvedTimeZone ? { timeZone: resolvedTimeZone } : {}),
   }).format(parsed);
 }
 
@@ -216,7 +182,10 @@ export function OnboardingForm({
   const [savedHousehold, setSavedHousehold] = useState<HouseholdResponse["household"]>();
   const [firstCheckIn, setFirstCheckIn] = useState<HouseholdResponse["firstCheckIn"]>();
   const [firstCheckInMessage, setFirstCheckInMessage] = useState<string>();
-  const firstCheckInScheduledLabel = formatScheduledFor(firstCheckIn?.scheduledFor);
+  const firstCheckInScheduledLabel = formatScheduledFor(
+    firstCheckIn?.scheduledFor,
+    savedHousehold?.senior.timezone ?? form.timezone,
+  );
 
   useEffect(() => {
     setForm(resolvedInitialForm);
@@ -374,9 +343,9 @@ export function OnboardingForm({
             value={form.timezone}
             onChange={(event) => updateField("timezone", event.target.value)}
           >
-            {timezoneOptions.map((timezone) => (
-              <option key={timezone} value={timezone}>
-                {timezone}
+            {timeZoneOptions.map((timezone) => (
+              <option key={timezone.value} value={timezone.value}>
+                {timezone.label}
               </option>
             ))}
           </select>
