@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
+import { protectAuthHref } from "@/lib/routes";
 
 type SectionKey = "privacy" | "terms" | "about" | "contact" | "howto" | "faq";
 const contactEmail = "sales@warm-hello.com";
@@ -94,6 +96,11 @@ export function LegalLinksPanel() {
     <section className="section">
       <div className="card footer-links-card">
         <h3 className="footer-brand">WarmHello</h3>
+        <div className="footer-cta-row">
+          <Link href={protectAuthHref} className="button buy-now-button footer-buy-cta">
+            Buy Now
+          </Link>
+        </div>
         <p className="footer-links-heading">
           <strong>Quick Links</strong>
         </p>

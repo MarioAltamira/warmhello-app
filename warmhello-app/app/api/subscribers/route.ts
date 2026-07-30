@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createHousehold } from "@/lib/households";
+import { createHousehold, updateHousehold } from "@/lib/households";
 
 const bodySchema = z.object({
+  subscriberId: z.string().min(1).optional(),
   subscriber: z.object({
     fullName: z.string().min(2),
     email: z.string().email(),
@@ -37,4 +38,23 @@ export async function POST(request: Request) {
     firstCheckIn: result.firstCheckIn,
     firstCheckInMessage: result.firstCheckInMessage,
   });
+}
+
+export async function PUT(request: Request) {
+  const parsed = bodySchema.parse(await request.json());
+
+  if (!parsed.subscriberId) {
+    return NextResponse.json(
+      { ok: false, message: "Subscriber ID is required to update a household." },
+      { status: 400 },
+    );
+  }
+
+  const result = await updateHousehold(parsed.subscriberId, parsed);
+
+  if (!result.ok) {
+    return NextResponse.json(result, { status: 400 });
+  }
+
+  return NextResponse.json(result);
 }

@@ -7,8 +7,11 @@ import {
   protectAuthHref,
   trialAuthHref,
 } from "@/lib/routes";
+import { getSubscriberSessionId } from "@/lib/subscriber-session";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const subscriberId = await getSubscriberSessionId();
+  const trialCtaHref = subscriberId ? dashboardAuthHref : trialAuthHref;
   const integrations = getIntegrationStatus();
   const allSystemsReady =
     integrations.database &&
@@ -29,7 +32,7 @@ export default function HomePage() {
             that says, &quot;I&apos;m doing great this morning.&quot;
           </p>
           <div className="actions">
-            <Link href={trialAuthHref} className="button primary">
+            <Link href={trialCtaHref} className="button primary hero-primary-cta">
               Start Their Free 7-Day Trial
             </Link>
             <Link href={dashboardAuthHref} className="button secondary">
@@ -225,7 +228,7 @@ export default function HomePage() {
           </p>
         </div>
         <div className="actions">
-          <Link href={trialAuthHref} className="button primary">
+          <Link href={trialCtaHref} className="button primary">
             Start Their Free 7-Day Trial
           </Link>
           <Link href="/checkin/demo-token" className="button secondary">

@@ -5,14 +5,16 @@ import { useState } from "react";
 type CheckoutButtonProps = {
   subscriberId: string;
   customerEmail: string;
+  label?: string;
 };
 
 export function CheckoutButton({
   subscriberId,
   customerEmail,
+  label = "Buy Now",
 }: CheckoutButtonProps) {
   const [statusMessage, setStatusMessage] = useState(
-    "Create a Stripe checkout session for this household.",
+    "",
   );
   const [submitting, setSubmitting] = useState(false);
 
@@ -54,10 +56,10 @@ export function CheckoutButton({
 
   return (
     <div>
-      <button className="button primary" onClick={handleCheckout} disabled={submitting}>
-        {submitting ? "Starting..." : "Start Stripe Checkout"}
+      <button className="button buy-now-button" onClick={handleCheckout} disabled={submitting}>
+        {submitting ? "Starting..." : label}
       </button>
-      <p style={{ marginTop: 12 }}>{statusMessage}</p>
+      {statusMessage ? <p style={{ marginTop: 12 }}>{statusMessage}</p> : null}
     </div>
   );
 }

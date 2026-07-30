@@ -7,10 +7,15 @@ export type IntegrationStatus = {
 };
 
 export type DashboardSnapshot = {
+  subscriberId?: string;
   subscriberName: string;
   subscriberEmail: string;
   subscriberPhone: string;
   subscriptionStatus: string;
+  isPaidSubscriber: boolean;
+  isTrialExpired: boolean;
+  showBuyNow: boolean;
+  hasHousehold: boolean;
   seniorName: string;
   nextCheckInLabel: string;
   latestCheckInStatus: string;
@@ -35,10 +40,15 @@ export type CheckInPageData = {
 };
 
 export const demoDashboard: DashboardSnapshot = {
+  subscriberId: "demo-subscriber",
   subscriberName: "Caregiver Demo",
   subscriberEmail: "caregiver@example.com",
   subscriberPhone: "+15551230001",
   subscriptionStatus: "Trial",
+  isPaidSubscriber: false,
+  isTrialExpired: false,
+  showBuyNow: false,
+  hasHousehold: true,
   seniorName: "Margaret Johnson",
   nextCheckInLabel: "Today at 9:00 AM",
   latestCheckInStatus: "Pending",

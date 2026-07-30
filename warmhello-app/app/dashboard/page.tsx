@@ -1,8 +1,21 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { CheckoutButton } from "@/components/checkout-button";
 import { getDashboardSnapshot } from "@/lib/checkins";
+import { getSubscriberSession } from "@/lib/subscriber-session";
 
 export default async function DashboardPage() {
-  const snapshot = await getDashboardSnapshot();
+  const { subscriberId, sessionExpired } = await getSubscriberSession();
+
+  if (!subscriberId) {
+    redirect(
+      sessionExpired
+        ? "/auth?mode=login&redirect=%2Fdashboard&source=dashboard&session=expired"
+        : "/auth?mode=login&redirect=%2Fdashboard&source=dashboard",
+    );
+  }
+
+  const snapshot = await getDashboardSnapshot(subscriberId);
 
   return (
     <main className="shell">
@@ -18,6 +31,9 @@ export default async function DashboardPage() {
       <section className="dashboard-grid" style={{ marginTop: 24 }}>
         <article className="card">
           <h2>Coverage</h2>
+          <p>
+            <strong>Subscriber:</strong> {snapshot.subscriberName}
+          </p>
           <p>
             <strong>Subscriber email:</strong> {snapshot.subscriberEmail}
           </p>
@@ -115,13 +131,21 @@ export default async function DashboardPage() {
           <li>Add Stripe, Telnyx, email, and QStash secrets to enable live integrations.</li>
         </ul>
         <div className="actions" style={{ marginTop: 16 }}>
-          <Link href="/onboard" className="button primary">
-            Create Household
+          <Link href="/onboard?mode=edit" className="button primary">
+            {snapshot.hasHousehold ? "Edit Household" : "Create Household"}
           </Link>
           <Link href="/checkin/demo-token" className="button secondary">
             Preview Demo Check-In
           </Link>
         </div>
+        {snapshot.showBuyNow && snapshot.subscriberId ? (
+          <div style={{ marginTop: 16 }}>
+            <CheckoutButton
+              subscriberId={snapshot.subscriberId}
+              customerEmail={snapshot.subscriberEmail}
+            />
+          </div>
+        ) : null}
       </section>
     </main>
   );

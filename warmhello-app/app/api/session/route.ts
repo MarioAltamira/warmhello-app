@@ -1,0 +1,81 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { prisma } from "@/lib/prisma";
+import {
+  getSubscriberSessionBootId,
+  subscriberSessionBootCookieName,
+  subscriberSessionCookieName,
+  subscriberSessionCookieOptions,
+} from "@/lib/subscriber-session";
+
+const bodySchema = z
+  .object({
+    email: z.string().email().optional(),
+    subscriberId: z.string().min(1).optional(),
+  })
+  .refine((value) => value.email || value.subscriberId, {
+    message: "Email or subscriberId is required.",
+  });
+
+export async function POST(request: Request) {
+  if (!prisma) {
+    return NextResponse.json(
+      { ok: false, message: "Database is not configured yet." },
+      { status: 400 },
+    );
+  }
+
+  const parsed = bodySchema.parse(await request.json());
+  const subscriber = parsed.subscriberId
+    ? await prisma.subscriber.findUnique({
+        where: { id: parsed.subscriberId },
+      })
+    : await prisma.subscriber.findUnique({
+        where: { email: parsed.email },
+      });
+
+  if (!subscriber) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "We could not find a subscriber with that email yet. Create the household first.",
+      },
+      { status: 404 },
+    );
+  }
+
+  const response = NextResponse.json({
+    ok: true,
+    subscriber: {
+      id: subscriber.id,
+      email: subscriber.email,
+      fullName: subscriber.fullName,
+    },
+  });
+
+  response.cookies.set(
+    subscriberSessionCookieName,
+    subscriber.id,
+    subscriberSessionCookieOptions,
+  );
+  response.cookies.set(
+    subscriberSessionBootCookieName,
+    getSubscriberSessionBootId(),
+    subscriberSessionCookieOptions,
+  );
+
+  return response;
+}
+
+export async function DELETE() {
+  const response = NextResponse.json({ ok: true });
+  response.cookies.set(subscriberSessionCookieName, "", {
+    ...subscriberSessionCookieOptions,
+    maxAge: 0,
+  });
+  response.cookies.set(subscriberSessionBootCookieName, "", {
+    ...subscriberSessionCookieOptions,
+    maxAge: 0,
+  });
+  return response;
+}

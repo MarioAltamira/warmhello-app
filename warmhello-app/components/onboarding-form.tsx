@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { CheckoutButton } from "@/components/checkout-button";
 
 type HouseholdResponse = {
@@ -16,16 +17,63 @@ type HouseholdResponse = {
       id: string;
       email: string;
       fullName: string;
+      phoneNumber?: string;
     };
     senior: {
       id: string;
       firstName: string;
       lastName: string;
+      phoneNumber?: string;
+      timezone?: string;
+      checkInHour?: number;
+      secondAttemptHours?: number;
     };
     contact: {
       id: string;
       fullName: string;
+      relationship?: string;
+      phoneNumber?: string;
     };
+  };
+};
+
+type CurrentHousehold = {
+  subscriber: {
+    id: string;
+    fullName: string;
+    email: string;
+    phoneNumber: string;
+  };
+  senior: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    phoneNumber: string;
+    timezone: string;
+    checkInHour: number;
+    secondAttemptHours: number;
+  };
+  contact: {
+    id: string;
+    fullName: string;
+    relationship: string;
+    phoneNumber: string;
+  };
+  plan: {
+    isPaidSubscriber: boolean;
+    isFreeTrial: boolean;
+    isTrialExpired: boolean;
+    showBuyNow: boolean;
+    statusLabel: string;
+  };
+};
+
+type OnboardingFormProps = {
+  editMode?: boolean;
+  currentHousehold?: CurrentHousehold | null;
+  signupDefaults?: {
+    subscriberName?: string;
+    subscriberEmail?: string;
   };
 };
 
@@ -108,13 +156,71 @@ const initialForm = {
   contactPhone: "+15551230003",
 };
 
-export function OnboardingForm() {
-  const [form, setForm] = useState(initialForm);
+function buildInitialForm(
+  currentHousehold?: CurrentHousehold | null,
+  signupDefaults?: OnboardingFormProps["signupDefaults"],
+) {
+  if (currentHousehold) {
+    return {
+      subscriberName: currentHousehold.subscriber.fullName,
+      subscriberEmail: currentHousehold.subscriber.email,
+      subscriberPhone: currentHousehold.subscriber.phoneNumber,
+      seniorFirstName: currentHousehold.senior.firstName,
+      seniorLastName: currentHousehold.senior.lastName,
+      seniorPhone: currentHousehold.senior.phoneNumber,
+      timezone: currentHousehold.senior.timezone,
+      checkInHour: String(currentHousehold.senior.checkInHour),
+      secondAttemptHours: String(currentHousehold.senior.secondAttemptHours),
+      contactName: currentHousehold.contact.fullName,
+      contactRelationship: currentHousehold.contact.relationship,
+      contactPhone: currentHousehold.contact.phoneNumber,
+    };
+  }
+
+  return {
+    ...initialForm,
+    subscriberName: signupDefaults?.subscriberName?.trim() || initialForm.subscriberName,
+    subscriberEmail: signupDefaults?.subscriberEmail?.trim() || initialForm.subscriberEmail,
+  };
+}
+
+function formatScheduledFor(value?: string) {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(parsed);
+}
+
+export function OnboardingForm({
+  editMode = false,
+  currentHousehold,
+  signupDefaults,
+}: OnboardingFormProps) {
+  const resolvedInitialForm = useMemo(
+    () => buildInitialForm(currentHousehold, signupDefaults),
+    [currentHousehold, signupDefaults],
+  );
+  const [form, setForm] = useState(resolvedInitialForm);
   const [submitting, setSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
-  const [created, setCreated] = useState<HouseholdResponse["household"]>();
+  const [savedHousehold, setSavedHousehold] = useState<HouseholdResponse["household"]>();
   const [firstCheckIn, setFirstCheckIn] = useState<HouseholdResponse["firstCheckIn"]>();
   const [firstCheckInMessage, setFirstCheckInMessage] = useState<string>();
+  const firstCheckInScheduledLabel = formatScheduledFor(firstCheckIn?.scheduledFor);
+
+  useEffect(() => {
+    setForm(resolvedInitialForm);
+  }, [resolvedInitialForm]);
 
   function updateField(name: keyof typeof initialForm, value: string) {
     setForm((current) => ({
@@ -132,37 +238,40 @@ export function OnboardingForm() {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitting(true);
-    setCreated(undefined);
+    setSavedHousehold(undefined);
     setFirstCheckIn(undefined);
     setFirstCheckInMessage(undefined);
-    setStatusMessage("Creating household...");
+    setStatusMessage(editMode ? "Updating household..." : "Creating household...");
 
     try {
+      const payload = {
+        subscriberId: currentHousehold?.subscriber.id,
+        subscriber: {
+          fullName: form.subscriberName,
+          email: form.subscriberEmail,
+          phoneNumber: form.subscriberPhone,
+        },
+        senior: {
+          firstName: form.seniorFirstName,
+          lastName: form.seniorLastName,
+          phoneNumber: form.seniorPhone,
+          timezone: form.timezone,
+          checkInHour: Number(form.checkInHour),
+          secondAttemptHours: Number(form.secondAttemptHours),
+        },
+        primaryContact: {
+          fullName: form.contactName,
+          relationship: form.contactRelationship,
+          phoneNumber: form.contactPhone,
+        },
+      };
+
       const response = await fetch("/api/subscribers", {
-        method: "POST",
+        method: editMode ? "PUT" : "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          subscriber: {
-            fullName: form.subscriberName,
-            email: form.subscriberEmail,
-            phoneNumber: form.subscriberPhone,
-          },
-          senior: {
-            firstName: form.seniorFirstName,
-            lastName: form.seniorLastName,
-            phoneNumber: form.seniorPhone,
-            timezone: form.timezone,
-            checkInHour: Number(form.checkInHour),
-            secondAttemptHours: Number(form.secondAttemptHours),
-          },
-          primaryContact: {
-            fullName: form.contactName,
-            relationship: form.contactRelationship,
-            phoneNumber: form.contactPhone,
-          },
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = (await response.json()) as HouseholdResponse;
@@ -172,10 +281,25 @@ export function OnboardingForm() {
         return;
       }
 
-      setCreated(data.household);
+      setSavedHousehold(data.household);
       setFirstCheckIn(data.firstCheckIn);
       setFirstCheckInMessage(data.firstCheckInMessage);
-      setStatusMessage("Household created successfully.");
+      if (data.household?.subscriber.id) {
+        await fetch("/api/session", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            subscriberId: data.household.subscriber.id,
+          }),
+        });
+      }
+      setStatusMessage(
+        editMode
+          ? data.message ?? "Household updated successfully."
+          : "Household created successfully.",
+      );
     } catch {
       setStatusMessage("We could not reach the server right now.");
     } finally {
@@ -185,7 +309,15 @@ export function OnboardingForm() {
 
   return (
     <section className="card">
-      <h2>Create Subscriber Household</h2>
+      <h2>{editMode ? "Edit Subscriber Household" : "Create Subscriber Household"}</h2>
+      {currentHousehold ? (
+        <p style={{ marginTop: 12 }}>
+          <strong>Plan status:</strong> {currentHousehold.plan.statusLabel}
+          {currentHousehold.plan.isTrialExpired
+            ? " - Buy now to keep the household protected."
+            : null}
+        </p>
+      ) : null}
       <form className="form-grid" onSubmit={handleSubmit}>
         <label>
           Caregiver name
@@ -299,33 +431,59 @@ export function OnboardingForm() {
         </label>
         <div className="form-actions">
           <button className="button primary" type="submit" disabled={submitting}>
-            {submitting ? "Creating..." : "Create Household"}
+            {submitting
+              ? editMode
+                ? "Saving..."
+                : "Creating..."
+              : editMode
+                ? "Update Household"
+                : "Create Household"}
           </button>
+          {currentHousehold?.plan.showBuyNow ? (
+            <CheckoutButton
+              subscriberId={savedHousehold?.subscriber.id ?? currentHousehold.subscriber.id}
+              customerEmail={savedHousehold?.subscriber.email ?? currentHousehold.subscriber.email}
+            />
+          ) : null}
         </div>
       </form>
-      <p style={{ marginTop: 16 }}>{statusMessage}</p>
-      {created ? (
+      {statusMessage && !savedHousehold ? <p style={{ marginTop: 16 }}>{statusMessage}</p> : null}
+      {savedHousehold ? (
         <div className="result-panel">
-          <p>
-            <strong>Subscriber ID:</strong> {created.subscriber.id}
+          <p className="result-panel-kicker">
+            {editMode ? "Household Updated" : "Household Created"}
           </p>
-          <p>
-            <strong>Senior ID:</strong> {created.senior.id}
+          <h3>
+            {savedHousehold.senior.firstName} {savedHousehold.senior.lastName} is set up and ready.
+          </h3>
+          <p className="result-panel-summary">
+            Caregiver: {savedHousehold.subscriber.fullName}. Primary contact:{" "}
+            {savedHousehold.contact.fullName}.
           </p>
-          <p>
-            <strong>Primary contact:</strong> {created.contact.fullName}
-          </p>
-          {firstCheckIn ? (
-            <p>
-              <strong>First check-in:</strong>{" "}
-              <a href={`/checkin/${firstCheckIn.token}`}>{firstCheckIn.token}</a>
+          {firstCheckInScheduledLabel ? (
+            <p className="result-panel-summary">
+              First check-in is scheduled for {firstCheckInScheduledLabel}.
             </p>
           ) : null}
-          {firstCheckInMessage ? <p>{firstCheckInMessage}</p> : null}
-          <CheckoutButton
-            subscriberId={created.subscriber.id}
-            customerEmail={created.subscriber.email}
-          />
+          {firstCheckIn ? (
+            <div className="result-panel-actions">
+              <Link href="/dashboard" className="button primary">
+                View Family Dashboard
+              </Link>
+              <Link href={`/checkin/${firstCheckIn.token}`} className="button secondary">
+                Preview First Check-In
+              </Link>
+            </div>
+          ) : (
+            <div className="result-panel-actions">
+              <Link href="/dashboard" className="button primary">
+                View Family Dashboard
+              </Link>
+            </div>
+          )}
+          {firstCheckInMessage ? (
+            <p className="result-panel-note">{firstCheckInMessage}</p>
+          ) : null}
         </div>
       ) : null}
     </section>

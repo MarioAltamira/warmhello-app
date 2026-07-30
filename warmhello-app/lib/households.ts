@@ -1,5 +1,7 @@
 import { createCheckInSession } from "@/lib/checkins";
 import { prisma } from "@/lib/prisma";
+import { getSubscriberPlanSummary } from "@/lib/subscriber-plan";
+import { sendTrialWelcomeEmail } from "@/lib/trial-emails";
 
 export type CreateHouseholdInput = {
   subscriber: {
@@ -21,6 +23,66 @@ export type CreateHouseholdInput = {
     phoneNumber: string;
   };
 };
+
+export async function getHouseholdForSubscriber(subscriberId: string) {
+  if (!prisma) {
+    return null;
+  }
+
+  try {
+    const subscriber = await prisma.subscriber.findUnique({
+      where: { id: subscriberId },
+      include: {
+        seniors: {
+          orderBy: { createdAt: "asc" },
+          take: 1,
+        },
+        contacts: {
+          orderBy: { priority: "asc" },
+          take: 1,
+        },
+      },
+    });
+
+    if (!subscriber || subscriber.seniors.length === 0 || subscriber.contacts.length === 0) {
+      return null;
+    }
+
+    const senior = subscriber.seniors[0];
+    const contact = subscriber.contacts[0];
+    const plan = getSubscriberPlanSummary({
+      created: subscriber.created,
+      subscriptionStatus: subscriber.subscriptionStatus,
+    });
+
+    return {
+      subscriber: {
+        id: subscriber.id,
+        fullName: subscriber.fullName,
+        email: subscriber.email,
+        phoneNumber: subscriber.phoneNumber,
+      },
+      senior: {
+        id: senior.id,
+        firstName: senior.firstName,
+        lastName: senior.lastName,
+        phoneNumber: senior.phoneNumber,
+        timezone: senior.timezone,
+        checkInHour: senior.checkInHour,
+        secondAttemptHours: senior.secondAttemptHours,
+      },
+      contact: {
+        id: contact.id,
+        fullName: contact.fullName,
+        relationship: contact.relationship,
+        phoneNumber: contact.phoneNumber,
+      },
+      plan,
+    };
+  } catch {
+    return null;
+  }
+}
 
 export async function createHousehold(input: CreateHouseholdInput) {
   if (!prisma) {
@@ -90,8 +152,11 @@ export async function createHousehold(input: CreateHouseholdInput) {
     });
 
     const { enqueueJsonJob } = await import("@/lib/qstash");
-    await enqueueJsonJob("/api/jobs/trial-nudge", { subscriberId: result.subscriber.id }, 72);
-    await enqueueJsonJob("/api/jobs/trial-final", { subscriberId: result.subscriber.id }, 168);
+    await Promise.allSettled([
+      sendTrialWelcomeEmail(result.subscriber.id),
+      enqueueJsonJob("/api/jobs/trial-nudge", { subscriberId: result.subscriber.id }, 72),
+      enqueueJsonJob("/api/jobs/trial-final", { subscriberId: result.subscriber.id }, 168),
+    ]);
 
     return {
       ok: true as const,
@@ -105,6 +170,109 @@ export async function createHousehold(input: CreateHouseholdInput) {
       firstCheckInMessage: firstCheckIn.ok
         ? "Initial check-in scheduled."
         : firstCheckIn.message,
+    };
+  } catch {
+    return { ok: false as const, message: "Database is not reachable right now." };
+  }
+}
+
+export async function updateHousehold(subscriberId: string, input: CreateHouseholdInput) {
+  if (!prisma) {
+    return { ok: false as const, message: "Database is not configured yet." };
+  }
+
+  try {
+    const existingSubscriber = await prisma.subscriber.findUnique({
+      where: { id: subscriberId },
+      include: {
+        seniors: {
+          orderBy: { createdAt: "asc" },
+          take: 1,
+        },
+        contacts: {
+          orderBy: { priority: "asc" },
+          take: 1,
+        },
+      },
+    });
+
+    if (!existingSubscriber) {
+      return { ok: false as const, message: "Subscriber record was not found." };
+    }
+
+    const emailOwner = await prisma.subscriber.findUnique({
+      where: { email: input.subscriber.email },
+    });
+
+    if (emailOwner && emailOwner.id !== subscriberId) {
+      return {
+        ok: false as const,
+        message: "That email is already attached to another subscriber.",
+      };
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      const subscriber = await tx.subscriber.update({
+        where: { id: subscriberId },
+        data: {
+          email: input.subscriber.email,
+          fullName: input.subscriber.fullName,
+          phoneNumber: input.subscriber.phoneNumber,
+        },
+      });
+
+      const senior = existingSubscriber.seniors[0]
+        ? await tx.senior.update({
+            where: { id: existingSubscriber.seniors[0].id },
+            data: {
+              firstName: input.senior.firstName,
+              lastName: input.senior.lastName,
+              phoneNumber: input.senior.phoneNumber,
+              timezone: input.senior.timezone,
+              checkInHour: input.senior.checkInHour,
+              secondAttemptHours: input.senior.secondAttemptHours,
+            },
+          })
+        : await tx.senior.create({
+            data: {
+              subscriberId,
+              firstName: input.senior.firstName,
+              lastName: input.senior.lastName,
+              phoneNumber: input.senior.phoneNumber,
+              timezone: input.senior.timezone,
+              checkInHour: input.senior.checkInHour,
+              secondAttemptHours: input.senior.secondAttemptHours,
+            },
+          });
+
+      const contact = existingSubscriber.contacts[0]
+        ? await tx.contact.update({
+            where: { id: existingSubscriber.contacts[0].id },
+            data: {
+              fullName: input.primaryContact.fullName,
+              relationship: input.primaryContact.relationship,
+              phoneNumber: input.primaryContact.phoneNumber,
+              seniorId: senior.id,
+            },
+          })
+        : await tx.contact.create({
+            data: {
+              subscriberId,
+              seniorId: senior.id,
+              fullName: input.primaryContact.fullName,
+              relationship: input.primaryContact.relationship,
+              phoneNumber: input.primaryContact.phoneNumber,
+              priority: 1,
+            },
+          });
+
+      return { subscriber, senior, contact };
+    });
+
+    return {
+      ok: true as const,
+      household: result,
+      message: "Household updated successfully.",
     };
   } catch {
     return { ok: false as const, message: "Database is not reachable right now." };
