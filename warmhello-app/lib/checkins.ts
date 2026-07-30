@@ -2,6 +2,7 @@ import { addHours, formatDateTime } from "@/lib/dates";
 import { demoCheckIn, demoDashboard } from "@/lib/demo-data";
 import { getIntegrationStatus } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
+import { getSubscriberPlanSummary } from "@/lib/subscriber-plan";
 import { createCheckInToken } from "@/lib/tokens";
 
 function formatEnumLabel(status: string) {
@@ -12,7 +13,73 @@ function formatEnumLabel(status: string) {
     .join(" ");
 }
 
-export async function getDashboardSnapshot() {
+function buildDashboardSnapshot(subscriber: {
+  id: string;
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  stripeCustomerId: string | null;
+  subscriptionStatus: "TRIAL" | "ACTIVE" | "PAST_DUE" | "CANCELED";
+  created: Date;
+  seniors: Array<{
+    firstName: string;
+    lastName: string;
+    secondAttemptHours: number;
+  }>;
+  contacts: Array<{
+    fullName: string;
+    relationship: string;
+    phoneNumber: string;
+  }>;
+  checkIns: Array<{
+    token: string;
+    status: "PENDING" | "CONFIRMED" | "REMINDER_SENT" | "ESCALATED" | "EXPIRED";
+    scheduledFor: Date;
+    confirmedAt: Date | null;
+  }>;
+}) {
+  const senior = subscriber.seniors[0];
+  const latestCheckIn = subscriber.checkIns[0];
+  const plan = getSubscriberPlanSummary({
+    created: subscriber.created,
+    subscriptionStatus: subscriber.subscriptionStatus,
+  });
+
+  return {
+    subscriberId: subscriber.id,
+    subscriberName: subscriber.fullName,
+    subscriberEmail: subscriber.email,
+    subscriberPhone: subscriber.phoneNumber,
+    subscriptionStatus: plan.statusLabel,
+    isPaidSubscriber: plan.isPaidSubscriber,
+    isTrialExpired: plan.isTrialExpired,
+    showBuyNow: plan.showBuyNow,
+    hasHousehold: true,
+    seniorName: `${senior.firstName} ${senior.lastName}`,
+    nextCheckInLabel: latestCheckIn
+      ? formatDateTime(latestCheckIn.scheduledFor)
+      : "No check-in scheduled yet",
+    latestCheckInStatus: latestCheckIn
+      ? formatEnumLabel(latestCheckIn.status)
+      : "Not scheduled",
+    latestCheckInToken: latestCheckIn?.token,
+    latestConfirmedLabel: latestCheckIn?.confirmedAt
+      ? formatDateTime(latestCheckIn.confirmedAt)
+      : undefined,
+    billingCustomerLabel: subscriber.stripeCustomerId
+      ? `Stripe customer ${subscriber.stripeCustomerId}`
+      : "Stripe customer will appear after checkout.",
+    contacts: subscriber.contacts.map((contact) => ({
+      fullName: contact.fullName,
+      relationship: contact.relationship,
+      phoneNumber: contact.phoneNumber,
+    })),
+    escalationPolicy: `Second attempt after ${senior.secondAttemptHours} hour${senior.secondAttemptHours === 1 ? "" : "s"}, contact alerts after another ${senior.secondAttemptHours} hour${senior.secondAttemptHours === 1 ? "" : "s"}.`,
+    integrationStatus: getIntegrationStatus(),
+  };
+}
+
+export async function getDashboardSnapshot(subscriberId?: string | null) {
   if (!prisma) {
     return {
       ...demoDashboard,
@@ -21,7 +88,21 @@ export async function getDashboardSnapshot() {
   }
 
   try {
-    const subscriber = await prisma.subscriber.findFirst({
+    const subscriber = subscriberId
+      ? await prisma.subscriber.findUnique({
+          where: { id: subscriberId },
+          include: {
+            seniors: true,
+            contacts: {
+              orderBy: { priority: "asc" },
+            },
+            checkIns: {
+              orderBy: { scheduledFor: "desc" },
+              take: 1,
+            },
+          },
+        })
+      : await prisma.subscriber.findFirst({
       include: {
         seniors: true,
         contacts: {
@@ -32,7 +113,7 @@ export async function getDashboardSnapshot() {
           take: 1,
         },
       },
-    });
+        });
 
     if (!subscriber || subscriber.seniors.length === 0) {
       return {
@@ -41,36 +122,7 @@ export async function getDashboardSnapshot() {
       };
     }
 
-    const senior = subscriber.seniors[0];
-    const latestCheckIn = subscriber.checkIns[0];
-
-    return {
-      subscriberName: subscriber.fullName,
-      subscriberEmail: subscriber.email,
-      subscriberPhone: subscriber.phoneNumber,
-      subscriptionStatus: formatEnumLabel(subscriber.subscriptionStatus),
-      seniorName: `${senior.firstName} ${senior.lastName}`,
-      nextCheckInLabel: latestCheckIn
-        ? formatDateTime(latestCheckIn.scheduledFor)
-        : "No check-in scheduled yet",
-      latestCheckInStatus: latestCheckIn
-        ? formatEnumLabel(latestCheckIn.status)
-        : "Not scheduled",
-      latestCheckInToken: latestCheckIn?.token,
-      latestConfirmedLabel: latestCheckIn?.confirmedAt
-        ? formatDateTime(latestCheckIn.confirmedAt)
-        : undefined,
-      billingCustomerLabel: subscriber.stripeCustomerId
-        ? `Stripe customer ${subscriber.stripeCustomerId}`
-        : "Stripe customer will appear after checkout.",
-      contacts: subscriber.contacts.map((contact) => ({
-        fullName: contact.fullName,
-        relationship: contact.relationship,
-        phoneNumber: contact.phoneNumber,
-      })),
-      escalationPolicy: `Second attempt after ${senior.secondAttemptHours} hour${senior.secondAttemptHours === 1 ? "" : "s"}, contact alerts after another ${senior.secondAttemptHours} hour${senior.secondAttemptHours === 1 ? "" : "s"}.`,
-      integrationStatus: getIntegrationStatus(),
-    };
+    return buildDashboardSnapshot(subscriber);
   } catch {
     return {
       ...demoDashboard,
@@ -280,9 +332,11 @@ export async function markReminderSent(checkInId: string) {
       return { ok: false as const, message: "No reminder needed." };
     }
 
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL ?? "http://localhost:8080";
+    const checkInUrl = `${appUrl}/checkin/${checkIn.token}`;
     const sms = await sendSms(
       checkIn.senior.phoneNumber,
-      "WarmHello reminder: please tap your secure check-in link if you are okay.",
+      `WarmHello reminder for ${checkIn.senior.firstName}: please tap your secure check-in link if you are okay: ${checkInUrl}`,
     );
 
     await prisma.checkIn.update({
