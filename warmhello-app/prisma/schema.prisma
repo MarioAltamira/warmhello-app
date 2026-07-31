@@ -53,6 +53,7 @@ model Senior {
   phoneNumber  String
   timezone     String     @default("America/New_York")
   checkInHour  Int        @default(9)
+  checkInMinute Int       @default(0)
   secondAttemptHours Int  @default(1)
   active       Boolean    @default(true)
   createdAt    DateTime   @default(now())

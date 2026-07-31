@@ -27,6 +27,7 @@ type HouseholdResponse = {
       phoneNumber?: string;
       timezone?: string;
       checkInHour?: number;
+      checkInMinute?: number;
       secondAttemptHours?: number;
     };
     contact: {
@@ -52,6 +53,7 @@ type CurrentHousehold = {
     phoneNumber: string;
     timezone: string;
     checkInHour: number;
+    checkInMinute: number;
     secondAttemptHours: number;
   };
   contact: {
@@ -78,32 +80,22 @@ type OnboardingFormProps = {
   };
 };
 
-const checkInHourOptions = [
-  { value: "0", label: "12:00 AM" },
-  { value: "1", label: "01:00 AM" },
-  { value: "2", label: "02:00 AM" },
-  { value: "3", label: "03:00 AM" },
-  { value: "4", label: "04:00 AM" },
-  { value: "5", label: "05:00 AM" },
-  { value: "6", label: "06:00 AM" },
-  { value: "7", label: "07:00 AM" },
-  { value: "8", label: "08:00 AM" },
-  { value: "9", label: "09:00 AM" },
-  { value: "10", label: "10:00 AM" },
-  { value: "11", label: "11:00 AM" },
-  { value: "12", label: "12:00 PM" },
-  { value: "13", label: "01:00 PM" },
-  { value: "14", label: "02:00 PM" },
-  { value: "15", label: "03:00 PM" },
-  { value: "16", label: "04:00 PM" },
-  { value: "17", label: "05:00 PM" },
-  { value: "18", label: "06:00 PM" },
-  { value: "19", label: "07:00 PM" },
-  { value: "20", label: "08:00 PM" },
-  { value: "21", label: "09:00 PM" },
-  { value: "22", label: "10:00 PM" },
-  { value: "23", label: "11:00 PM" },
-] as const;
+function formatTimeLabel(hour: number, minute: number) {
+  const ampm = hour < 12 ? "AM" : "PM";
+  const displayHour = ((hour + 11) % 12) + 1;
+  const minuteLabel = String(minute).padStart(2, "0");
+  return `${String(displayHour).padStart(2, "0")}:${minuteLabel} ${ampm}`;
+}
+
+const checkInTimeOptions = Array.from({ length: 96 }, (_, index) => {
+  const totalMinutes = index * 15;
+  const hour = Math.floor(totalMinutes / 60);
+  const minute = totalMinutes % 60;
+  return {
+    value: String(totalMinutes),
+    label: formatTimeLabel(hour, minute),
+  };
+});
 
 const initialForm = {
   subscriberName: "Caregiver Demo",
@@ -113,7 +105,7 @@ const initialForm = {
   seniorLastName: "Johnson",
   seniorPhone: "+15551230002",
   timezone: "America/Toronto",
-  checkInHour: "9",
+  checkInTime: "540",
   secondAttemptHours: "1",
   contactName: "David Johnson",
   contactRelationship: "Son",
@@ -133,7 +125,9 @@ function buildInitialForm(
       seniorLastName: currentHousehold.senior.lastName,
       seniorPhone: currentHousehold.senior.phoneNumber,
       timezone: normalizeTimeZone(currentHousehold.senior.timezone),
-      checkInHour: String(currentHousehold.senior.checkInHour),
+      checkInTime: String(
+        currentHousehold.senior.checkInHour * 60 + currentHousehold.senior.checkInMinute,
+      ),
       secondAttemptHours: String(currentHousehold.senior.secondAttemptHours),
       contactName: currentHousehold.contact.fullName,
       contactRelationship: currentHousehold.contact.relationship,
@@ -178,10 +172,14 @@ export function OnboardingForm({
   );
   const [form, setForm] = useState(resolvedInitialForm);
   const [submitting, setSubmitting] = useState(false);
+  const [sendTestNow, setSendTestNow] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
   const [savedHousehold, setSavedHousehold] = useState<HouseholdResponse["household"]>();
   const [firstCheckIn, setFirstCheckIn] = useState<HouseholdResponse["firstCheckIn"]>();
   const [firstCheckInMessage, setFirstCheckInMessage] = useState<string>();
+  const [testMessage, setTestMessage] = useState<string>();
+  const [testCheckInToken, setTestCheckInToken] = useState<string>();
+  const [testSubmitting, setTestSubmitting] = useState(false);
   const firstCheckInScheduledLabel = formatScheduledFor(
     firstCheckIn?.scheduledFor,
     savedHousehold?.senior.timezone ?? form.timezone,
@@ -204,15 +202,51 @@ export function OnboardingForm({
     event.currentTarget.select();
   }
 
+  async function createTestCheckIn(household?: HouseholdResponse["household"]) {
+    if (!household || testSubmitting) {
+      return;
+    }
+
+    setTestSubmitting(true);
+    setTestMessage("Sending test check-in...");
+    setTestCheckInToken(undefined);
+    try {
+      const response = await fetch("/api/checkins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subscriberId: household.subscriber.id,
+          seniorId: household.senior.id,
+        }),
+      });
+      const data = (await response.json()) as { ok?: boolean; token?: string; message?: string };
+      if (!response.ok || !data.ok || !data.token) {
+        setTestMessage(data.message ?? "We could not send the test check-in.");
+        return;
+      }
+      setTestCheckInToken(data.token);
+      setTestMessage("Test check-in sent.");
+    } catch {
+      setTestMessage("We could not reach the server right now.");
+    } finally {
+      setTestSubmitting(false);
+    }
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitting(true);
     setSavedHousehold(undefined);
     setFirstCheckIn(undefined);
     setFirstCheckInMessage(undefined);
+    setTestMessage(undefined);
+    setTestCheckInToken(undefined);
     setStatusMessage(editMode ? "Updating household..." : "Creating household...");
 
     try {
+      const totalMinutes = Number(form.checkInTime);
+      const checkInHour = Math.floor(totalMinutes / 60);
+      const checkInMinute = totalMinutes % 60;
       const payload = {
         subscriberId: currentHousehold?.subscriber.id,
         subscriber: {
@@ -225,7 +259,8 @@ export function OnboardingForm({
           lastName: form.seniorLastName,
           phoneNumber: form.seniorPhone,
           timezone: form.timezone,
-          checkInHour: Number(form.checkInHour),
+          checkInHour,
+          checkInMinute,
           secondAttemptHours: Number(form.secondAttemptHours),
         },
         primaryContact: {
@@ -269,6 +304,9 @@ export function OnboardingForm({
           ? data.message ?? "Household updated successfully."
           : "Household created successfully.",
       );
+      if (sendTestNow) {
+        await createTestCheckIn(data.household);
+      }
     } catch {
       setStatusMessage("We could not reach the server right now.");
     } finally {
@@ -351,12 +389,12 @@ export function OnboardingForm({
           </select>
         </label>
         <label className="form-grid-compact">
-          Check-in hour
+          Check-in time
           <select
-            value={form.checkInHour}
-            onChange={(event) => updateField("checkInHour", event.target.value)}
+            value={form.checkInTime}
+            onChange={(event) => updateField("checkInTime", event.target.value)}
           >
-            {checkInHourOptions.map((option) => (
+            {checkInTimeOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -408,6 +446,15 @@ export function OnboardingForm({
                 ? "Update Household"
                 : "Create Household"}
           </button>
+          <label className="site-header-button" style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
+            <input
+              type="checkbox"
+              checked={sendTestNow}
+              onChange={(event) => setSendTestNow(event.target.checked)}
+              disabled={submitting}
+            />
+            Test immediately
+          </label>
           {currentHousehold?.plan.showBuyNow ? (
             <CheckoutButton
               subscriberId={savedHousehold?.subscriber.id ?? currentHousehold.subscriber.id}
@@ -442,16 +489,40 @@ export function OnboardingForm({
               <Link href={`/checkin/${firstCheckIn.token}`} className="button secondary">
                 Preview First Check-In
               </Link>
+              <button
+                type="button"
+                className="button secondary"
+                onClick={() => createTestCheckIn(savedHousehold)}
+                disabled={testSubmitting}
+              >
+                {testSubmitting ? "Sending Test..." : "Send Test Check-In Now"}
+              </button>
             </div>
           ) : (
             <div className="result-panel-actions">
               <Link href="/dashboard" className="button primary">
                 View Family Dashboard
               </Link>
+              <button
+                type="button"
+                className="button secondary"
+                onClick={() => createTestCheckIn(savedHousehold)}
+                disabled={testSubmitting}
+              >
+                {testSubmitting ? "Sending Test..." : "Send Test Check-In Now"}
+              </button>
             </div>
           )}
           {firstCheckInMessage ? (
             <p className="result-panel-note">{firstCheckInMessage}</p>
+          ) : null}
+          {testMessage ? <p className="result-panel-note">{testMessage}</p> : null}
+          {testCheckInToken ? (
+            <div className="result-panel-actions">
+              <Link href={`/checkin/${testCheckInToken}`} className="button secondary">
+                Open Test Check-In Link
+              </Link>
+            </div>
           ) : null}
         </div>
       ) : null}

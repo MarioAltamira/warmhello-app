@@ -15,6 +15,12 @@ const bodySchema = z.object({
     phoneNumber: z.string().min(7),
     timezone: z.string().min(2),
     checkInHour: z.number().int().min(0).max(23),
+    checkInMinute: z
+      .number()
+      .int()
+      .min(0)
+      .max(45)
+      .refine((value) => value % 15 === 0),
     secondAttemptHours: z.number().int().min(1).max(3),
   }),
   primaryContact: z.object({

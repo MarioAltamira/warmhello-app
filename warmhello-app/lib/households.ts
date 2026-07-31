@@ -17,6 +17,7 @@ export type CreateHouseholdInput = {
     phoneNumber: string;
     timezone: string;
     checkInHour: number;
+    checkInMinute: number;
     secondAttemptHours: number;
   };
   primaryContact: {
@@ -71,6 +72,7 @@ export async function getHouseholdForSubscriber(subscriberId: string) {
         phoneNumber: senior.phoneNumber,
         timezone: senior.timezone,
         checkInHour: senior.checkInHour,
+        checkInMinute: senior.checkInMinute,
         secondAttemptHours: senior.secondAttemptHours,
       },
       contact: {
@@ -122,6 +124,7 @@ export async function createHousehold(input: CreateHouseholdInput) {
           phoneNumber: input.senior.phoneNumber,
           timezone: input.senior.timezone,
           checkInHour: input.senior.checkInHour,
+          checkInMinute: input.senior.checkInMinute,
           secondAttemptHours: input.senior.secondAttemptHours,
         },
       });
@@ -144,6 +147,7 @@ export async function createHousehold(input: CreateHouseholdInput) {
     const firstScheduledFor = getNextOccurrenceAtHourInTimeZone({
       timeZone,
       hour: input.senior.checkInHour,
+      minute: input.senior.checkInMinute,
     });
 
     const firstCheckIn = await createCheckInSession({
@@ -231,6 +235,7 @@ export async function updateHousehold(subscriberId: string, input: CreateHouseho
               phoneNumber: input.senior.phoneNumber,
               timezone: input.senior.timezone,
               checkInHour: input.senior.checkInHour,
+              checkInMinute: input.senior.checkInMinute,
               secondAttemptHours: input.senior.secondAttemptHours,
             },
           })
@@ -242,6 +247,7 @@ export async function updateHousehold(subscriberId: string, input: CreateHouseho
               phoneNumber: input.senior.phoneNumber,
               timezone: input.senior.timezone,
               checkInHour: input.senior.checkInHour,
+              checkInMinute: input.senior.checkInMinute,
               secondAttemptHours: input.senior.secondAttemptHours,
             },
           });

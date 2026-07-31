@@ -6,6 +6,7 @@ import {
   signInUpHref,
   trialAuthHref,
 } from "@/lib/routes";
+import { LogoutButton } from "@/components/logout-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getSubscriberSessionId } from "@/lib/subscriber-session";
 
@@ -44,6 +45,7 @@ export async function SiteHeader() {
           <Link href={signInCtaHref} className="button secondary site-header-button">
             Log In / Sign Up
           </Link>
+          {subscriberId ? <LogoutButton /> : null}
           <ThemeToggle />
         </nav>
       </div>
