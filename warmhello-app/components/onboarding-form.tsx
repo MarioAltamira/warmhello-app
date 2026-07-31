@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckoutButton } from "@/components/checkout-button";
 import { normalizeTimeZone, timeZoneOptions } from "@/lib/timezones";
 
@@ -172,7 +172,7 @@ export function OnboardingForm({
   );
   const [form, setForm] = useState(resolvedInitialForm);
   const [submitting, setSubmitting] = useState(false);
-  const [sendTestNow, setSendTestNow] = useState(false);
+  const submitIntent = useRef<"save" | "saveAndTest">("save");
   const [statusMessage, setStatusMessage] = useState("");
   const [savedHousehold, setSavedHousehold] = useState<HouseholdResponse["household"]>();
   const [firstCheckIn, setFirstCheckIn] = useState<HouseholdResponse["firstCheckIn"]>();
@@ -304,13 +304,14 @@ export function OnboardingForm({
           ? data.message ?? "Household updated successfully."
           : "Household created successfully.",
       );
-      if (sendTestNow) {
+      if (submitIntent.current === "saveAndTest") {
         await createTestCheckIn(data.household);
       }
     } catch {
       setStatusMessage("We could not reach the server right now.");
     } finally {
       setSubmitting(false);
+      submitIntent.current = "save";
     }
   }
 
@@ -437,7 +438,14 @@ export function OnboardingForm({
           />
         </label>
         <div className="form-actions">
-          <button className="button primary" type="submit" disabled={submitting}>
+          <button
+            className="button primary"
+            type="submit"
+            disabled={submitting}
+            onClick={() => {
+              submitIntent.current = "save";
+            }}
+          >
             {submitting
               ? editMode
                 ? "Saving..."
@@ -446,15 +454,16 @@ export function OnboardingForm({
                 ? "Update Household"
                 : "Create Household"}
           </button>
-          <label className="site-header-button" style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
-            <input
-              type="checkbox"
-              checked={sendTestNow}
-              onChange={(event) => setSendTestNow(event.target.checked)}
-              disabled={submitting}
-            />
-            Test immediately
-          </label>
+          <button
+            className="button secondary"
+            type="submit"
+            disabled={submitting}
+            onClick={() => {
+              submitIntent.current = "saveAndTest";
+            }}
+          >
+            {editMode ? "Update + Test" : "Create + Test"}
+          </button>
           {currentHousehold?.plan.showBuyNow ? (
             <CheckoutButton
               subscriberId={savedHousehold?.subscriber.id ?? currentHousehold.subscriber.id}

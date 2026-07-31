@@ -1,10 +1,20 @@
 import { env } from "@/lib/env";
+import { prisma } from "@/lib/prisma";
 
 type SmsResult =
   | { ok: true; sid: string | null }
   | { ok: false; message: string };
 
-export async function sendSms(to: string, body: string): Promise<SmsResult> {
+export async function sendSms(
+  to: string,
+  body: string,
+  meta?: {
+    subscriberId?: string | null;
+    seniorId?: string | null;
+    checkInId?: string | null;
+    kind?: string | null;
+  },
+): Promise<SmsResult> {
   if (!env.TELNYX_API_KEY || !env.TELNYX_FROM_NUMBER) {
     return {
       ok: false,
@@ -27,6 +37,24 @@ export async function sendSms(to: string, body: string): Promise<SmsResult> {
 
   if (!response.ok) {
     const text = await response.text();
+    try {
+      await prisma?.smsLog.create({
+        data: {
+          direction: "OUT",
+          status: "FAILED",
+          provider: "telnyx",
+          kind: meta?.kind ?? null,
+          fromNumber: env.TELNYX_FROM_NUMBER,
+          toNumber: to,
+          body,
+          subscriberId: meta?.subscriberId ?? null,
+          seniorId: meta?.seniorId ?? null,
+          checkInId: meta?.checkInId ?? null,
+        },
+      });
+    } catch {
+      // ignore
+    }
     return { ok: false, message: text || "Telnyx rejected the SMS request." };
   }
 
@@ -35,6 +63,26 @@ export async function sendSms(to: string, body: string): Promise<SmsResult> {
       id?: string;
     };
   };
+
+  try {
+    await prisma?.smsLog.create({
+      data: {
+        direction: "OUT",
+        status: "SENT",
+        provider: "telnyx",
+        providerMessageId: data.data?.id ?? null,
+        kind: meta?.kind ?? null,
+        fromNumber: env.TELNYX_FROM_NUMBER,
+        toNumber: to,
+        body,
+        subscriberId: meta?.subscriberId ?? null,
+        seniorId: meta?.seniorId ?? null,
+        checkInId: meta?.checkInId ?? null,
+      },
+    });
+  } catch {
+    // ignore
+  }
 
   return { ok: true, sid: data.data?.id ?? null };
 }

@@ -237,7 +237,14 @@ export async function confirmCheckInToken(token: string) {
       const { sendSms } = await import("@/lib/sms");
       const message = `${existing.senior.firstName} is okay and has completed today's WarmHello check-in.`;
       const notifications = await Promise.all(
-        contacts.map((contact) => sendSms(contact.phoneNumber, message)),
+        contacts.map((contact) =>
+          sendSms(contact.phoneNumber, message, {
+            subscriberId: existing.subscriberId,
+            seniorId: existing.seniorId,
+            checkInId: existing.id,
+            kind: "confirmation_sms",
+          }),
+        ),
       );
 
       if (contacts.length > 0) {
@@ -283,6 +290,12 @@ export async function markInitialSent(checkInId: string) {
     const sms = await sendSms(
       checkIn.senior.phoneNumber,
       `WarmHello check-in for ${checkIn.senior.firstName}: ${checkInUrl}`,
+      {
+        subscriberId: checkIn.subscriberId,
+        seniorId: checkIn.seniorId,
+        checkInId: checkIn.id,
+        kind: "initial_sms",
+      },
     );
 
     await prisma.alertJob.create({
@@ -296,6 +309,10 @@ export async function markInitialSent(checkInId: string) {
       },
     });
 
+    if (!sms.ok) {
+      return { ok: false as const, message: sms.message };
+    }
+
     return { ok: true as const, message: "Check-in sent." };
   } catch {
     return { ok: false as const, message: "Database is not reachable right now." };
@@ -306,6 +323,7 @@ export async function createCheckInSession(input: {
   subscriberId: string;
   seniorId: string;
   scheduledFor?: Date;
+  requireSmsSuccess?: boolean;
 }) {
   if (!prisma) {
     return { ok: false as const, message: "Database is not configured yet." };
@@ -343,7 +361,10 @@ export async function createCheckInSession(input: {
     const { enqueueJsonJobAt } = await import("@/lib/qstash");
     const shouldSendNow = scheduledFor.getTime() - now.getTime() <= 30_000;
     if (shouldSendNow) {
-      await markInitialSent(checkIn.id);
+      const sent = await markInitialSent(checkIn.id);
+      if (!sent.ok && input.requireSmsSuccess) {
+        return { ok: false as const, message: sent.message };
+      }
     } else {
       const scheduled = await enqueueJsonJobAt(
         "/api/jobs/checkin",
@@ -351,7 +372,10 @@ export async function createCheckInSession(input: {
         scheduledFor,
       );
       if (!scheduled.ok) {
-        await markInitialSent(checkIn.id);
+        const sent = await markInitialSent(checkIn.id);
+        if (!sent.ok && input.requireSmsSuccess) {
+          return { ok: false as const, message: sent.message };
+        }
       }
     }
 
@@ -387,6 +411,12 @@ export async function markReminderSent(checkInId: string) {
     const sms = await sendSms(
       checkIn.senior.phoneNumber,
       `WarmHello reminder for ${checkIn.senior.firstName}: please tap your secure check-in link if you are okay: ${checkInUrl}`,
+      {
+        subscriberId: checkIn.subscriberId,
+        seniorId: checkIn.seniorId,
+        checkInId: checkIn.id,
+        kind: "reminder_sms",
+      },
     );
 
     await prisma.checkIn.update({
@@ -439,6 +469,12 @@ export async function markEscalationSent(checkInId: string) {
         sendSms(
           contact.phoneNumber,
           `WarmHello alert: ${checkIn.senior.firstName} has not responded to today's check-in.`,
+          {
+            subscriberId: checkIn.subscriberId,
+            seniorId: checkIn.seniorId,
+            checkInId: checkIn.id,
+            kind: "escalation_sms",
+          },
         ),
       ),
     );

@@ -14,6 +14,7 @@ export async function POST(request: Request) {
     subscriberId: parsed.subscriberId,
     seniorId: parsed.seniorId,
     scheduledFor: parsed.scheduledFor ? new Date(parsed.scheduledFor) : undefined,
+    requireSmsSuccess: true,
   });
 
   if (!result.ok) {

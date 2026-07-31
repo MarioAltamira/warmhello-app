@@ -29,6 +29,17 @@ enum AlertJobStatus {
   FAILED
 }
 
+enum SmsDirection {
+  OUT
+  IN
+}
+
+enum SmsStatus {
+  SENT
+  FAILED
+  RECEIVED
+}
+
 model Subscriber {
   id                   String             @id @default(cuid())
   email                String             @unique
@@ -43,6 +54,7 @@ model Subscriber {
   seniors              Senior[]
   contacts             Contact[]
   checkIns             CheckIn[]
+  smsLogs              SmsLog[]
 }
 
 model Senior {
@@ -61,6 +73,7 @@ model Senior {
   subscriber   Subscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
   contacts     Contact[]
   checkIns     CheckIn[]
+  smsLogs      SmsLog[]
 }
 
 model Contact {
@@ -92,6 +105,7 @@ model CheckIn {
   subscriber   Subscriber    @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
   senior       Senior        @relation(fields: [seniorId], references: [id], onDelete: Cascade)
   alertJobs    AlertJob[]
+  smsLogs      SmsLog[]
 }
 
 model AlertJob {
@@ -105,4 +119,29 @@ model AlertJob {
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
   checkIn           CheckIn        @relation(fields: [checkInId], references: [id], onDelete: Cascade)
+}
+
+model SmsLog {
+  id                String       @id @default(cuid())
+  direction         SmsDirection
+  status            SmsStatus
+  provider          String       @default("telnyx")
+  providerMessageId String?
+  kind              String?
+  fromNumber        String
+  toNumber          String
+  body              String
+  subscriberId      String?
+  seniorId          String?
+  checkInId         String?
+  createdAt         DateTime     @default(now())
+
+  subscriber Subscriber? @relation(fields: [subscriberId], references: [id], onDelete: SetNull)
+  senior     Senior?     @relation(fields: [seniorId], references: [id], onDelete: SetNull)
+  checkIn    CheckIn?    @relation(fields: [checkInId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([subscriberId, createdAt])
+  @@index([seniorId, createdAt])
+  @@index([checkInId, createdAt])
 }
