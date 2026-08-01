@@ -79,13 +79,15 @@ async function sendSmtpMail(input: EmailInput) {
   const smtpUsername = env.SMTP_USERNAME;
   const smtpPassword = env.SMTP_PASSWORD;
   const fromAddress = env.EMAIL_FROM_ADDRESS;
+  const envelopeFromAddress = env.EMAIL_ENVELOPE_FROM_ADDRESS ?? fromAddress;
 
   if (
     !smtpHost ||
     !smtpPort ||
     !smtpUsername ||
     !smtpPassword ||
-    !fromAddress
+    !fromAddress ||
+    !envelopeFromAddress
   ) {
     return {
       ok: false as const,
@@ -162,7 +164,7 @@ async function sendSmtpMail(input: EmailInput) {
     await sendSmtpCommand(socket, "AUTH LOGIN", [334]);
     await sendSmtpCommand(socket, authUser, [334]);
     await sendSmtpCommand(socket, authPass, [235]);
-    await sendSmtpCommand(socket, `MAIL FROM:<${fromAddress}>`, [250]);
+    await sendSmtpCommand(socket, `MAIL FROM:<${envelopeFromAddress}>`, [250]);
     await sendSmtpCommand(socket, `RCPT TO:<${input.to}>`, [250, 251]);
     await sendSmtpCommand(socket, "DATA", [354]);
     await sendSmtpCommand(socket, `${message}\r\n.`, [250]);
