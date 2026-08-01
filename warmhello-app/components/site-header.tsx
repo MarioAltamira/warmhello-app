@@ -12,10 +12,10 @@ export async function SiteHeader() {
   return (
     <header className="site-header">
       <div className="site-header-inner">
-        <Link href="/" className="site-header-brand" aria-label="Warm_Hello home">
+        <Link href="/" className="site-header-brand" aria-label="Warm-Hello home">
           <Image
             src="/warmhello-logo.png"
-            alt="Warm_Hello"
+            alt="Warm-Hello"
             width={160}
             height={42}
             priority

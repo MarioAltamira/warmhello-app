@@ -95,7 +95,7 @@ export function LegalLinksPanel() {
   return (
     <section className="section">
       <div className="card footer-links-card">
-        <h3 className="footer-brand">Warm_Hello</h3>
+        <h3 className="footer-brand">Warm-Hello</h3>
         <div className="footer-cta-row">
           <Link href={protectAuthHref} className="button buy-now-button footer-buy-cta">
             Buy Now
@@ -129,7 +129,7 @@ export function LegalLinksPanel() {
                   <strong>Last Updated:</strong> June 12, 2026
                 </p>
                 <p>
-                  At <strong>Warm_Hello</strong>, we provide automated status check-in
+                  At <strong>Warm-Hello</strong>, we provide automated status check-in
                   services to ensure your safety and give your loved ones peace of
                   mind. Because our service relies on checking in on your well-being,
                   we treat your personal data with the highest level of security,
@@ -164,16 +164,16 @@ export function LegalLinksPanel() {
                   <strong>Effective Date:</strong> June 12, 2026
                 </p>
                 <blockquote className="notice-block">
-                  <strong>IMPORTANT DISCLAIMER:</strong> Warm_Hello is an automated
+                  <strong>IMPORTANT DISCLAIMER:</strong> Warm-Hello is an automated
                   text-message check-in notification tool designed to facilitate
                   routine monitoring between individuals and their trusted personal contacts.{" "}
-                  <strong>Warm_Hello is NOT a medical alert system, emergency
+                  <strong>Warm-Hello is NOT a medical alert system, emergency
                   dispatch line, or a replacement for professional healthcare or 911
                   services.</strong>
                 </blockquote>
                 <ul className="longform-list">
                   <li>
-                    <strong>Service Description:</strong> Warm_Hello sends automated SMS
+                    <strong>Service Description:</strong> Warm-Hello sends automated SMS
                     prompts and alerts designated contacts when a check-in window is
                     missed.
                   </li>
@@ -186,7 +186,7 @@ export function LegalLinksPanel() {
                     depends on carrier service, device power, and cellular reception.
                   </li>
                   <li>
-                    <strong>Limitation of Liability:</strong> Warm_Hello is not liable
+                    <strong>Limitation of Liability:</strong> Warm-Hello is not liable
                     for missed escalations or damages caused by outages, delays, or
                     user errors to the fullest extent allowed by law.
                   </li>
@@ -200,7 +200,7 @@ export function LegalLinksPanel() {
                   <strong>Simple check-ins. Absolute peace of mind.</strong>
                 </p>
                 <p>
-                  Warm_Hello was created to help families make sure loved ones living
+                  Warm-Hello was created to help families make sure loved ones living
                   independently are okay every day without being intrusive.
                 </p>
                 <p>
@@ -285,7 +285,7 @@ export function LegalLinksPanel() {
                   the secure validation link.
                 </li>
                 <li>
-                  <strong>4. Escalation:</strong> If no reply arrives in time, Warm_Hello
+                  <strong>4. Escalation:</strong> If no reply arrives in time, Warm-Hello
                   notifies your trusted contacts.
                 </li>
               </ul>
@@ -294,18 +294,18 @@ export function LegalLinksPanel() {
             {activeSection === "faq" ? (
               <ul className="longform-list">
                 <li>
-                  <strong>How does check-in monitoring work?</strong> Warm_Hello sends a
+                  <strong>How does check-in monitoring work?</strong> Warm-Hello sends a
                   daily SMS and updates your status when you respond. If you miss the
                   window, alerts go out automatically.
                 </li>
                 <li>
-                  <strong>How much does it cost?</strong> Warm_Hello costs{" "}
+                  <strong>How much does it cost?</strong> Warm-Hello costs{" "}
                   <strong>$0.20 per day</strong> with secure recurring billing through
                   Stripe.
                 </li>
                 <li>
                   <strong>What devices work?</strong> Any phone capable of sending and
-                  receiving SMS messages can use Warm_Hello.
+                  receiving SMS messages can use Warm-Hello.
                 </li>
                 <li>
                   <strong>What if I forget to reply?</strong> The system allows a grace
@@ -319,9 +319,9 @@ export function LegalLinksPanel() {
         <hr className="footer-divider" />
 
         <p className="footer-disclaimer">
-          &copy; 2026 Warm_Hello. All rights reserved. | <strong>Disclaimer:</strong>{" "}
-          Warm_Hello is an automated text-message check-in notification tool designed to facilitate
-          routine monitoring between individuals and their trusted personal contacts. Warm_Hello is
+          &copy; 2026 Warm-Hello. All rights reserved. | <strong>Disclaimer:</strong>{" "}
+          Warm-Hello is an automated text-message check-in notification tool designed to facilitate
+          routine monitoring between individuals and their trusted personal contacts. Warm-Hello is
           NOT a medical alert system, emergency dispatch line, or a replacement for professional
           healthcare or 911 services. Standard
           cellular carrier SMS messaging rates may apply.

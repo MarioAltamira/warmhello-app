@@ -1,6 +1,6 @@
-# Warm_Hello
+# Warm-Hello
 
-Warm_Hello is a clean rebuild around this stack:
+Warm-Hello is a clean rebuild around this stack:
 
 - TypeScript
 - Next.js App Router

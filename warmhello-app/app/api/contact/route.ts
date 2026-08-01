@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { sendEmail } from "@/lib/email";
 import { env } from "@/lib/env";
+import { wrapEmailHtml, wrapEmailText } from "@/lib/email-branding";
 
 const bodySchema = z.object({
   name: z.string().trim().min(2),
@@ -24,12 +25,19 @@ export async function POST(request: Request) {
     );
   }
 
+  const sentAt = new Date();
   const result = await sendEmail({
     to: env.EMAIL_FROM_ADDRESS,
     replyTo: parsed.email,
-    subject: `Warm_Hello contact form: ${parsed.name}`,
-    text: `Name: ${parsed.name}\nEmail: ${parsed.email}\n\nMessage:\n${parsed.message}`,
-    html: `<p><strong>Name:</strong> ${parsed.name}</p><p><strong>Email:</strong> ${parsed.email}</p><p><strong>Message:</strong></p><p>${parsed.message.replace(/\n/g, "<br />")}</p>`,
+    subject: `Warm-Hello contact form: ${parsed.name}`,
+    text: wrapEmailText({
+      sentAt,
+      body: `Name: ${parsed.name}\nEmail: ${parsed.email}\n\nMessage:\n${parsed.message}`,
+    }),
+    html: wrapEmailHtml({
+      sentAt,
+      body: `<p><strong>Name:</strong> ${parsed.name}</p><p><strong>Email:</strong> ${parsed.email}</p><p><strong>Message:</strong></p><p>${parsed.message.replace(/\n/g, "<br />")}</p>`,
+    }),
   });
 
   if (!result.ok) {

@@ -23,7 +23,7 @@ export default async function HomePage() {
           <p className="eyebrow">Daily Peace Of Mind For Families</p>
           <h1>They love their independence. You love knowing they&apos;re okay.</h1>
           <p className="lede">
-            Warm_Hello is the zero-friction daily check-in for seniors who live alone. No intrusive
+            Warm-Hello is the zero-friction daily check-in for seniors who live alone. No intrusive
             phone calls, no complicated apps to download. Just a single tap that says, &quot;I&apos;m
             doing great this morning.&quot;
           </p>
@@ -42,7 +42,7 @@ export default async function HomePage() {
           <div className="hero-photo">
             <Image
               src="/hero-warmhello.png"
-              alt="A senior holding a phone with the Warm_Hello daily check-in screen open during a peaceful morning at home."
+              alt="A senior holding a phone with the Warm-Hello daily check-in screen open during a peaceful morning at home."
               fill
               priority
               className="hero-photo-image"
@@ -82,7 +82,7 @@ export default async function HomePage() {
       <section className="section">
         <div className="section-heading">
           <p className="eyebrow">The Solution</p>
-          <h2>How Warm_Hello Works</h2>
+          <h2>How Warm-Hello Works</h2>
           <p className="section-copy">
             It&apos;s beautifully simple for seniors and reassuringly automatic for families.
           </p>
@@ -92,7 +92,7 @@ export default async function HomePage() {
             <span className="step-number">1</span>
             <h3>The Morning Greeting</h3>
             <p>
-              Every morning at a time you choose, Warm_Hello sends your loved one a gentle text
+              Every morning at a time you choose, Warm-Hello sends your loved one a gentle text
               message. No app to install, no password to remember. Just a text.
             </p>
           </article>
@@ -109,7 +109,7 @@ export default async function HomePage() {
             <h3>Automated Safety Net</h3>
             <p>
               If they&apos;re busy or forget, the system gently reminds them 60 minutes later. If
-              there&apos;s still no response after another hour, Warm_Hello immediately alerts you by
+              there&apos;s still no response after another hour, Warm-Hello immediately alerts you by
               text and email so you can check in.
             </p>
           </article>
@@ -125,7 +125,7 @@ export default async function HomePage() {
           <article className="card">
             <h3>Zero Learning Curve</h3>
             <p>
-              If they can open a text message, they can use Warm_Hello. It works on any smartphone
+              If they can open a text message, they can use Warm-Hello. It works on any smartphone
               without downloads or logins.
             </p>
           </article>
@@ -213,7 +213,7 @@ export default async function HomePage() {
         <div>
           <h2>Respect their independence without carrying the daily worry alone.</h2>
           <p className="section-copy">
-            Start with a free trial, set the morning time, and let Warm_Hello handle the gentle daily
+            Start with a free trial, set the morning time, and let Warm-Hello handle the gentle daily
             rhythm.
           </p>
         </div>

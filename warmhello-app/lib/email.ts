@@ -1,5 +1,6 @@
 import { Buffer } from "node:buffer";
 import { Socket } from "node:net";
+import net from "node:net";
 import tls from "node:tls";
 import { env } from "@/lib/env";
 
@@ -73,12 +74,18 @@ async function sendSmtpCommand(
 }
 
 async function sendSmtpMail(input: EmailInput) {
+  const smtpHost = env.SMTP_HOST;
+  const smtpPort = env.SMTP_PORT;
+  const smtpUsername = env.SMTP_USERNAME;
+  const smtpPassword = env.SMTP_PASSWORD;
+  const fromAddress = env.EMAIL_FROM_ADDRESS;
+
   if (
-    !env.SMTP_HOST ||
-    !env.SMTP_PORT ||
-    !env.SMTP_USERNAME ||
-    !env.SMTP_PASSWORD ||
-    !env.EMAIL_FROM_ADDRESS
+    !smtpHost ||
+    !smtpPort ||
+    !smtpUsername ||
+    !smtpPassword ||
+    !fromAddress
   ) {
     return {
       ok: false as const,
@@ -86,19 +93,30 @@ async function sendSmtpMail(input: EmailInput) {
     };
   }
 
-  let socket: tls.TLSSocket | null = null;
+  let socket: Socket | tls.TLSSocket | null = null;
 
   try {
-    socket = await new Promise<tls.TLSSocket>((resolve, reject) => {
-      const connection = tls.connect(
+    socket = await new Promise<Socket | tls.TLSSocket>((resolve, reject) => {
+      if (env.SMTP_SECURE) {
+        const connection = tls.connect(
+          {
+            host: smtpHost,
+            port: smtpPort,
+            rejectUnauthorized: false,
+          },
+          () => resolve(connection),
+        );
+        connection.once("error", reject);
+        return;
+      }
+
+      const connection = net.connect(
         {
-          host: env.SMTP_HOST,
-          port: env.SMTP_PORT,
-          rejectUnauthorized: false,
+          host: smtpHost,
+          port: smtpPort,
         },
         () => resolve(connection),
       );
-
       connection.once("error", reject);
     });
 
@@ -106,7 +124,7 @@ async function sendSmtpMail(input: EmailInput) {
     const messageId = `<warm_hello-contact-${Date.now()}@warm-hello.com>`;
     const htmlBody = input.html.replace(/\r?\n/g, "");
     const message = [
-      `From: Warm_Hello <${env.EMAIL_FROM_ADDRESS}>`,
+      `From: Warm-Hello <${fromAddress}>`,
       `To: ${input.to}`,
       input.replyTo ? `Reply-To: ${input.replyTo}` : null,
       `Subject: ${encodeHeader(input.subject)}`,
@@ -132,8 +150,8 @@ async function sendSmtpMail(input: EmailInput) {
       .filter((line): line is string => line !== null)
       .join("\r\n");
 
-    const authUser = Buffer.from(env.SMTP_USERNAME, "utf8").toString("base64");
-    const authPass = Buffer.from(env.SMTP_PASSWORD, "utf8").toString("base64");
+    const authUser = Buffer.from(smtpUsername, "utf8").toString("base64");
+    const authPass = Buffer.from(smtpPassword, "utf8").toString("base64");
 
     const greeting = await readSmtpResponse(socket);
     if (!greeting.startsWith("220")) {
@@ -144,7 +162,7 @@ async function sendSmtpMail(input: EmailInput) {
     await sendSmtpCommand(socket, "AUTH LOGIN", [334]);
     await sendSmtpCommand(socket, authUser, [334]);
     await sendSmtpCommand(socket, authPass, [235]);
-    await sendSmtpCommand(socket, `MAIL FROM:<${env.EMAIL_FROM_ADDRESS}>`, [250]);
+    await sendSmtpCommand(socket, `MAIL FROM:<${fromAddress}>`, [250]);
     await sendSmtpCommand(socket, `RCPT TO:<${input.to}>`, [250, 251]);
     await sendSmtpCommand(socket, "DATA", [354]);
     await sendSmtpCommand(socket, `${message}\r\n.`, [250]);
