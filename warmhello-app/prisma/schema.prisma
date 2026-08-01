@@ -106,6 +106,7 @@ model CheckIn {
   senior       Senior        @relation(fields: [seniorId], references: [id], onDelete: Cascade)
   alertJobs    AlertJob[]
   smsLogs      SmsLog[]
+  shortLink    ShortLink?
 }
 
 model AlertJob {
