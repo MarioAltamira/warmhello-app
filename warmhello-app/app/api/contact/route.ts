@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   const result = await sendEmail({
     to: env.EMAIL_FROM_ADDRESS,
     replyTo: parsed.email,
-    subject: `WarmHello contact form: ${parsed.name}`,
+    subject: `Warm_Hello contact form: ${parsed.name}`,
     text: `Name: ${parsed.name}\nEmail: ${parsed.email}\n\nMessage:\n${parsed.message}`,
     html: `<p><strong>Name:</strong> ${parsed.name}</p><p><strong>Email:</strong> ${parsed.email}</p><p><strong>Message:</strong></p><p>${parsed.message.replace(/\n/g, "<br />")}</p>`,
   });

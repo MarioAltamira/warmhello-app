@@ -14,13 +14,9 @@ type OnboardPageProps = {
 export default async function OnboardPage({ searchParams }: OnboardPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const subscriberId = await getSubscriberSessionId();
-  const currentHousehold = subscriberId
-    ? await getHouseholdForSubscriber(subscriberId)
-    : null;
+  const currentHousehold = subscriberId ? await getHouseholdForSubscriber(subscriberId) : null;
   const editMode = resolvedSearchParams.mode === "edit" && Boolean(currentHousehold);
-  const heading = editMode
-    ? "Edit your household details."
-    : "Create a household and launch your free trial.";
+  const heading = editMode ? "Edit your household details." : "Create a household and launch your free trial.";
   const lede = editMode
     ? "Update the form below and click Update Household to save your changes."
     : "Use the form below to setup your household and click the Create Household.";
@@ -59,3 +55,4 @@ export default async function OnboardPage({ searchParams }: OnboardPageProps) {
     </main>
   );
 }
+

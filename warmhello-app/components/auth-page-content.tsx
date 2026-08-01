@@ -34,7 +34,7 @@ function getHeading(source: string | null, redirectPath: Route) {
   return {
     eyebrow: "Start Your Trial",
     title: "Create an account or log in to begin the 7-day trial.",
-    lede: "Set up your WarmHello household, choose a morning check-in time, and invite the right contacts.",
+    lede: "Set up your Warm_Hello household, choose a morning check-in time, and invite the right contacts.",
   };
 }
 
@@ -141,7 +141,7 @@ export function AuthPageContent({ sessionExpired = false }: AuthPageContentProps
 
       <section className="auth-grid">
         <article className={`card auth-panel ${mode === "signup" ? "auth-panel-active" : ""}`}>
-          <p className="auth-kicker">New to WarmHello?</p>
+          <p className="auth-kicker">New to Warm_Hello?</p>
           <h2>Sign Up</h2>
           <p className="auth-copy">
             Create your account, then continue into the setup flow for your family.

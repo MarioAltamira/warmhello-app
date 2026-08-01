@@ -236,7 +236,7 @@ export async function confirmCheckInToken(token: string) {
         orderBy: { priority: "asc" },
       });
       const { sendSms } = await import("@/lib/sms");
-      const message = `${existing.senior.firstName} is okay and has completed today's WarmHello check-in.`;
+      const message = `${existing.senior.firstName} is okay and has completed today's Warm_Hello check-in.`;
       const notifications = await Promise.all(
         contacts.map((contact) =>
           sendSms(contact.phoneNumber, message, {
@@ -289,7 +289,7 @@ export async function markInitialSent(checkInId: string) {
     const checkInUrl = await getShortLinkForCheckIn({ checkInId: checkIn.id, token: checkIn.token });
     const sms = await sendSms(
       checkIn.senior.phoneNumber,
-      `Hi ${checkIn.senior.firstName} — it’s time for your WarmHello check-in.\nTap I’m OK: ${checkInUrl}`,
+      `Hi ${checkIn.senior.firstName} — it’s time for your Warm_Hello check-in.\nTap I’m OK: ${checkInUrl}`,
       {
         subscriberId: checkIn.subscriberId,
         seniorId: checkIn.seniorId,
@@ -409,7 +409,7 @@ export async function markReminderSent(checkInId: string) {
     const checkInUrl = await getShortLinkForCheckIn({ checkInId: checkIn.id, token: checkIn.token });
     const sms = await sendSms(
       checkIn.senior.phoneNumber,
-      `WarmHello reminder for ${checkIn.senior.firstName}.\nTap I’m OK: ${checkInUrl}`,
+      `Warm_Hello reminder for ${checkIn.senior.firstName}.\nTap I’m OK: ${checkInUrl}`,
       {
         subscriberId: checkIn.subscriberId,
         seniorId: checkIn.seniorId,
@@ -467,7 +467,7 @@ export async function markEscalationSent(checkInId: string) {
       contacts.map((contact) =>
         sendSms(
           contact.phoneNumber,
-          `WarmHello alert: ${checkIn.senior.firstName} has not responded to today's check-in.`,
+          `Warm_Hello alert: ${checkIn.senior.firstName} has not responded to today's check-in.`,
           {
             subscriberId: checkIn.subscriberId,
             seniorId: checkIn.seniorId,

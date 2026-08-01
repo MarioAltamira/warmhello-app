@@ -23,8 +23,8 @@ export default async function DashboardPage() {
         <p className="eyebrow">Subscriber Dashboard</p>
         <h1>{snapshot.subscriberName}</h1>
         <p className="lede">
-          Monitor the protected senior, billing state, and the reminder/escalation
-          workflow from one place.
+          Monitor the protected senior, billing state, and the reminder/escalation workflow from one
+          place.
         </p>
       </div>
 
@@ -55,8 +55,8 @@ export default async function DashboardPage() {
           <h2>Escalation policy</h2>
           <p>{snapshot.escalationPolicy}</p>
           <p>
-            Reminder, escalation, and trial follow-up jobs are designed to be triggered
-            via delayed QStash delivery.
+            Reminder, escalation, and trial follow-up jobs are designed to be triggered via delayed
+            QStash delivery.
           </p>
           <p>
             <strong>Billing:</strong> {snapshot.billingCustomerLabel}
@@ -82,10 +82,7 @@ export default async function DashboardPage() {
           ) : null}
           {snapshot.latestCheckInToken ? (
             <div className="actions" style={{ marginTop: 16 }}>
-              <Link
-                href={`/checkin/${snapshot.latestCheckInToken}`}
-                className="button secondary"
-              >
+              <Link href={`/checkin/${snapshot.latestCheckInToken}`} className="button secondary">
                 Open Check-In Link
               </Link>
             </div>
@@ -108,28 +105,7 @@ export default async function DashboardPage() {
       </section>
 
       <section className="card" style={{ marginTop: 24 }}>
-        <h2>Integration readiness</h2>
-        <div className="status-list">
-          {Object.entries(snapshot.integrationStatus).map(([name, ready]) => (
-            <div key={name} className="status-row">
-              <span>{name}</span>
-              <span className={`badge ${ready ? "ready" : "missing"}`}>
-                {ready ? "configured" : "env needed"}
-              </span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="card" style={{ marginTop: 24 }}>
         <h2>Next actions</h2>
-        <ul>
-          <li>Run <code>npx pnpm install</code> with the new dependency set.</li>
-          <li>Add Supabase Postgres URLs to <code>.env</code>.</li>
-          <li>Run <code>npx pnpm run prisma:generate</code> and <code>npx pnpm run prisma:push</code>.</li>
-          <li>Run <code>npx pnpm run db:seed</code> to load the starter household into Supabase.</li>
-          <li>Add Stripe, Telnyx, email, and QStash secrets to enable live integrations.</li>
-        </ul>
         <div className="actions" style={{ marginTop: 16 }}>
           <Link href="/onboard?mode=edit" className="button primary">
             {snapshot.hasHousehold ? "Edit Household" : "Create Household"}
@@ -140,10 +116,7 @@ export default async function DashboardPage() {
         </div>
         {snapshot.showBuyNow && snapshot.subscriberId ? (
           <div style={{ marginTop: 16 }}>
-            <CheckoutButton
-              subscriberId={snapshot.subscriberId}
-              customerEmail={snapshot.subscriberEmail}
-            />
+            <CheckoutButton subscriberId={snapshot.subscriberId} customerEmail={snapshot.subscriberEmail} />
           </div>
         ) : null}
       </section>

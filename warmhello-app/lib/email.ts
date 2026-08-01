@@ -103,10 +103,10 @@ async function sendSmtpMail(input: EmailInput) {
     });
 
     const hostName = env.APP_URL.replace(/^https?:\/\//, "").replace(/\/.*$/, "") || "localhost";
-    const messageId = `<warmhello-contact-${Date.now()}@warm-hello.com>`;
+    const messageId = `<warm_hello-contact-${Date.now()}@warm-hello.com>`;
     const htmlBody = input.html.replace(/\r?\n/g, "");
     const message = [
-      `From: WarmHello <${env.EMAIL_FROM_ADDRESS}>`,
+      `From: Warm_Hello <${env.EMAIL_FROM_ADDRESS}>`,
       `To: ${input.to}`,
       input.replyTo ? `Reply-To: ${input.replyTo}` : null,
       `Subject: ${encodeHeader(input.subject)}`,
