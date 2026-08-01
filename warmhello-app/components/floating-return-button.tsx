@@ -1,16 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 export function FloatingReturnButton() {
   const pathname = usePathname();
   const router = useRouter();
-  const [canGoBack, setCanGoBack] = useState(false);
-
-  useEffect(() => {
-    setCanGoBack(window.history.length > 1);
-  }, [pathname]);
+  const canGoBack = typeof window !== "undefined" && window.history.length > 1;
 
   if (pathname === "/") {
     return null;

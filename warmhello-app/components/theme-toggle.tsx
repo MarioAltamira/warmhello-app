@@ -1,28 +1,44 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 
 const THEME_STORAGE_KEY = "warmhello-theme";
 
+function subscribeTheme(callback: () => void) {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+
+  window.addEventListener("storage", callback);
+  window.addEventListener("warmhello-theme", callback as EventListener);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener("warmhello-theme", callback as EventListener);
+  };
+}
+
+function getThemeSnapshot() {
+  if (typeof window === "undefined") {
+    return "light";
+  }
+
+  return window.localStorage.getItem(THEME_STORAGE_KEY) ?? "light";
+}
+
 export function ThemeToggle() {
-  const [isDark, setIsDark] = useState(false);
-  const [isReady, setIsReady] = useState(false);
+  const theme = useSyncExternalStore(subscribeTheme, getThemeSnapshot, () => "light");
+  const isDark = theme === "dark";
 
   useEffect(() => {
-    const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
-    const nextIsDark = savedTheme === "dark";
-
-    document.documentElement.dataset.theme = nextIsDark ? "dark" : "light";
-    setIsDark(nextIsDark);
-    setIsReady(true);
-  }, []);
+    document.documentElement.dataset.theme = isDark ? "dark" : "light";
+  }, [isDark]);
 
   function handleToggle() {
     const nextIsDark = !isDark;
 
     document.documentElement.dataset.theme = nextIsDark ? "dark" : "light";
     window.localStorage.setItem(THEME_STORAGE_KEY, nextIsDark ? "dark" : "light");
-    setIsDark(nextIsDark);
+    window.dispatchEvent(new Event("warmhello-theme"));
   }
 
   return (
@@ -32,7 +48,7 @@ export function ThemeToggle() {
       onClick={handleToggle}
       aria-pressed={isDark}
     >
-      {isReady ? `Dark Theme ${isDark ? "On" : "Off"}` : "Dark Theme"}
+      {`Dark Theme ${isDark ? "On" : "Off"}`}
     </button>
   );
 }

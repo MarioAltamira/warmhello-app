@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { CheckoutButton } from "@/components/checkout-button";
 import { normalizeTimeZone, timeZoneOptions } from "@/lib/timezones";
 
@@ -184,10 +184,6 @@ export function OnboardingForm({
     firstCheckIn?.scheduledFor,
     savedHousehold?.senior.timezone ?? form.timezone,
   );
-
-  useEffect(() => {
-    setForm(resolvedInitialForm);
-  }, [resolvedInitialForm]);
 
   function updateField(name: keyof typeof initialForm, value: string) {
     setForm((current) => ({

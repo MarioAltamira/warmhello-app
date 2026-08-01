@@ -47,6 +47,7 @@ export default async function OnboardPage({ searchParams }: OnboardPageProps) {
 
       <div style={{ marginTop: 24 }}>
         <OnboardingForm
+          key={`${subscriberId ?? "anonymous"}-${editMode ? "edit" : "create"}`}
           editMode={editMode}
           currentHousehold={currentHousehold}
           signupDefaults={{

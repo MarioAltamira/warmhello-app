@@ -2,6 +2,7 @@ import { addHours, formatDateTime } from "@/lib/dates";
 import { demoCheckIn, demoDashboard } from "@/lib/demo-data";
 import { getIntegrationStatus } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
+import { getShortLinkForCheckIn } from "@/lib/short-links";
 import { getSubscriberPlanSummary } from "@/lib/subscriber-plan";
 import { normalizeTimeZone } from "@/lib/timezones";
 import { createCheckInToken } from "@/lib/tokens";
@@ -285,11 +286,10 @@ export async function markInitialSent(checkInId: string) {
       return { ok: false as const, message: "No check-in needed." };
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL ?? "http://localhost:8080";
-    const checkInUrl = `${appUrl}/checkin/${checkIn.token}`;
+    const checkInUrl = await getShortLinkForCheckIn({ checkInId: checkIn.id, token: checkIn.token });
     const sms = await sendSms(
       checkIn.senior.phoneNumber,
-      `WarmHello check-in for ${checkIn.senior.firstName}: ${checkInUrl}`,
+      `Hi ${checkIn.senior.firstName} — it’s time for your WarmHello check-in.\nTap I’m OK: ${checkInUrl}`,
       {
         subscriberId: checkIn.subscriberId,
         seniorId: checkIn.seniorId,
@@ -406,11 +406,10 @@ export async function markReminderSent(checkInId: string) {
       return { ok: false as const, message: "No reminder needed." };
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL ?? "http://localhost:8080";
-    const checkInUrl = `${appUrl}/checkin/${checkIn.token}`;
+    const checkInUrl = await getShortLinkForCheckIn({ checkInId: checkIn.id, token: checkIn.token });
     const sms = await sendSms(
       checkIn.senior.phoneNumber,
-      `WarmHello reminder for ${checkIn.senior.firstName}: please tap your secure check-in link if you are okay: ${checkInUrl}`,
+      `WarmHello reminder for ${checkIn.senior.firstName}.\nTap I’m OK: ${checkInUrl}`,
       {
         subscriberId: checkIn.subscriberId,
         seniorId: checkIn.seniorId,

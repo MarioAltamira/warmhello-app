@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useState, useSyncExternalStore } from "react";
 
 function hasSubscriberCookie() {
   if (typeof document === "undefined") {
@@ -15,12 +16,27 @@ function hasSubscriberCookie() {
 }
 
 export function HeaderAuthActions() {
-  const [loggedIn, setLoggedIn] = useState(false);
   const [busy, setBusy] = useState(false);
+  usePathname();
 
-  useEffect(() => {
-    setLoggedIn(hasSubscriberCookie());
-  }, []);
+  const loggedIn = useSyncExternalStore(
+    (callback) => {
+      if (typeof window === "undefined") {
+        return () => {};
+      }
+
+      window.addEventListener("focus", callback);
+      window.addEventListener("popstate", callback);
+      document.addEventListener("visibilitychange", callback);
+      return () => {
+        window.removeEventListener("focus", callback);
+        window.removeEventListener("popstate", callback);
+        document.removeEventListener("visibilitychange", callback);
+      };
+    },
+    () => hasSubscriberCookie(),
+    () => false,
+  );
 
   async function handleLogout() {
     if (busy) {
@@ -31,7 +47,6 @@ export function HeaderAuthActions() {
     try {
       await fetch("/api/session", { method: "DELETE" });
     } finally {
-      setLoggedIn(false);
       window.location.href = "/auth";
     }
   }

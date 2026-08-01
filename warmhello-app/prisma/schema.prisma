@@ -145,3 +145,17 @@ model SmsLog {
   @@index([seniorId, createdAt])
   @@index([checkInId, createdAt])
 }
+
+model ShortLink {
+  id         String   @id @default(cuid())
+  code       String   @unique
+  targetPath String
+  kind       String?
+  checkInId  String?  @unique
+  createdAt  DateTime @default(now())
+
+  checkIn CheckIn? @relation(fields: [checkInId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([checkInId])
+}

@@ -17,6 +17,7 @@ export function CheckInCard({
   status,
   confirmedLabel,
 }: CheckInCardProps) {
+  const returnToMessagesHref = "sms:+16892258343";
   const [message, setMessage] = useState(
     status === "confirmed"
       ? `Already confirmed${confirmedLabel ? ` on ${confirmedLabel}` : ""}.`
@@ -25,6 +26,7 @@ export function CheckInCard({
         : "Tap once to confirm you are okay.",
   );
   const [submitting, setSubmitting] = useState(false);
+  const [confirmed, setConfirmed] = useState(status === "confirmed");
 
   async function handleConfirm() {
     setSubmitting(true);
@@ -35,6 +37,9 @@ export function CheckInCard({
       });
       const data = (await response.json()) as { ok: boolean; message: string };
       setMessage(data.message);
+      if (data.ok) {
+        setConfirmed(true);
+      }
     } catch {
       setMessage("We could not confirm the check-in right now.");
     } finally {
@@ -58,6 +63,11 @@ export function CheckInCard({
       <p className={`checkin-status ${errorMessage ? "error" : "success"}`} style={{ marginTop: 16 }}>
         {message}
       </p>
+      {confirmed ? (
+        <a className="button secondary" href={returnToMessagesHref} style={{ marginTop: 16 }}>
+          Return to Messages
+        </a>
+      ) : null}
     </section>
   );
 }
