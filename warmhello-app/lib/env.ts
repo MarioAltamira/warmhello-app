@@ -17,16 +17,10 @@ const envSchema = z.object({
   EMAIL_PROVIDER: z.string().optional(),
   EMAIL_API_KEY: z.string().optional(),
   EMAIL_FROM_ADDRESS: z.string().email().default("sales@warm-hello.com"),
-  EMAIL_HEADER_FROM_ADDRESS: z.string().email().optional(),
-  EMAIL_ENVELOPE_FROM_ADDRESS: z.string().email().optional(),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().int().positive().optional(),
   SMTP_USERNAME: z.string().optional(),
   SMTP_PASSWORD: z.string().optional(),
-  SMTP_SECURE: z
-    .enum(["true", "false"])
-    .transform((value) => value === "true")
-    .default("true"),
   QSTASH_URL: z.string().url().default("https://qstash.upstash.io"),
   QSTASH_TOKEN: z.string().optional(),
 });
@@ -48,13 +42,10 @@ export const env = envSchema.parse({
   EMAIL_PROVIDER: process.env.EMAIL_PROVIDER,
   EMAIL_API_KEY: process.env.EMAIL_API_KEY,
   EMAIL_FROM_ADDRESS: process.env.EMAIL_FROM_ADDRESS,
-  EMAIL_HEADER_FROM_ADDRESS: process.env.EMAIL_HEADER_FROM_ADDRESS,
-  EMAIL_ENVELOPE_FROM_ADDRESS: process.env.EMAIL_ENVELOPE_FROM_ADDRESS,
   SMTP_HOST: process.env.SMTP_HOST,
   SMTP_PORT: process.env.SMTP_PORT,
   SMTP_USERNAME: process.env.SMTP_USERNAME,
   SMTP_PASSWORD: process.env.SMTP_PASSWORD,
-  SMTP_SECURE: process.env.SMTP_SECURE,
   QSTASH_URL: process.env.QSTASH_URL,
   QSTASH_TOKEN: process.env.QSTASH_TOKEN,
 });
