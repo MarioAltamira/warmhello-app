@@ -2,7 +2,7 @@ import { env } from "@/lib/env";
 
 function getLogoUrl() {
   const base = env.APP_URL.replace(/\/$/, "");
-  return `${base}/warmhello-logo.png`;
+  return `${base}/warmhello-logo%20b.PNG`;
 }
 
 function formatTimestamp(sentAt: Date) {

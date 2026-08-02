@@ -14,7 +14,7 @@ export async function SiteHeader() {
       <div className="site-header-inner">
         <Link href="/" className="site-header-brand" aria-label="Warm-Hello home">
           <Image
-            src="/warmhello-logo.png"
+            src="/warmhello-logo%20b.PNG"
             alt="Warm-Hello"
             width={160}
             height={42}
