@@ -79,6 +79,7 @@ async function sendSmtpMail(input: EmailInput) {
   const smtpUsername = env.SMTP_USERNAME;
   const smtpPassword = env.SMTP_PASSWORD;
   const fromAddress = env.EMAIL_FROM_ADDRESS;
+  const headerFromAddress = env.EMAIL_HEADER_FROM_ADDRESS ?? fromAddress;
   const envelopeFromAddress = env.EMAIL_ENVELOPE_FROM_ADDRESS ?? fromAddress;
 
   if (
@@ -87,6 +88,7 @@ async function sendSmtpMail(input: EmailInput) {
     !smtpUsername ||
     !smtpPassword ||
     !fromAddress ||
+    !headerFromAddress ||
     !envelopeFromAddress
   ) {
     return {
@@ -126,7 +128,7 @@ async function sendSmtpMail(input: EmailInput) {
     const messageId = `<warm_hello-contact-${Date.now()}@warm-hello.com>`;
     const htmlBody = input.html.replace(/\r?\n/g, "");
     const message = [
-      `From: Warm-Hello <${fromAddress}>`,
+      `From: Warm-Hello <${headerFromAddress}>`,
       `To: ${input.to}`,
       input.replyTo ? `Reply-To: ${input.replyTo}` : null,
       `Subject: ${encodeHeader(input.subject)}`,
