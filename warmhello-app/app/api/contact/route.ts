@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     replyTo: parsed.email,
     subject: `Warm-Hello contact form: ${parsed.name}`,
     text: `Name: ${parsed.name}\nEmail: ${parsed.email}\n\nMessage:\n${parsed.message}`,
-    html: `<p><strong>Name:</strong> ${parsed.name}</p><p><strong>Email:</strong> ${parsed.email}</p><p><strong>Message:</strong></p><p>${parsed.message.replace(/\n/g, "<br />")}</p>`,
+    html: `<p><img src="${env.APP_URL}/warmhello-logo%20b.PNG" alt="Warm-Hello" width="140" /></p><p><strong>Name:</strong> ${parsed.name}</p><p><strong>Email:</strong> ${parsed.email}</p><p><strong>Message:</strong></p><p>${parsed.message.replace(/\n/g, "<br />")}</p>`,
   });
 
   if (!result.ok) {

@@ -35,7 +35,7 @@ export default async function HomePage() {
               View Family Dashboard
             </Link>
           </div>
-          <p className="hero-meta">No credit card required. Protect peace of mind for $3/month.</p>
+          <p className="hero-meta">No credit card required. Protect peace of mind for $6/month.</p>
         </div>
 
         <div className="hero-visual card">
