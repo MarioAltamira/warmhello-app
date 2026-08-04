@@ -231,10 +231,6 @@ export async function confirmCheckInToken(token: string) {
     });
 
     try {
-      if (existing.subscriber.unsubscribedAt !== null) {
-        return { ok: true as const, message: "Check-in confirmed successfully." };
-      }
-
       const contacts = await prisma.contact.findMany({
         where: { seniorId: existing.seniorId },
         orderBy: { priority: "asc" },
@@ -283,15 +279,11 @@ export async function markInitialSent(checkInId: string) {
     const { sendSms } = await import("@/lib/sms");
     const checkIn = await prisma.checkIn.findUnique({
       where: { id: checkInId },
-      include: { senior: true, subscriber: true },
+      include: { senior: true },
     });
 
     if (!checkIn || checkIn.status === "CONFIRMED" || checkIn.status === "EXPIRED") {
       return { ok: false as const, message: "No check-in needed." };
-    }
-
-    if (checkIn.subscriber.unsubscribedAt !== null) {
-      return { ok: false as const, message: "Subscriber unsubscribed." };
     }
 
     const checkInUrl = await getShortLinkForCheckIn({ checkInId: checkIn.id, token: checkIn.token });
@@ -345,10 +337,6 @@ export async function createCheckInSession(input: {
 
     if (!senior || senior.subscriberId !== input.subscriberId) {
       return { ok: false as const, message: "Subscriber or senior record was not found." };
-    }
-
-    if (senior.subscriber.unsubscribedAt !== null) {
-      return { ok: false as const, message: "Subscriber unsubscribed." };
     }
 
     const now = new Date();
@@ -411,15 +399,11 @@ export async function markReminderSent(checkInId: string) {
     const { sendSms } = await import("@/lib/sms");
     const checkIn = await prisma.checkIn.findUnique({
       where: { id: checkInId },
-      include: { senior: true, subscriber: true },
+      include: { senior: true },
     });
 
     if (!checkIn || checkIn.status === "CONFIRMED") {
       return { ok: false as const, message: "No reminder needed." };
-    }
-
-    if (checkIn.subscriber.unsubscribedAt !== null) {
-      return { ok: false as const, message: "Subscriber unsubscribed." };
     }
 
     const checkInUrl = await getShortLinkForCheckIn({ checkInId: checkIn.id, token: checkIn.token });
@@ -467,16 +451,11 @@ export async function markEscalationSent(checkInId: string) {
       where: { id: checkInId },
       include: {
         senior: true,
-        subscriber: true,
       },
     });
 
     if (!checkIn || checkIn.status === "CONFIRMED") {
       return { ok: false as const, message: "No escalation needed." };
-    }
-
-    if (checkIn.subscriber.unsubscribedAt !== null) {
-      return { ok: false as const, message: "Subscriber unsubscribed." };
     }
 
     const contacts = await prisma.contact.findMany({

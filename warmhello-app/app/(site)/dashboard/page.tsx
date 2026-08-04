@@ -113,6 +113,9 @@ export default async function DashboardPage() {
           <Link href="/dashboard/timeline" className="button secondary">
             View 7-Day Timeline
           </Link>
+          <Link href="/dashboard/settings" className="button secondary">
+            Settings
+          </Link>
           <Link href="/checkin/demo-token" className="button secondary">
             Preview Demo Check-In
           </Link>

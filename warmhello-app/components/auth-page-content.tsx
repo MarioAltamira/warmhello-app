@@ -4,7 +4,7 @@ import type { Route } from "next";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
-const allowedRedirects = new Set<Route>(["/onboard", "/dashboard"]);
+const allowedRedirects = new Set<Route>(["/onboard", "/dashboard", "/dashboard/settings"]);
 
 function getSafeRedirect(redirect: string | null): Route {
   if (redirect && allowedRedirects.has(redirect as Route)) {

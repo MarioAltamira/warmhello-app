@@ -35,7 +35,6 @@ export async function GET(
   }
 
   return html(
-    `<h1>You're unsubscribed</h1><p>You will no longer receive trial emails or SMS check-ins from Warm-Hello.</p>`,
+    `<h1>You're unsubscribed</h1><p>You will no longer receive trial emails from Warm-Hello.</p>`,
   );
 }
-

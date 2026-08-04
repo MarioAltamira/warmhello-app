@@ -71,7 +71,7 @@ Unsubscribe: ${unsubscribeLink}`,
 <p>Remember, there's nothing for your loved one to download or learn. They'll receive a gentle, friendly text each morning with a secure link. A single tap on the big "I'm OK" button is all it takes to keep you in the loop.</p>
 <p>We're here to help you get settled. If you have any questions, just hit reply to this email.</p>
 <p>Warmly,<br />The Warm-Hello Team</p>
-<p style="font-size: 12px; opacity: 0.8;">To stop trial emails and SMS check-ins, <a href="${unsubscribeLink}">unsubscribe</a>.</p>`,
+<p style="font-size: 12px; opacity: 0.8;">To stop trial emails, <a href="${unsubscribeLink}">unsubscribe</a>.</p>`,
   });
 }
 
@@ -112,7 +112,7 @@ Unsubscribe: ${unsubscribeLink}`,
 <p><a href="${buyNowLink}">Secure your account for $6/month</a></p>
 <p>We are always looking to improve. If you have any feedback on your experience so far, we'd love to hear it!</p>
 <p>Best,<br />The Warm-Hello Team</p>
-<p style="font-size: 12px; opacity: 0.8;">To stop trial emails and SMS check-ins, <a href="${unsubscribeLink}">unsubscribe</a>.</p>`,
+<p style="font-size: 12px; opacity: 0.8;">To stop trial emails, <a href="${unsubscribeLink}">unsubscribe</a>.</p>`,
   });
 }
 
@@ -150,6 +150,6 @@ Unsubscribe: ${unsubscribeLink}`,
 <p><a href="${buyNowLink}">Activate your Warm-Hello subscription here</a></p>
 <p>Thank you for trusting us to help you bridge the gap between respect for their independence and your own peace of mind.</p>
 <p>Warmly,<br />The Warm-Hello Team</p>
-<p style="font-size: 12px; opacity: 0.8;">To stop trial emails and SMS check-ins, <a href="${unsubscribeLink}">unsubscribe</a>.</p>`,
+<p style="font-size: 12px; opacity: 0.8;">To stop trial emails, <a href="${unsubscribeLink}">unsubscribe</a>.</p>`,
   });
 }
