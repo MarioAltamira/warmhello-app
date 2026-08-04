@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
 import { env } from "@/lib/env";
+import { createUnsubscribeToken } from "@/lib/unsubscribe";
 
 async function getTrialSubscriber(subscriberId: string) {
   if (!prisma) {
@@ -11,7 +12,11 @@ async function getTrialSubscriber(subscriberId: string) {
     where: { id: subscriberId },
   });
 
-  if (!subscriber || subscriber.subscriptionStatus !== "TRIAL") {
+  if (
+    !subscriber ||
+    subscriber.subscriptionStatus !== "TRIAL" ||
+    subscriber.unsubscribedAt !== null
+  ) {
     return null;
   }
 
@@ -26,6 +31,11 @@ function getBuyNowLink(subscriberId: string) {
   return `${env.APP_URL}/subscribe/${subscriberId}`;
 }
 
+function getUnsubscribeLink(subscriberId: string) {
+  const token = createUnsubscribeToken({ subscriberId });
+  return `${env.APP_URL}/unsubscribe/${token}`;
+}
+
 export async function sendTrialWelcomeEmail(subscriberId: string) {
   const subscriber = await getTrialSubscriber(subscriberId);
   if (!subscriber) {
@@ -33,6 +43,7 @@ export async function sendTrialWelcomeEmail(subscriberId: string) {
   }
 
   const dashboardLink = getDashboardLink();
+  const unsubscribeLink = getUnsubscribeLink(subscriber.id);
 
   return sendEmail({
     to: subscriber.email,
@@ -50,14 +61,17 @@ Remember, there's nothing for your loved one to download or learn. They'll recei
 We're here to help you get settled. If you have any questions, just hit reply to this email.
 
 Warmly,
-The Warm-Hello Team`,
+The Warm-Hello Team
+
+Unsubscribe: ${unsubscribeLink}`,
     html: `<p><img src="${env.APP_URL}/warmhello-logo%20b.PNG" alt="Warm-Hello" width="140" /></p>
 <p>Hi there,</p>
 <p>Thank you for choosing Warm-Hello to help stay connected with your loved one. We know that balancing their independence with your need for peace of mind can be difficult, and we're here to make that rhythm effortless.</p>
 <p><strong>Getting started is simple:</strong><br />If you haven't already, please finish setting up your account and schedule your preferred morning check-in time via your <a href="${dashboardLink}">Dashboard</a>.</p>
 <p>Remember, there's nothing for your loved one to download or learn. They'll receive a gentle, friendly text each morning with a secure link. A single tap on the big "I'm OK" button is all it takes to keep you in the loop.</p>
 <p>We're here to help you get settled. If you have any questions, just hit reply to this email.</p>
-<p>Warmly,<br />The Warm-Hello Team</p>`,
+<p>Warmly,<br />The Warm-Hello Team</p>
+<p style="font-size: 12px; opacity: 0.8;">To stop trial emails and SMS check-ins, <a href="${unsubscribeLink}">unsubscribe</a>.</p>`,
   });
 }
 
@@ -68,6 +82,7 @@ export async function sendTrialNudgeEmail(subscriberId: string) {
   }
 
   const buyNowLink = getBuyNowLink(subscriber.id);
+  const unsubscribeLink = getUnsubscribeLink(subscriber.id);
 
   return sendEmail({
     to: subscriber.email,
@@ -86,7 +101,9 @@ ${buyNowLink}
 We are always looking to improve. If you have any feedback on your experience so far, we'd love to hear it!
 
 Best,
-The Warm-Hello Team`,
+The Warm-Hello Team
+
+Unsubscribe: ${unsubscribeLink}`,
     html: `<p><img src="${env.APP_URL}/warmhello-logo%20b.PNG" alt="Warm-Hello" width="140" /></p>
 <p>Hi there,</p>
 <p>We hope the first few days of using Warm-Hello have brought a little more calm to your mornings.</p>
@@ -94,7 +111,8 @@ The Warm-Hello Team`,
 <p>If you're ready to secure this peace of mind for the long term, you can upgrade your account at any time to ensure there's no interruption to your check-ins after your trial ends.</p>
 <p><a href="${buyNowLink}">Secure your account for $6/month</a></p>
 <p>We are always looking to improve. If you have any feedback on your experience so far, we'd love to hear it!</p>
-<p>Best,<br />The Warm-Hello Team</p>`,
+<p>Best,<br />The Warm-Hello Team</p>
+<p style="font-size: 12px; opacity: 0.8;">To stop trial emails and SMS check-ins, <a href="${unsubscribeLink}">unsubscribe</a>.</p>`,
   });
 }
 
@@ -105,6 +123,7 @@ export async function sendTrialFinalEmail(subscriberId: string) {
   }
 
   const buyNowLink = getBuyNowLink(subscriber.id);
+  const unsubscribeLink = getUnsubscribeLink(subscriber.id);
 
   return sendEmail({
     to: subscriber.email,
@@ -121,13 +140,16 @@ ${buyNowLink}
 Thank you for trusting us to help you bridge the gap between respect for their independence and your own peace of mind.
 
 Warmly,
-The Warm-Hello Team`,
+The Warm-Hello Team
+
+Unsubscribe: ${unsubscribeLink}`,
     html: `<p><img src="${env.APP_URL}/warmhello-logo%20b.PNG" alt="Warm-Hello" width="140" /></p>
 <p>Hi there,</p>
 <p>Your 7-day free trial of Warm-Hello has concluded. We hope that over the past week, you've experienced how much easier it is to stay connected without having to be "the person who checks in" every single morning.</p>
 <p>We would love to continue helping you protect that sense of peace for your family. If you'd like to keep the automated check-ins running, you can officially activate your subscription today for just $6 a month.</p>
 <p><a href="${buyNowLink}">Activate your Warm-Hello subscription here</a></p>
 <p>Thank you for trusting us to help you bridge the gap between respect for their independence and your own peace of mind.</p>
-<p>Warmly,<br />The Warm-Hello Team</p>`,
+<p>Warmly,<br />The Warm-Hello Team</p>
+<p style="font-size: 12px; opacity: 0.8;">To stop trial emails and SMS check-ins, <a href="${unsubscribeLink}">unsubscribe</a>.</p>`,
   });
 }

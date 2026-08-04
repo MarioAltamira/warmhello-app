@@ -48,6 +48,7 @@ model Subscriber {
   stripeCustomerId     String?            @unique
   stripeSubscriptionId String?            @unique
   subscriptionStatus   SubscriptionStatus @default(TRIAL)
+  unsubscribedAt       DateTime?
   created              DateTime           @default(now()) @map("Created")
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt

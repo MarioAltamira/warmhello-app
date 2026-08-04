@@ -43,7 +43,7 @@ export function TimelineClient({ initialTimeline }: TimelineClientProps) {
     }
   }
 
-  async function runAction(action: "trial-nudge" | "trial-final" | "checkin-now") {
+  async function runAction(action: "trial-welcome" | "trial-nudge" | "trial-final" | "checkin-now") {
     setBusy(action);
     setNotice(null);
     try {
@@ -82,6 +82,14 @@ export function TimelineClient({ initialTimeline }: TimelineClientProps) {
         </div>
 
         <div className="actions" style={{ gap: 12, flexWrap: "wrap" }}>
+          <button
+            type="button"
+            className="button secondary"
+            onClick={() => void runAction("trial-welcome")}
+            disabled={busy !== null}
+          >
+            Send Trial Welcome Now
+          </button>
           <button
             type="button"
             className="button secondary"
