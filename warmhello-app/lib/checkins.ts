@@ -4,6 +4,7 @@ import { getIntegrationStatus } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { getShortLinkForCheckIn } from "@/lib/short-links";
 import { getSubscriberPlanSummary } from "@/lib/subscriber-plan";
+import { shouldSendCheckInMessaging } from "@/lib/subscriber-lifecycle";
 import { normalizeTimeZone } from "@/lib/timezones";
 import { createCheckInToken } from "@/lib/tokens";
 
@@ -279,11 +280,29 @@ export async function markInitialSent(checkInId: string) {
     const { sendSms } = await import("@/lib/sms");
     const checkIn = await prisma.checkIn.findUnique({
       where: { id: checkInId },
-      include: { senior: true },
+      include: {
+        senior: true,
+        subscriber: {
+          select: { id: true, subscriptionStatus: true, created: true },
+        },
+      },
     });
 
     if (!checkIn || checkIn.status === "CONFIRMED" || checkIn.status === "EXPIRED") {
       return { ok: false as const, message: "No check-in needed." };
+    }
+
+    if (
+      !checkIn.subscriber ||
+      !shouldSendCheckInMessaging({
+        subscriptionStatus: checkIn.subscriber.subscriptionStatus,
+        created: checkIn.subscriber.created,
+      })
+    ) {
+      return {
+        ok: false as const,
+        message: "Check-in messaging is disabled for this subscriber status.",
+      };
     }
 
     const checkInUrl = await getShortLinkForCheckIn({ checkInId: checkIn.id, token: checkIn.token });
@@ -337,6 +356,19 @@ export async function createCheckInSession(input: {
 
     if (!senior || senior.subscriberId !== input.subscriberId) {
       return { ok: false as const, message: "Subscriber or senior record was not found." };
+    }
+
+    if (
+      !shouldSendCheckInMessaging({
+        subscriptionStatus: senior.subscriber.subscriptionStatus,
+        created: senior.subscriber.created,
+      })
+    ) {
+      return {
+        ok: false as const,
+        message:
+          "Check-ins are currently paused for this account. Upgrade or renew to resume check-in messaging.",
+      };
     }
 
     const now = new Date();
@@ -399,11 +431,29 @@ export async function markReminderSent(checkInId: string) {
     const { sendSms } = await import("@/lib/sms");
     const checkIn = await prisma.checkIn.findUnique({
       where: { id: checkInId },
-      include: { senior: true },
+      include: {
+        senior: true,
+        subscriber: {
+          select: { id: true, subscriptionStatus: true, created: true },
+        },
+      },
     });
 
     if (!checkIn || checkIn.status === "CONFIRMED") {
       return { ok: false as const, message: "No reminder needed." };
+    }
+
+    if (
+      !checkIn.subscriber ||
+      !shouldSendCheckInMessaging({
+        subscriptionStatus: checkIn.subscriber.subscriptionStatus,
+        created: checkIn.subscriber.created,
+      })
+    ) {
+      return {
+        ok: false as const,
+        message: "Check-in messaging is disabled for this subscriber status.",
+      };
     }
 
     const checkInUrl = await getShortLinkForCheckIn({ checkInId: checkIn.id, token: checkIn.token });
@@ -451,11 +501,27 @@ export async function markEscalationSent(checkInId: string) {
       where: { id: checkInId },
       include: {
         senior: true,
+        subscriber: {
+          select: { id: true, subscriptionStatus: true, created: true },
+        },
       },
     });
 
     if (!checkIn || checkIn.status === "CONFIRMED") {
       return { ok: false as const, message: "No escalation needed." };
+    }
+
+    if (
+      !checkIn.subscriber ||
+      !shouldSendCheckInMessaging({
+        subscriptionStatus: checkIn.subscriber.subscriptionStatus,
+        created: checkIn.subscriber.created,
+      })
+    ) {
+      return {
+        ok: false as const,
+        message: "Check-in messaging is disabled for this subscriber status.",
+      };
     }
 
     const contacts = await prisma.contact.findMany({

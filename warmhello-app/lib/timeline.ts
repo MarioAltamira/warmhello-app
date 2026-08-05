@@ -1,5 +1,6 @@
 import { addDays, addHours, formatDateTime, getNextOccurrenceAtHourInTimeZone, subDays } from "@/lib/dates";
 import { prisma } from "@/lib/prisma";
+import { shouldSendCheckInMessaging } from "@/lib/subscriber-lifecycle";
 import { normalizeTimeZone } from "@/lib/timezones";
 
 export type TimelineEvent = {
@@ -295,7 +296,13 @@ export async function getSubscriberTimeline(subscriberId: string, days = 7): Pro
     }),
   );
 
-  if (senior) {
+  if (
+    senior &&
+    shouldSendCheckInMessaging({
+      subscriptionStatus: subscriber.subscriptionStatus,
+      created: subscriber.created,
+    })
+  ) {
     events.push(
       ...buildProjectedCheckInEvents({
         subscriberId,

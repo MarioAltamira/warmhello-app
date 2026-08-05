@@ -161,6 +161,7 @@ export async function createHousehold(input: CreateHouseholdInput) {
       sendTrialWelcomeEmail(result.subscriber.id),
       enqueueJsonJob("/api/jobs/trial-nudge", { subscriberId: result.subscriber.id }, 72),
       enqueueJsonJob("/api/jobs/trial-final", { subscriberId: result.subscriber.id }, 168),
+      enqueueJsonJob("/api/jobs/trial-expire", { subscriberId: result.subscriber.id }, 192),
     ]);
 
     return {

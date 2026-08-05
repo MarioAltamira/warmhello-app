@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import { env } from "@/lib/env";
+import { prisma } from "@/lib/prisma";
 
 let stripeClient: Stripe | null = null;
 
@@ -56,4 +57,59 @@ export function verifyStripeWebhookSignature(payload: string, signature: string 
   }
 
   return stripe.webhooks.constructEvent(payload, signature, env.STRIPE_WEBHOOK_SECRET);
+}
+
+export async function cancelSubscriptionAtPeriodEnd(input: { subscriberId: string }) {
+  const stripe = getStripeClient();
+  if (!stripe) {
+    return { ok: false as const, message: "Stripe is not configured." };
+  }
+
+  if (!prisma) {
+    return { ok: false as const, message: "Database is not configured yet." };
+  }
+
+  try {
+    const subscriber = await prisma.subscriber.findUnique({
+      where: { id: input.subscriberId },
+      select: {
+        id: true,
+        stripeSubscriptionId: true,
+        stripeCustomerId: true,
+        subscriptionStatus: true,
+      },
+    });
+
+    if (!subscriber) {
+      return { ok: false as const, message: "Subscriber was not found." };
+    }
+
+    if (!subscriber.stripeSubscriptionId) {
+      await prisma.subscriber.update({
+        where: { id: subscriber.id },
+        data: { subscriptionStatus: "CANCELED" },
+      });
+      return {
+        ok: true as const,
+        message: "Subscription marked as canceled. No active Stripe subscription was found.",
+      };
+    }
+
+    await stripe.subscriptions.update(subscriber.stripeSubscriptionId, {
+      cancel_at_period_end: true,
+    });
+
+    await prisma.subscriber.update({
+      where: { id: subscriber.id },
+      data: { subscriptionStatus: "CANCELED" },
+    });
+
+    return {
+      ok: true as const,
+      message: "Auto-renew canceled. Your service will remain active until the end of the billing cycle.",
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to cancel subscription.";
+    return { ok: false as const, message };
+  }
 }

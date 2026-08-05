@@ -23,6 +23,22 @@ async function getTrialSubscriber(subscriberId: string) {
   return subscriber;
 }
 
+async function getSubscriberForEmail(subscriberId: string) {
+  if (!prisma) {
+    return null;
+  }
+
+  const subscriber = await prisma.subscriber.findUnique({
+    where: { id: subscriberId },
+  });
+
+  if (!subscriber || subscriber.unsubscribedAt !== null) {
+    return null;
+  }
+
+  return subscriber;
+}
+
 function getDashboardLink() {
   return `${env.APP_URL}/dashboard`;
 }
@@ -151,5 +167,40 @@ Unsubscribe: ${unsubscribeLink}`,
 <p>Thank you for trusting us to help you bridge the gap between respect for their independence and your own peace of mind.</p>
 <p>Warmly,<br />The Warm-Hello Team</p>
 <p style="font-size: 12px; opacity: 0.8;">To stop trial emails, <a href="${unsubscribeLink}">unsubscribe</a>.</p>`,
+  });
+}
+
+export async function sendThankYouForSubscriptionEmail(subscriberId: string) {
+  const subscriber = await getSubscriberForEmail(subscriberId);
+  if (!subscriber) {
+    return { ok: true as const, id: null };
+  }
+
+  const dashboardLink = getDashboardLink();
+  const unsubscribeLink = getUnsubscribeLink(subscriber.id);
+
+  return sendEmail({
+    to: subscriber.email,
+    subject: "Thank you for trying Warm-Hello",
+    text: `Hi there,
+
+Thank you for giving Warm-Hello a try.
+
+We've canceled your auto-renewal and your subscription will stay active through the end of your current billing cycle. If you'd like to continue protecting your family's peace of mind with Warm-Hello, you can reactivate anytime from your Dashboard:
+${dashboardLink}
+
+If there's anything we could have done better or if you have any questions, simply reply to this email and we'll be happy to help.
+
+Warmly,
+The Warm-Hello Team
+
+Unsubscribe: ${unsubscribeLink}`,
+    html: `<p><img src="${env.APP_URL}/warmhello-logo%20b.PNG" alt="Warm-Hello" width="140" /></p>
+<p>Hi there,</p>
+<p>Thank you for giving Warm-Hello a try.</p>
+<p>We've canceled your auto-renewal and your subscription will stay active through the end of your current billing cycle. If you'd like to continue protecting your family's peace of mind with Warm-Hello, you can reactivate anytime from your <a href="${dashboardLink}">Dashboard</a>.</p>
+<p>If there's anything we could have done better or if you have any questions, simply reply to this email and we'll be happy to help.</p>
+<p>Warmly,<br />The Warm-Hello Team</p>
+<p style="font-size: 12px; opacity: 0.8;">To stop future emails, <a href="${unsubscribeLink}">unsubscribe</a>.</p>`,
   });
 }
