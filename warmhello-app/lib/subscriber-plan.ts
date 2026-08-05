@@ -26,9 +26,9 @@ export function getSubscriberPlanSummary(input: {
   const isTrialExpired = isFreeTrial && trialEndsAt.getTime() <= Date.now();
   const isPaidSubscriber = input.subscriptionStatus === "ACTIVE";
   const showBuyNow =
+    input.subscriptionStatus === "TRIAL" ||
     input.subscriptionStatus === "PAST_DUE" ||
-    input.subscriptionStatus === "CANCELED" ||
-    isTrialExpired;
+    input.subscriptionStatus === "CANCELED";
 
   let statusLabel = input.subscriptionStatus
     .toLowerCase()

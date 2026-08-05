@@ -29,6 +29,12 @@ export type DashboardSnapshot = {
   }>;
   escalationPolicy: string;
   integrationStatus: IntegrationStatus;
+  stripePrice: {
+    displayLabel: string | null;
+    expectedLabel: string;
+    aligned: boolean;
+    priceId: string;
+  } | null;
 };
 
 export type CheckInPageData = {
@@ -74,6 +80,7 @@ export const demoDashboard: DashboardSnapshot = {
     email: false,
     qstash: false,
   },
+  stripePrice: null,
 };
 
 export const demoCheckIn: CheckInPageData = {

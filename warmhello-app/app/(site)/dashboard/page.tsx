@@ -60,6 +60,18 @@ export default async function DashboardPage() {
           <p>
             <strong>Billing:</strong> {snapshot.billingCustomerLabel}
           </p>
+          {snapshot.stripePrice?.displayLabel ? (
+            <p>
+              <strong>Checkout price:</strong> {snapshot.stripePrice.displayLabel}
+            </p>
+          ) : null}
+          {snapshot.stripePrice && !snapshot.stripePrice.aligned ? (
+            <p style={{ marginTop: 12 }}>
+              <strong>Heads up:</strong> the checkout price above does not match the expected plan
+              ({snapshot.stripePrice.expectedLabel}). Update <code>STRIPE_PRICE_ID</code> on AWS to
+              match the $6/month price before accepting payments.
+            </p>
+          ) : null}
         </article>
       </section>
 

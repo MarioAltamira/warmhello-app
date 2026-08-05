@@ -50,6 +50,50 @@ export async function createCheckoutSession(input: {
   return { ok: true as const, url: session.url };
 }
 
+export async function getPriceInfo(priceId?: string) {
+  const stripe = getStripeClient();
+  if (!stripe || !priceId) {
+    return { ok: false as const, price: null, displayLabel: null };
+  }
+
+  try {
+    const price = await stripe.prices.retrieve(priceId);
+    const currency = (price.currency ?? "usd").toUpperCase();
+    const amount = price.unit_amount_decimal
+      ? Number(price.unit_amount_decimal) / 100
+      : Number(price.unit_amount ?? 0) / 100;
+    const interval = price.recurring?.interval ?? null;
+
+    const period =
+      interval === "month"
+        ? "month"
+        : interval === "year"
+          ? "year"
+          : interval === "week"
+            ? "week"
+            : interval === "day"
+              ? "day"
+              : "one-time";
+
+    return {
+      ok: true as const,
+      price: {
+        id: price.id,
+        currency,
+        amount,
+        interval,
+        period,
+      },
+      displayLabel:
+        period === "one-time"
+          ? `${currency} ${amount.toFixed(2)}`
+          : `${currency} ${amount.toFixed(2)} per ${period}`,
+    };
+  } catch {
+    return { ok: false as const, price: null, displayLabel: null };
+  }
+}
+
 export function verifyStripeWebhookSignature(payload: string, signature: string | null) {
   const stripe = getStripeClient();
   if (!stripe || !env.STRIPE_WEBHOOK_SECRET || !signature) {

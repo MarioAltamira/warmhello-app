@@ -3,6 +3,7 @@ import { demoCheckIn, demoDashboard } from "@/lib/demo-data";
 import { getIntegrationStatus } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { getShortLinkForCheckIn } from "@/lib/short-links";
+import { getPriceInfo } from "@/lib/stripe";
 import { getSubscriberPlanSummary } from "@/lib/subscriber-plan";
 import { shouldSendCheckInMessaging } from "@/lib/subscriber-lifecycle";
 import { normalizeTimeZone } from "@/lib/timezones";
@@ -16,32 +17,42 @@ function formatEnumLabel(status: string) {
     .join(" ");
 }
 
-function buildDashboardSnapshot(subscriber: {
-  id: string;
-  fullName: string;
-  email: string;
-  phoneNumber: string;
-  stripeCustomerId: string | null;
-  subscriptionStatus: "TRIAL" | "ACTIVE" | "PAST_DUE" | "CANCELED";
-  created: Date;
-  seniors: Array<{
-    firstName: string;
-    lastName: string;
-    secondAttemptHours: number;
-    timezone: string;
-  }>;
-  contacts: Array<{
+function buildDashboardSnapshot(
+  subscriber: {
+    id: string;
     fullName: string;
-    relationship: string;
+    email: string;
     phoneNumber: string;
-  }>;
-  checkIns: Array<{
-    token: string;
-    status: "PENDING" | "CONFIRMED" | "REMINDER_SENT" | "ESCALATED" | "EXPIRED";
-    scheduledFor: Date;
-    confirmedAt: Date | null;
-  }>;
-}) {
+    stripeCustomerId: string | null;
+    subscriptionStatus: "TRIAL" | "ACTIVE" | "PAST_DUE" | "CANCELED";
+    created: Date;
+    seniors: Array<{
+      firstName: string;
+      lastName: string;
+      secondAttemptHours: number;
+      timezone: string;
+    }>;
+    contacts: Array<{
+      fullName: string;
+      relationship: string;
+      phoneNumber: string;
+    }>;
+    checkIns: Array<{
+      token: string;
+      status: "PENDING" | "CONFIRMED" | "REMINDER_SENT" | "ESCALATED" | "EXPIRED";
+      scheduledFor: Date;
+      confirmedAt: Date | null;
+    }>;
+  },
+  options?: {
+    stripePrice?: {
+      displayLabel: string | null;
+      expectedLabel: string;
+      aligned: boolean;
+      priceId: string;
+    } | null;
+  },
+) {
   const senior = subscriber.seniors[0];
   const timeZone = normalizeTimeZone(senior.timezone);
   const latestCheckIn = subscriber.checkIns[0];
@@ -81,6 +92,7 @@ function buildDashboardSnapshot(subscriber: {
     })),
     escalationPolicy: `Second attempt after ${senior.secondAttemptHours} hour${senior.secondAttemptHours === 1 ? "" : "s"}, contact alerts after another ${senior.secondAttemptHours} hour${senior.secondAttemptHours === 1 ? "" : "s"}.`,
     integrationStatus: getIntegrationStatus(),
+    stripePrice: options?.stripePrice ?? null,
   };
 }
 
@@ -127,7 +139,20 @@ export async function getDashboardSnapshot(subscriberId?: string | null) {
       };
     }
 
-    return buildDashboardSnapshot(subscriber);
+    const expectedLabel = "USD 6.00 per month";
+    const priceInfo = await getPriceInfo(process.env.STRIPE_PRICE_ID ?? undefined);
+    const stripePrice = priceInfo.ok && priceInfo.price
+      ? {
+          displayLabel: priceInfo.displayLabel,
+          expectedLabel,
+          aligned:
+            priceInfo.price.interval === "month" &&
+            Math.abs(priceInfo.price.amount - 6) <= 0.01,
+          priceId: priceInfo.price.id,
+        }
+      : null;
+
+    return buildDashboardSnapshot(subscriber, { stripePrice });
   } catch {
     return {
       ...demoDashboard,
