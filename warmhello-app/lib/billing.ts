@@ -13,6 +13,17 @@ function mapStripeSubscriptionStatus(status: string) {
   return "CANCELED" as const;
 }
 
+function stripeCurrentPeriodEnd(subscription: {
+  current_period_end?: number | null;
+  cancel_at?: number | null;
+  ended_at?: number | null;
+}) {
+  const candidates = [subscription.cancel_at, subscription.ended_at, subscription.current_period_end]
+    .filter((v): v is number => typeof v === "number" && v > 0);
+  if (candidates.length === 0) return null;
+  return new Date(Math.max(...candidates) * 1000);
+}
+
 export async function applyStripeEvent(event: Stripe.Event) {
   if (!prisma) {
     return { ok: false as const, message: "Database is not configured yet." };
@@ -30,6 +41,21 @@ export async function applyStripeEvent(event: Stripe.Event) {
         return { ok: false as const, message: "Missing subscriber reference." };
       }
 
+      let currentPeriodEndsAt: Date | undefined;
+      if (subscriptionId) {
+        try {
+          const { getStripeClient } = await import("@/lib/stripe");
+          const stripe = getStripeClient();
+          if (stripe) {
+            const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+            const endsAt = stripeCurrentPeriodEnd(subscription);
+            if (endsAt) currentPeriodEndsAt = endsAt;
+          }
+        } catch {
+          // ignore
+        }
+      }
+
       await prisma.subscriber.updateMany({
         where: subscriberId
           ? { id: subscriberId }
@@ -38,6 +64,7 @@ export async function applyStripeEvent(event: Stripe.Event) {
           stripeCustomerId: customerId,
           stripeSubscriptionId: subscriptionId,
           subscriptionStatus: "ACTIVE",
+          currentPeriodEndsAt,
         },
       });
 
@@ -49,6 +76,7 @@ export async function applyStripeEvent(event: Stripe.Event) {
     case "customer.subscription.deleted": {
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = typeof subscription.customer === "string" ? subscription.customer : null;
+      const currentPeriodEndsAt = stripeCurrentPeriodEnd(subscription);
 
       await prisma.subscriber.updateMany({
         where: {
@@ -61,6 +89,7 @@ export async function applyStripeEvent(event: Stripe.Event) {
           stripeCustomerId: customerId,
           stripeSubscriptionId: subscription.id,
           subscriptionStatus: mapStripeSubscriptionStatus(subscription.status),
+          currentPeriodEndsAt: currentPeriodEndsAt ?? undefined,
         },
       });
 

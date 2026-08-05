@@ -1,19 +1,23 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
+import { BuyNowButton } from "@/components/buy-now-button";
 
 type SubscriptionManagementCardProps = {
   subscriberId: string;
   subscriptionStatus: string;
   showBuyNow: boolean;
   customerEmail: string;
+  buyNowIntent?: "BUY_NOW" | "POPUP_ALREADY_SUBSCRIBED" | "POPUP_HAS_TIME_REMAINING";
+  timeRemainingLabel?: string | null;
 };
 
 export function SubscriptionManagementCard({
   subscriberId,
   subscriptionStatus,
   showBuyNow,
+  buyNowIntent,
+  timeRemainingLabel,
 }: SubscriptionManagementCardProps) {
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -61,9 +65,11 @@ export function SubscriptionManagementCard({
 
       <div className="actions" style={{ marginTop: 16, flexWrap: "wrap" }}>
         {showBuyNow ? (
-          <Link href={`/subscribe/${subscriberId}`} className="button buy-now-button">
-            Buy Now
-          </Link>
+          <BuyNowButton
+            subscriberId={subscriberId}
+            intent={buyNowIntent ?? "BUY_NOW"}
+            timeRemainingLabel={timeRemainingLabel}
+          />
         ) : null}
 
         {canCancel ? (

@@ -15,6 +15,9 @@ export type DashboardSnapshot = {
   isPaidSubscriber: boolean;
   isTrialExpired: boolean;
   showBuyNow: boolean;
+  buyNowIntent: "BUY_NOW" | "POPUP_ALREADY_SUBSCRIBED" | "POPUP_HAS_TIME_REMAINING";
+  periodEndsAt?: string;
+  timeRemainingLabel: string | null;
   hasHousehold: boolean;
   seniorName: string;
   nextCheckInLabel: string;
@@ -53,7 +56,9 @@ export const demoDashboard: DashboardSnapshot = {
   subscriptionStatus: "Trial",
   isPaidSubscriber: false,
   isTrialExpired: false,
-  showBuyNow: false,
+  showBuyNow: true,
+  buyNowIntent: "BUY_NOW",
+  timeRemainingLabel: null,
   hasHousehold: true,
   seniorName: "Margaret Johnson",
   nextCheckInLabel: "Today at 9:00 AM",

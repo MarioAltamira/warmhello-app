@@ -48,6 +48,8 @@ export default async function DashboardSettingsPage() {
         subscriberId={snapshot.subscriberId ?? subscriberId}
         subscriptionStatus={snapshot.subscriptionStatus}
         showBuyNow={snapshot.showBuyNow}
+        buyNowIntent={snapshot.buyNowIntent}
+        timeRemainingLabel={snapshot.timeRemainingLabel}
         customerEmail={snapshot.subscriberEmail ?? ""}
       />
 

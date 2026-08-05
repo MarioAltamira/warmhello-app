@@ -25,6 +25,7 @@ function buildDashboardSnapshot(
     phoneNumber: string;
     stripeCustomerId: string | null;
     subscriptionStatus: "TRIAL" | "ACTIVE" | "PAST_DUE" | "CANCELED";
+    currentPeriodEndsAt: Date | null;
     created: Date;
     seniors: Array<{
       firstName: string;
@@ -59,6 +60,7 @@ function buildDashboardSnapshot(
   const plan = getSubscriberPlanSummary({
     created: subscriber.created,
     subscriptionStatus: subscriber.subscriptionStatus,
+    currentPeriodEndsAt: subscriber.currentPeriodEndsAt,
   });
 
   return {
@@ -70,6 +72,9 @@ function buildDashboardSnapshot(
     isPaidSubscriber: plan.isPaidSubscriber,
     isTrialExpired: plan.isTrialExpired,
     showBuyNow: plan.showBuyNow,
+    buyNowIntent: plan.buyNowIntent,
+    periodEndsAt: plan.periodEndsAt.toISOString(),
+    timeRemainingLabel: plan.timeRemainingLabel,
     hasHousehold: true,
     seniorName: `${senior.firstName} ${senior.lastName}`,
     nextCheckInLabel: latestCheckIn

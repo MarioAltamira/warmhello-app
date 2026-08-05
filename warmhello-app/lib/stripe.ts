@@ -139,13 +139,28 @@ export async function cancelSubscriptionAtPeriodEnd(input: { subscriberId: strin
       };
     }
 
-    await stripe.subscriptions.update(subscriber.stripeSubscriptionId, {
+    const updated = await stripe.subscriptions.update(subscriber.stripeSubscriptionId, {
       cancel_at_period_end: true,
     });
 
+    const subscriptionTimestamps = updated as unknown as {
+      cancel_at?: number | null;
+      ended_at?: number | null;
+      current_period_end?: number | null;
+    };
+    const candidates = [
+      subscriptionTimestamps.cancel_at,
+      subscriptionTimestamps.ended_at,
+      subscriptionTimestamps.current_period_end,
+    ]
+      .filter((v): v is number => typeof v === "number" && v > 0);
+    const currentPeriodEndsAt = candidates.length
+      ? new Date(Math.max(...candidates) * 1000)
+      : undefined;
+
     await prisma.subscriber.update({
       where: { id: subscriber.id },
-      data: { subscriptionStatus: "CANCELED" },
+      data: { subscriptionStatus: "CANCELED", currentPeriodEndsAt },
     });
 
     return {

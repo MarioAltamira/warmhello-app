@@ -56,6 +56,7 @@ export async function getHouseholdForSubscriber(subscriberId: string) {
     const plan = getSubscriberPlanSummary({
       created: subscriber.created,
       subscriptionStatus: subscriber.subscriptionStatus,
+      currentPeriodEndsAt: subscriber.currentPeriodEndsAt,
     });
 
     return {
@@ -106,13 +107,18 @@ export async function createHousehold(input: CreateHouseholdInput) {
     }
 
     const result = await prisma.$transaction(async (tx) => {
+      const now = new Date();
+      const trialEndsAt = new Date(now);
+      trialEndsAt.setDate(trialEndsAt.getDate() + 7);
+
       const subscriber = await tx.subscriber.create({
         data: {
           email: input.subscriber.email,
           fullName: input.subscriber.fullName,
           phoneNumber: input.subscriber.phoneNumber,
           subscriptionStatus: "TRIAL",
-          created: new Date(),
+          currentPeriodEndsAt: trialEndsAt,
+          created: now,
         },
       });
 

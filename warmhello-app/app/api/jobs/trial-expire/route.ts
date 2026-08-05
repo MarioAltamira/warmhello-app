@@ -58,7 +58,10 @@ export async function POST(request: Request) {
     if (summary.isFreeTrial && summary.isTrialExpired) {
       await prisma.subscriber.update({
         where: { id: subscriber.id },
-        data: { subscriptionStatus: "PAST_DUE" },
+        data: {
+          subscriptionStatus: "PAST_DUE",
+          currentPeriodEndsAt: summary.trialEndsAt,
+        },
       });
     }
 

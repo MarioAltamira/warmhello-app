@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
+import { BuyNowButton } from "@/components/buy-now-button";
 import { normalizeTimeZone, timeZoneOptions } from "@/lib/timezones";
 
 type HouseholdResponse = {
@@ -67,6 +68,9 @@ type CurrentHousehold = {
     isTrialExpired: boolean;
     showBuyNow: boolean;
     statusLabel: string;
+    buyNowIntent: "BUY_NOW" | "POPUP_ALREADY_SUBSCRIBED" | "POPUP_HAS_TIME_REMAINING";
+    periodEndsAt: Date;
+    timeRemainingLabel: string | null;
   };
 };
 
@@ -460,14 +464,12 @@ export function OnboardingForm({
             {editMode ? "Update + Test" : "Create + Test"}
           </button>
           {currentHousehold?.plan.showBuyNow ? (
-            <Link
-              href={`/subscribe/${
-                savedHousehold?.subscriber.id ?? currentHousehold.subscriber.id
-              }`}
+            <BuyNowButton
+              subscriberId={savedHousehold?.subscriber.id ?? currentHousehold.subscriber.id}
+              intent={currentHousehold.plan.buyNowIntent}
+              timeRemainingLabel={currentHousehold.plan.timeRemainingLabel}
               className="button buy-now-button"
-            >
-              Buy Now
-            </Link>
+            />
           ) : null}
         </div>
       </form>
