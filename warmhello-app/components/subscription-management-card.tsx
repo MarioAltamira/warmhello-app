@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 type SubscriptionManagementCardProps = {
@@ -13,37 +14,10 @@ export function SubscriptionManagementCard({
   subscriberId,
   subscriptionStatus,
   showBuyNow,
-  customerEmail,
 }: SubscriptionManagementCardProps) {
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
-
-  async function handleCheckout() {
-    setBusy(true);
-    setStatus("Starting checkout...");
-    try {
-      const res = await fetch("/api/billing/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subscriberId, customerEmail }),
-      });
-      const data = (await res.json()) as {
-        ok?: boolean;
-        url?: string | null;
-        message?: string;
-      };
-      if (!res.ok || !data.ok || !data.url) {
-        setStatus(data.message ?? "Stripe checkout is not configured yet.");
-        return;
-      }
-      window.location.href = data.url;
-    } catch {
-      setStatus("We could not start checkout right now.");
-    } finally {
-      setBusy(false);
-    }
-  }
 
   async function handleCancel() {
     if (!confirming) {
@@ -87,14 +61,9 @@ export function SubscriptionManagementCard({
 
       <div className="actions" style={{ marginTop: 16, flexWrap: "wrap" }}>
         {showBuyNow ? (
-          <button
-            type="button"
-            className="button primary"
-            onClick={() => void handleCheckout()}
-            disabled={busy}
-          >
-            {busy ? "Starting..." : "Buy Now"}
-          </button>
+          <Link href={`/subscribe/${subscriberId}`} className="button buy-now-button">
+            Buy Now
+          </Link>
         ) : null}
 
         {canCancel ? (

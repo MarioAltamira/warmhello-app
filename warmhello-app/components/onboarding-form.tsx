@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
-import { CheckoutButton } from "@/components/checkout-button";
 import { normalizeTimeZone, timeZoneOptions } from "@/lib/timezones";
 
 type HouseholdResponse = {
@@ -461,10 +460,14 @@ export function OnboardingForm({
             {editMode ? "Update + Test" : "Create + Test"}
           </button>
           {currentHousehold?.plan.showBuyNow ? (
-            <CheckoutButton
-              subscriberId={savedHousehold?.subscriber.id ?? currentHousehold.subscriber.id}
-              customerEmail={savedHousehold?.subscriber.email ?? currentHousehold.subscriber.email}
-            />
+            <Link
+              href={`/subscribe/${
+                savedHousehold?.subscriber.id ?? currentHousehold.subscriber.id
+              }`}
+              className="button buy-now-button"
+            >
+              Buy Now
+            </Link>
           ) : null}
         </div>
       </form>

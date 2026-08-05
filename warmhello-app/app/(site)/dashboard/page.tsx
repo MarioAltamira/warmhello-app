@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CheckoutButton } from "@/components/checkout-button";
 import { getDashboardSnapshot } from "@/lib/checkins";
 import { getSubscriberSession } from "@/lib/subscriber-session";
 
@@ -120,9 +119,14 @@ export default async function DashboardPage() {
             Preview Demo Check-In
           </Link>
         </div>
-        {snapshot.showBuyNow && snapshot.subscriberId ? (
+        {snapshot.showBuyNow && (snapshot.subscriberId ?? subscriberId) ? (
           <div style={{ marginTop: 16 }}>
-            <CheckoutButton subscriberId={snapshot.subscriberId} customerEmail={snapshot.subscriberEmail} />
+            <Link
+              href={`/subscribe/${snapshot.subscriberId ?? subscriberId}`}
+              className="button buy-now-button"
+            >
+              Buy Now
+            </Link>
           </div>
         ) : null}
       </section>
