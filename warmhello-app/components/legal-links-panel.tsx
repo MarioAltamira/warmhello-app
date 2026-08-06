@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import CurrencyToggle from "@/components/currency-toggle";
 import { SmartBuyNowButton } from "@/components/smart-buy-now-button";
+import type { BillingCurrency } from "@/lib/pricing";
+import { pricingPlanFor } from "@/lib/pricing";
 
 type SectionKey = "privacy" | "terms" | "about" | "contact" | "howto" | "faq";
 const contactEmail = "sales@warm-hello.com";
@@ -16,8 +19,25 @@ const sectionLabels: Record<SectionKey, string> = {
   faq: "FAQ",
 };
 
-export function LegalLinksPanel() {
+type Props = { initialCurrency?: BillingCurrency | string | null };
+
+export function LegalLinksPanel({ initialCurrency }: Props) {
   const [activeSection, setActiveSection] = useState<SectionKey | null>(null);
+  const [currency, setCurrency] = useState<BillingCurrency>(() => {
+    const raw = initialCurrency;
+    if (raw === "USD" || raw === "CAD") return raw;
+    if (typeof document !== "undefined") {
+      const match = document.cookie
+        .split("; ")
+        .map((chunk) => chunk.split("="))
+        .find(([name]) => name === "wh_billing_currency");
+      const fromCookie = match ? decodeURIComponent(match[1]) : null;
+      if (fromCookie === "USD" || fromCookie === "CAD") return fromCookie;
+    }
+    const lang = (typeof navigator !== "undefined" && navigator.language) || "";
+    if (/(-ca|fr-ca|en-ca)/i.test(lang)) return "CAD";
+    return "USD";
+  });
   const [contactForm, setContactForm] = useState({
     name: "",
     email: "",
@@ -25,6 +45,7 @@ export function LegalLinksPanel() {
   });
   const [contactSubmitting, setContactSubmitting] = useState(false);
   const [contactStatus, setContactStatus] = useState("");
+  const plan = pricingPlanFor(currency);
 
   function toggleSection(section: SectionKey) {
     setActiveSection((current) => (current === section ? null : section));
@@ -98,6 +119,9 @@ export function LegalLinksPanel() {
         <h3 className="footer-brand">Warm-Hello</h3>
         <div className="footer-cta-row">
           <SmartBuyNowButton className="button buy-now-button footer-buy-cta" />
+          <div style={{ marginLeft: "auto" }}>
+            <CurrencyToggle initial={currency} compact onChanged={(next) => setCurrency(next)} />
+          </div>
         </div>
         <p className="footer-links-heading">
           <strong>Quick Links</strong>
@@ -176,8 +200,9 @@ export function LegalLinksPanel() {
                     missed.
                   </li>
                   <li>
-                    <strong>Subscriptions and Billing:</strong> Service is priced at{" "}
-                    <strong>$0.20 per day</strong> and billed through Stripe.
+                    <strong>Subscriptions and Billing:</strong> Service is billed at{" "}
+                    <strong>{plan.monthlyLabel}</strong> ({plan.dailyLabel}, equivalent to{" "}
+                    <strong>{plan.yearlyLabel}</strong>) through Stripe. Cancel or pause anytime.
                   </li>
                   <li>
                     <strong>Carrier and Device Reliability:</strong> SMS delivery
@@ -208,7 +233,7 @@ export function LegalLinksPanel() {
                 </p>
                 <p>
                   Our goal is to keep families connected with reliable, secure, and
-                  affordable technology at just <strong>$0.20 a day</strong>.
+                  affordable technology — {plan.dailyLabel} ({plan.monthlyLabel}), billed annually at {plan.yearlyAmount.toFixed(2)} {plan.currency}.
                 </p>
               </>
             ) : null}

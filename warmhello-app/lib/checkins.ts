@@ -1,9 +1,11 @@
 import { addHours, formatDateTime } from "@/lib/dates";
 import { demoCheckIn, demoDashboard } from "@/lib/demo-data";
 import { getIntegrationStatus } from "@/lib/env";
+import { isBillingCurrency, expectedMonthlyLabelFor, pricingPlanFor } from "@/lib/pricing";
 import { prisma } from "@/lib/prisma";
 import { getShortLinkForCheckIn } from "@/lib/short-links";
 import { getPriceInfo } from "@/lib/stripe";
+import { getStripePriceIdFor, resolveCurrencyForCurrentVisitor } from "@/lib/visitor-currency";
 import { getSubscriberPlanSummary } from "@/lib/subscriber-plan";
 import { shouldSendCheckInMessaging } from "@/lib/subscriber-lifecycle";
 import { normalizeTimeZone } from "@/lib/timezones";
@@ -25,6 +27,7 @@ function buildDashboardSnapshot(
     phoneNumber: string;
     stripeCustomerId: string | null;
     subscriptionStatus: "TRIAL" | "ACTIVE" | "PAST_DUE" | "CANCELED";
+    billingCurrency: "USD" | "CAD";
     currentPeriodEndsAt: Date | null;
     created: Date;
     seniors: Array<{
@@ -62,6 +65,8 @@ function buildDashboardSnapshot(
     subscriptionStatus: subscriber.subscriptionStatus,
     currentPeriodEndsAt: subscriber.currentPeriodEndsAt,
   });
+  const billingCurrency = isBillingCurrency(subscriber.billingCurrency) ? subscriber.billingCurrency : "USD";
+  const planCopy = pricingPlanFor(billingCurrency);
 
   return {
     subscriberId: subscriber.id,
@@ -69,6 +74,8 @@ function buildDashboardSnapshot(
     subscriberEmail: subscriber.email,
     subscriberPhone: subscriber.phoneNumber,
     subscriptionStatus: plan.statusLabel,
+    billingCurrency,
+    billingPlanLabel: planCopy.monthlyLabel,
     isPaidSubscriber: plan.isPaidSubscriber,
     isTrialExpired: plan.isTrialExpired,
     showBuyNow: plan.showBuyNow,
@@ -147,20 +154,27 @@ export async function getDashboardSnapshot(subscriberId?: string | null) {
       };
     }
 
-    const expectedLabel = "USD 6.00 per month";
-    const priceInfo = await getPriceInfo(process.env.STRIPE_PRICE_ID ?? undefined);
+    const visitorCurrency = await resolveCurrencyForCurrentVisitor({ subscriberId: subscriber.id });
+    const billingCurrency = isBillingCurrency(subscriber.billingCurrency)
+      ? subscriber.billingCurrency
+      : visitorCurrency.currency;
+    const expectedLabel = expectedMonthlyLabelFor(billingCurrency);
+    const priceCopy = pricingPlanFor(billingCurrency);
+    const priceId = getStripePriceIdFor(billingCurrency);
+    const priceInfo = await getPriceInfo(priceId ?? undefined);
     const stripePrice = priceInfo.ok && priceInfo.price
       ? {
           displayLabel: priceInfo.displayLabel,
           expectedLabel,
           aligned:
             priceInfo.price.interval === "month" &&
-            Math.abs(priceInfo.price.amount - 6) <= 0.01,
+            priceInfo.price.currency === billingCurrency &&
+            Math.abs(priceInfo.price.amount - priceCopy.monthlyAmount) <= 0.01,
           priceId: priceInfo.price.id,
         }
       : null;
 
-    return buildDashboardSnapshot(subscriber, { stripePrice });
+    return buildDashboardSnapshot({ ...subscriber, billingCurrency }, { stripePrice });
   } catch {
     return {
       ...demoDashboard,

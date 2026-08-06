@@ -50,6 +50,8 @@ export default async function DashboardSettingsPage() {
         showBuyNow={snapshot.showBuyNow}
         buyNowIntent={snapshot.buyNowIntent}
         timeRemainingLabel={snapshot.timeRemainingLabel}
+        billingCurrency={snapshot.billingCurrency}
+        billingPlanLabel={snapshot.billingPlanLabel}
         customerEmail={snapshot.subscriberEmail ?? ""}
       />
 

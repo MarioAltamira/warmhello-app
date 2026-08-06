@@ -1,17 +1,23 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { pricingPlanFor } from "@/lib/pricing";
 import { getSubscriberSession } from "@/lib/subscriber-session";
 import { getSubscriberPlanSummary } from "@/lib/subscriber-plan";
 import { protectAuthHref } from "@/lib/routes";
+import { resolveCurrencyForCurrentVisitor } from "@/lib/visitor-currency";
 
 export async function GET() {
   const session = await getSubscriberSession();
 
   if (!session.subscriberId) {
+    const visitorCurrency = await resolveCurrencyForCurrentVisitor();
+    const planCopy = pricingPlanFor(visitorCurrency.currency);
     return NextResponse.json({
       ok: true,
       loggedIn: false,
       loginHref: protectAuthHref,
+      visitorCurrency: visitorCurrency.currency,
+      billingPlanLabel: planCopy.monthlyLabel,
     });
   }
 
@@ -29,6 +35,7 @@ export async function GET() {
     select: {
       id: true,
       subscriptionStatus: true,
+      billingCurrency: true,
       created: true,
       currentPeriodEndsAt: true,
     },
@@ -44,6 +51,16 @@ export async function GET() {
     });
   }
 
+  const visitorCurrency = await resolveCurrencyForCurrentVisitor({
+    subscriberId: subscriber.id,
+  });
+  const billingCurrency =
+    typeof subscriber.billingCurrency === "string" &&
+    (subscriber.billingCurrency === "USD" || subscriber.billingCurrency === "CAD")
+      ? subscriber.billingCurrency
+      : visitorCurrency.currency;
+  const planCopy = pricingPlanFor(billingCurrency);
+
   const plan = getSubscriberPlanSummary({
     created: subscriber.created,
     subscriptionStatus: subscriber.subscriptionStatus as
@@ -58,6 +75,8 @@ export async function GET() {
     ok: true,
     loggedIn: true,
     subscriberId: subscriber.id,
+    billingCurrency,
+    billingPlanLabel: planCopy.monthlyLabel,
     buyNowIntent: plan.buyNowIntent,
     timeRemainingLabel: plan.timeRemainingLabel,
     // Always allow Buy Now to be clickable (it uses intent for smart popup vs navigate)

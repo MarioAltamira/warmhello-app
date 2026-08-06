@@ -15,6 +15,11 @@ enum SubscriptionStatus {
   CANCELED
 }
 
+enum BillingCurrency {
+  USD
+  CAD
+}
+
 enum CheckInStatus {
   PENDING
   CONFIRMED
@@ -48,6 +53,7 @@ model Subscriber {
   stripeCustomerId     String?            @unique
   stripeSubscriptionId String?            @unique
   subscriptionStatus   SubscriptionStatus @default(TRIAL)
+  billingCurrency      BillingCurrency    @default(USD)
   currentPeriodEndsAt  DateTime?
   unsubscribedAt       DateTime?
   created              DateTime           @default(now()) @map("Created")

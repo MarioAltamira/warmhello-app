@@ -1,6 +1,7 @@
 import { createCheckInSession } from "@/lib/checkins";
 import { getNextOccurrenceAtHourInTimeZone } from "@/lib/dates";
 import { prisma } from "@/lib/prisma";
+import { resolveCurrencyForCurrentVisitor } from "@/lib/visitor-currency";
 import { getSubscriberPlanSummary } from "@/lib/subscriber-plan";
 import { normalizeTimeZone } from "@/lib/timezones";
 import { sendTrialWelcomeEmail } from "@/lib/trial-emails";
@@ -111,12 +112,15 @@ export async function createHousehold(input: CreateHouseholdInput) {
       const trialEndsAt = new Date(now);
       trialEndsAt.setDate(trialEndsAt.getDate() + 7);
 
+      const visitorCurrency = await resolveCurrencyForCurrentVisitor();
+
       const subscriber = await tx.subscriber.create({
         data: {
           email: input.subscriber.email,
           fullName: input.subscriber.fullName,
           phoneNumber: input.subscriber.phoneNumber,
           subscriptionStatus: "TRIAL",
+          billingCurrency: visitorCurrency.currency,
           currentPeriodEndsAt: trialEndsAt,
           created: now,
         },

@@ -1,10 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
+import CurrencyToggle from "@/components/currency-toggle";
 import { LegalLinksPanel } from "@/components/legal-links-panel";
 import { SmartBuyNowButton } from "@/components/smart-buy-now-button";
 import { getIntegrationStatus } from "@/lib/env";
+import { pricingPlanFor } from "@/lib/pricing";
 import { dashboardAuthHref, trialAuthHref } from "@/lib/routes";
 import { getSubscriberSessionId } from "@/lib/subscriber-session";
+import { resolveCurrencyForCurrentVisitor } from "@/lib/visitor-currency";
 
 export default async function HomePage() {
   const subscriberId = await getSubscriberSessionId();
@@ -16,6 +19,9 @@ export default async function HomePage() {
     integrations.sms &&
     integrations.email &&
     integrations.qstash;
+
+  const visitorCurrency = await resolveCurrencyForCurrentVisitor();
+  const plan = pricingPlanFor(visitorCurrency.currency);
 
   return (
     <main className="shell">
@@ -36,7 +42,12 @@ export default async function HomePage() {
               View Family Dashboard
             </Link>
           </div>
-          <p className="hero-meta">No credit card required. Protect peace of mind for $6/month.</p>
+          <p className="hero-meta">
+            No credit card required. Protect peace of mind for {plan.monthlyLabel.toLowerCase()}.
+          </p>
+          <div style={{ marginTop: 12 }}>
+            <CurrencyToggle initial={visitorCurrency.currency} compact />
+          </div>
         </div>
 
         <div className="hero-visual card">
@@ -156,15 +167,16 @@ export default async function HomePage() {
             <p className="eyebrow">Simple Pricing</p>
             <h2>Peace of mind costs less than a cup of coffee.</h2>
             <p className="pricing-amount">
-              <span className="pricing-amount-item">
-                $0.20 <span className="pricing-amount-label">/ day</span>
-              </span>
+              <span
+                className="pricing-amount-item"
+                dangerouslySetInnerHTML={{ __html: plan.marketing.dailyCard }}
+              />
             </p>
-            <p className="pricing-copy">(Billed at $73 annually)</p>
-            <p className="pricing-copy">
-              That is just $0.20 a day to eliminate the daily &quot;what-if&quot; anxiety and make
-              sure you know within hours, not days, if something is wrong.
-            </p>
+            <p className="pricing-copy">{plan.marketing.yearlyCard}</p>
+            <p className="pricing-copy">{plan.marketing.peaceOfMind}</p>
+            <div style={{ marginTop: 14 }}>
+              <CurrencyToggle initial={visitorCurrency.currency} />
+            </div>
           </div>
           <div className="card pricing-includes">
             <p className="pricing-badge">7-Day Free Trial</p>
@@ -208,6 +220,13 @@ export default async function HomePage() {
               check-in is missed.
             </p>
           </article>
+          <article className="card">
+            <h3>What does pricing look like after the free trial?</h3>
+            <p>
+              Billing is simple and predictable: {plan.monthlyLabel}, which works out to {plan.dailyLabel}.
+              Cancel or pause anytime from the dashboard.
+            </p>
+          </article>
         </div>
       </section>
 
@@ -229,7 +248,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <LegalLinksPanel />
+      <LegalLinksPanel initialCurrency={visitorCurrency.currency} />
     </main>
   );
 }

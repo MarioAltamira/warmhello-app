@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { BuyNowButton } from "@/components/buy-now-button";
+import CurrencyToggle from "@/components/currency-toggle";
 import { getDashboardSnapshot } from "@/lib/checkins";
 import { getSubscriberSession } from "@/lib/subscriber-session";
 
@@ -47,8 +48,14 @@ export default async function DashboardPage() {
             <strong>Plan status:</strong> {snapshot.subscriptionStatus}
           </p>
           <p>
+            <strong>Plan:</strong> {snapshot.billingPlanLabel}
+          </p>
+          <p>
             <strong>Next check-in:</strong> {snapshot.nextCheckInLabel}
           </p>
+          <div style={{ marginTop: 14 }}>
+            <CurrencyToggle initial={snapshot.billingCurrency} compact />
+          </div>
         </article>
 
         <article className="card">

@@ -1,6 +1,8 @@
 import Stripe from "stripe";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
+import { BillingCurrency, isBillingCurrency } from "@/lib/pricing";
+import { getStripePriceIdFor, resolveCurrencyForCurrentVisitor } from "@/lib/visitor-currency";
 
 let stripeClient: Stripe | null = null;
 
@@ -16,13 +18,28 @@ export function getStripeClient() {
   return stripeClient;
 }
 
+export async function resolveCheckoutCurrency(input: {
+  subscriberId: string;
+}): Promise<BillingCurrency> {
+  const resolved = await resolveCurrencyForCurrentVisitor({ subscriberId: input.subscriberId });
+  if (!isBillingCurrency(resolved.currency)) return "USD";
+  return resolved.currency;
+}
+
 export async function createCheckoutSession(input: {
   customerEmail: string;
   subscriberId: string;
 }) {
   const stripe = getStripeClient();
-  if (!stripe || !env.STRIPE_PRICE_ID) {
-    return { ok: false as const, message: "Stripe is not configured." };
+
+  const currency = await resolveCheckoutCurrency({ subscriberId: input.subscriberId });
+  const priceId = getStripePriceIdFor(currency);
+  if (!stripe || !priceId) {
+    return {
+      ok: false as const,
+      message:
+        "Stripe is not configured for the selected currency. Please contact support@warm-hello.com.",
+    };
   }
 
   const session = await stripe.checkout.sessions.create({
@@ -31,6 +48,7 @@ export async function createCheckoutSession(input: {
     cancel_url: `${env.APP_URL}/dashboard?checkout=canceled`,
     customer_email: input.customerEmail,
     client_reference_id: input.subscriberId,
+    currency: currency.toLowerCase(),
     subscription_data: {
       metadata: {
         subscriberId: input.subscriberId,
@@ -38,10 +56,11 @@ export async function createCheckoutSession(input: {
     },
     metadata: {
       subscriberId: input.subscriberId,
+      billingCurrency: currency,
     },
     line_items: [
       {
-        price: env.STRIPE_PRICE_ID,
+        price: priceId,
         quantity: 1,
       },
     ],

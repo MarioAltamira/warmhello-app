@@ -1,5 +1,6 @@
 import type Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
+import { BillingCurrency, isBillingCurrency } from "@/lib/pricing";
 
 function mapStripeSubscriptionStatus(status: string) {
   if (status === "active" || status === "trialing") {
@@ -11,6 +12,24 @@ function mapStripeSubscriptionStatus(status: string) {
   }
 
   return "CANCELED" as const;
+}
+
+function currencyFromSessionOrSubscription(input: {
+  currencyField?: string | null;
+  subscriptionCurrency?: string | null;
+  metadataCurrency?: string | null | unknown;
+}): BillingCurrency {
+  const candidates = [
+    typeof input.metadataCurrency === "string" ? input.metadataCurrency : null,
+    typeof input.subscriptionCurrency === "string" ? input.subscriptionCurrency : null,
+    typeof input.currencyField === "string" ? input.currencyField : null,
+  ]
+    .filter((v): v is string => Boolean(v))
+    .map((v) => v.toUpperCase());
+  for (const candidate of candidates) {
+    if (isBillingCurrency(candidate)) return candidate;
+  }
+  return "USD";
 }
 
 function stripeCurrentPeriodEnd(subscription: {
@@ -42,6 +61,7 @@ export async function applyStripeEvent(event: Stripe.Event) {
       }
 
       let currentPeriodEndsAt: Date | undefined;
+      let billingCurrencyFromStripe: BillingCurrency | undefined;
       if (subscriptionId) {
         try {
           const { getStripeClient } = await import("@/lib/stripe");
@@ -50,11 +70,22 @@ export async function applyStripeEvent(event: Stripe.Event) {
             const subscription = await stripe.subscriptions.retrieve(subscriptionId);
             const endsAt = stripeCurrentPeriodEnd(subscription);
             if (endsAt) currentPeriodEndsAt = endsAt;
+            billingCurrencyFromStripe = currencyFromSessionOrSubscription({
+              currencyField: session.currency,
+              subscriptionCurrency: subscription.currency,
+              metadataCurrency: (session.metadata as { billingCurrency?: unknown } | null)?.billingCurrency,
+            });
           }
         } catch {
           // ignore
         }
       }
+
+      const sessionCurrency = billingCurrencyFromStripe ??
+        currencyFromSessionOrSubscription({
+          currencyField: session.currency,
+          metadataCurrency: (session.metadata as { billingCurrency?: unknown } | null)?.billingCurrency,
+        });
 
       await prisma.subscriber.updateMany({
         where: subscriberId
@@ -64,6 +95,7 @@ export async function applyStripeEvent(event: Stripe.Event) {
           stripeCustomerId: customerId,
           stripeSubscriptionId: subscriptionId,
           subscriptionStatus: "ACTIVE",
+          billingCurrency: sessionCurrency,
           currentPeriodEndsAt,
         },
       });
@@ -77,6 +109,9 @@ export async function applyStripeEvent(event: Stripe.Event) {
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = typeof subscription.customer === "string" ? subscription.customer : null;
       const currentPeriodEndsAt = stripeCurrentPeriodEnd(subscription);
+      const billingCurrencyFromStripe = currencyFromSessionOrSubscription({
+        subscriptionCurrency: subscription.currency,
+      });
 
       await prisma.subscriber.updateMany({
         where: {
@@ -89,6 +124,7 @@ export async function applyStripeEvent(event: Stripe.Event) {
           stripeCustomerId: customerId,
           stripeSubscriptionId: subscription.id,
           subscriptionStatus: mapStripeSubscriptionStatus(subscription.status),
+          billingCurrency: billingCurrencyFromStripe,
           currentPeriodEndsAt: currentPeriodEndsAt ?? undefined,
         },
       });
