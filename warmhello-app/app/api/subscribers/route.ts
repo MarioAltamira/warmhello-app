@@ -2,12 +2,15 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createHousehold, updateHousehold } from "@/lib/households";
 
+const BillingCurrencySchema = z.enum(["USD", "CAD"]);
+
 const bodySchema = z.object({
   subscriberId: z.string().min(1).optional(),
   subscriber: z.object({
     fullName: z.string().min(2),
     email: z.string().email(),
     phoneNumber: z.string().min(7),
+    billingCurrency: BillingCurrencySchema,
   }),
   senior: z.object({
     firstName: z.string().min(2),

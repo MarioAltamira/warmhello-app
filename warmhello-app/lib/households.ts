@@ -1,7 +1,7 @@
 import { createCheckInSession } from "@/lib/checkins";
 import { getNextOccurrenceAtHourInTimeZone } from "@/lib/dates";
 import { prisma } from "@/lib/prisma";
-import { resolveCurrencyForCurrentVisitor } from "@/lib/visitor-currency";
+import { BillingCurrency, isBillingCurrency } from "@/lib/pricing";
 import { getSubscriberPlanSummary } from "@/lib/subscriber-plan";
 import { normalizeTimeZone } from "@/lib/timezones";
 import { sendTrialWelcomeEmail } from "@/lib/trial-emails";
@@ -11,6 +11,7 @@ export type CreateHouseholdInput = {
     fullName: string;
     email: string;
     phoneNumber: string;
+    billingCurrency: BillingCurrency;
   };
   senior: {
     firstName: string;
@@ -66,6 +67,7 @@ export async function getHouseholdForSubscriber(subscriberId: string) {
         fullName: subscriber.fullName,
         email: subscriber.email,
         phoneNumber: subscriber.phoneNumber,
+        billingCurrency: subscriber.billingCurrency,
       },
       senior: {
         id: senior.id,
@@ -112,7 +114,9 @@ export async function createHousehold(input: CreateHouseholdInput) {
       const trialEndsAt = new Date(now);
       trialEndsAt.setDate(trialEndsAt.getDate() + 7);
 
-      const visitorCurrency = await resolveCurrencyForCurrentVisitor();
+      const billingCurrency: BillingCurrency = isBillingCurrency(input.subscriber.billingCurrency)
+        ? input.subscriber.billingCurrency
+        : "USD";
 
       const subscriber = await tx.subscriber.create({
         data: {
@@ -120,7 +124,7 @@ export async function createHousehold(input: CreateHouseholdInput) {
           fullName: input.subscriber.fullName,
           phoneNumber: input.subscriber.phoneNumber,
           subscriptionStatus: "TRIAL",
-          billingCurrency: visitorCurrency.currency,
+          billingCurrency,
           currentPeriodEndsAt: trialEndsAt,
           created: now,
         },
@@ -228,12 +232,17 @@ export async function updateHousehold(subscriberId: string, input: CreateHouseho
     }
 
     const result = await prisma.$transaction(async (tx) => {
+      const billingCurrency: BillingCurrency = isBillingCurrency(input.subscriber.billingCurrency)
+        ? input.subscriber.billingCurrency
+        : existingSubscriber.billingCurrency;
+
       const subscriber = await tx.subscriber.update({
         where: { id: subscriberId },
         data: {
           email: input.subscriber.email,
           fullName: input.subscriber.fullName,
           phoneNumber: input.subscriber.phoneNumber,
+          billingCurrency,
         },
       });
 

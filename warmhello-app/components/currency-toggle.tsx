@@ -6,6 +6,7 @@ import {
   CURRENCY_COOKIE_MAX_AGE,
   CURRENCY_COOKIE_NAME,
   CURRENCY_SWITCH_OPTIONS,
+  DEFAULT_CURRENCY,
   isBillingCurrency,
 } from "@/lib/pricing";
 
@@ -25,9 +26,7 @@ function getInitialValue(initial: BillingCurrency | string | null | undefined): 
     const fromCookie = match ? decodeURIComponent(match[1]) : null;
     if (isBillingCurrency(fromCookie)) return fromCookie;
   }
-  const lang = (typeof navigator !== "undefined" && navigator.language) || "";
-  if (/(-ca|fr-ca|en-ca)/i.test(lang)) return "CAD";
-  return "USD";
+  return DEFAULT_CURRENCY;
 }
 
 export function CurrencyToggle({ initial, onChanged, compact }: CurrencyToggleProps) {
@@ -40,11 +39,10 @@ export function CurrencyToggle({ initial, onChanged, compact }: CurrencyTogglePr
   }, [initial]);
 
   function handleChange(nextRaw: BillingCurrency) {
-    const next = isBillingCurrency(nextRaw) ? nextRaw : "USD";
+    const next = isBillingCurrency(nextRaw) ? nextRaw : DEFAULT_CURRENCY;
     setValue(next);
     document.cookie = `${CURRENCY_COOKIE_NAME}=${encodeURIComponent(next)}; path=/; max-age=${CURRENCY_COOKIE_MAX_AGE}; SameSite=Lax`;
     onChanged?.(next);
-    // Reload so all SSR pricing copy updates server-side too without a full SPA rewrite.
     window.location.reload();
   }
 

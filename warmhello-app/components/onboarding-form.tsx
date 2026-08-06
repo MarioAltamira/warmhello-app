@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { BuyNowButton } from "@/components/buy-now-button";
+import { BillingCurrency } from "@/lib/pricing";
 import { normalizeTimeZone, timeZoneOptions } from "@/lib/timezones";
 
 type HouseholdResponse = {
@@ -45,6 +46,7 @@ type CurrentHousehold = {
     fullName: string;
     email: string;
     phoneNumber: string;
+    billingCurrency: BillingCurrency;
   };
   senior: {
     id: string;
@@ -104,6 +106,7 @@ const initialForm = {
   subscriberName: "Caregiver Demo",
   subscriberEmail: "caregiver@example.com",
   subscriberPhone: "+15551230001",
+  billingCurrency: "USD" as BillingCurrency,
   seniorFirstName: "Margaret",
   seniorLastName: "Johnson",
   seniorPhone: "+15551230002",
@@ -124,6 +127,7 @@ function buildInitialForm(
       subscriberName: currentHousehold.subscriber.fullName,
       subscriberEmail: currentHousehold.subscriber.email,
       subscriberPhone: currentHousehold.subscriber.phoneNumber,
+      billingCurrency: currentHousehold.subscriber.billingCurrency,
       seniorFirstName: currentHousehold.senior.firstName,
       seniorLastName: currentHousehold.senior.lastName,
       seniorPhone: currentHousehold.senior.phoneNumber,
@@ -252,6 +256,7 @@ export function OnboardingForm({
           fullName: form.subscriberName,
           email: form.subscriberEmail,
           phoneNumber: form.subscriberPhone,
+          billingCurrency: form.billingCurrency,
         },
         senior: {
           firstName: form.seniorFirstName,
@@ -351,6 +356,65 @@ export function OnboardingForm({
             onFocus={handleSelectOnFocus}
           />
         </label>
+        <div className="form-grid-wide">
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
+              <p style={{ margin: 0, fontWeight: 600 }}>Your region & pricing</p>
+              <p style={{ margin: 0, fontSize: 13, color: "var(--muted)" }}>
+                This sets the currency you&apos;ll see and the price you&apos;ll pay after your free trial.
+              </p>
+            </div>
+            <div
+              role="radiogroup"
+              aria-label="Region and pricing"
+              className="currency-toggle-row"
+              style={{ padding: 6, gap: 6 }}
+            >
+              {[
+                {
+                  value: "USD" as BillingCurrency,
+                  label: "🇺🇸 United States",
+                  price: "USD 5.00 / month",
+                  detail: "($60.00 / year, ~USD 0.16 per day)",
+                },
+                {
+                  value: "CAD" as BillingCurrency,
+                  label: "🇨🇦 Canada",
+                  price: "CAD 6.00 / month",
+                  detail: "($72.00 / year, ~CAD 0.20 per day)",
+                },
+              ].map((option) => {
+                const selected = form.billingCurrency === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => updateField("billingCurrency", option.value)}
+                    className={selected ? "currency-chip currency-chip-active" : "currency-chip"}
+                    style={{
+                      flex: "1 1 0",
+                      padding: "14px 16px",
+                      borderRadius: 16,
+                      flexDirection: "column",
+                      alignItems: "flex-start",
+                      gap: 4,
+                    }}
+                  >
+                    <span style={{ fontSize: 14, fontWeight: 700 }}>{option.label}</span>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: "inherit" }}>
+                      {option.price}
+                    </span>
+                    <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 500 }}>
+                      {option.detail}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
         <label>
           Senior first name
           <input

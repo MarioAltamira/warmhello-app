@@ -1,81 +1,18 @@
-"use client";
-
-import { useEffect, useState } from "react";
+import CurrencyToggle from "@/components/currency-toggle";
+import { expectedMonthlyLabelFor, pricingPlanFor } from "@/lib/pricing";
+import { resolveCurrencyForCurrentVisitor } from "@/lib/visitor-currency";
+import SubscribeClient from "./subscribe-client";
 
 export default async function SubscribePage({
   params,
 }: {
   params: Promise<{ subscriberId: string }>;
 }) {
-  const resolvedParams = await params;
-  return <SubscribeClient subscriberId={resolvedParams.subscriberId} />;
-}
-
-function SubscribeClient({ subscriberId }: { subscriberId: string }) {
-  const [status, setStatus] = useState<string>("Taking you to checkout...");
-  const [failed, setFailed] = useState<boolean>(false);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function start() {
-      try {
-        const res = await fetch(`/api/subscribe/${encodeURIComponent(subscriberId)}`, {
-          method: "POST",
-        });
-        const data = (await res.json()) as {
-          ok?: boolean;
-          url?: string | null;
-          message?: string;
-        };
-        if (cancelled) {
-          return;
-        }
-        if (!res.ok || !data.ok || !data.url) {
-          setFailed(true);
-          setStatus(data.message ?? "Checkout is not available right now.");
-          return;
-        }
-        window.location.href = data.url;
-      } catch {
-        if (cancelled) {
-          return;
-        }
-        setFailed(true);
-        setStatus("We could not start checkout right now.");
-      }
-    }
-
-    void start();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [subscriberId]);
-
-  async function retry() {
-    setFailed(false);
-    setStatus("Taking you to checkout...");
-    try {
-      const res = await fetch(`/api/subscribe/${encodeURIComponent(subscriberId)}`, {
-        method: "POST",
-      });
-      const data = (await res.json()) as {
-        ok?: boolean;
-        url?: string | null;
-        message?: string;
-      };
-      if (!res.ok || !data.ok || !data.url) {
-        setFailed(true);
-        setStatus(data.message ?? "Checkout is not available right now.");
-        return;
-      }
-      window.location.href = data.url;
-    } catch {
-      setFailed(true);
-      setStatus("We could not start checkout right now.");
-    }
-  }
+  const { subscriberId } = await params;
+  const resolved = await resolveCurrencyForCurrentVisitor({ subscriberId });
+  const billingPlanLabel = expectedMonthlyLabelFor(resolved.currency);
+  const plan = pricingPlanFor(resolved.currency);
+  const monthlyLabel = `${plan.currencySymbol}${plan.monthlyAmount}/month`;
 
   return (
     <main className="shell">
@@ -83,24 +20,18 @@ function SubscribeClient({ subscriberId }: { subscriberId: string }) {
         <p className="eyebrow">Warm-Hello</p>
         <h1>Activate your Warm-Hello subscription</h1>
         <p className="lede" style={{ marginTop: 12 }}>
-          Secure your account for $6/month and keep your daily check-ins running without
+          Secure your account for {monthlyLabel} and keep your daily check-ins running without
           interruption.
         </p>
-        <p style={{ marginTop: 20 }}>{status}</p>
-        {failed ? (
-          <div className="actions" style={{ marginTop: 20, justifyContent: "center" }}>
-            <button
-              type="button"
-              className="button primary"
-              onClick={() => void retry()}
-            >
-              Activate your Warm-Hello subscription here
-            </button>
-            <a href="/dashboard" className="button secondary">
-              Back to Dashboard
-            </a>
-          </div>
-        ) : null}
+        <p style={{ marginTop: 10, fontSize: 14, color: "var(--muted)" }}>
+          {billingPlanLabel} · equivalent to {plan.yearlyLabel} · {plan.dailyLabel}
+        </p>
+        <div style={{ marginTop: 16, display: "flex", justifyContent: "center" }}>
+          <CurrencyToggle initial={resolved.currency} compact />
+        </div>
+        <div style={{ marginTop: 20 }}>
+          <SubscribeClient subscriberId={subscriberId} />
+        </div>
       </div>
     </main>
   );
