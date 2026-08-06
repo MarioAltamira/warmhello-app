@@ -1,8 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { LegalLinksPanel } from "@/components/legal-links-panel";
+import { SmartBuyNowButton } from "@/components/smart-buy-now-button";
 import { getIntegrationStatus } from "@/lib/env";
-import { dashboardAuthHref, protectAuthHref, trialAuthHref } from "@/lib/routes";
+import { dashboardAuthHref, trialAuthHref } from "@/lib/routes";
 import { getSubscriberSessionId } from "@/lib/subscriber-session";
 
 export default async function HomePage() {
@@ -172,9 +173,10 @@ export default async function HomePage() {
               <li>Automated escalation alerts to your phone</li>
               <li>Cancel or pause anytime</li>
             </ul>
-            <Link href={protectAuthHref} className="button primary">
-              Protect Your Loved One Today
-            </Link>
+            <SmartBuyNowButton
+              className="button primary"
+              label="Protect Your Loved One Today"
+            />
           </div>
         </div>
       </section>

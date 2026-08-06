@@ -68,21 +68,6 @@ export default async function DashboardPage() {
             that two gentle check-in attempts have gone unanswered, so your trusted circle can
             check in with care.
           </p>
-          <p>
-            <strong>Billing account:</strong> {snapshot.billingCustomerLabel}
-          </p>
-          {snapshot.stripePrice?.displayLabel ? (
-            <p>
-              <strong>Your plan:</strong> {snapshot.stripePrice.displayLabel}
-            </p>
-          ) : null}
-          {snapshot.stripePrice && !snapshot.stripePrice.aligned ? (
-            <p style={{ marginTop: 12 }}>
-              <strong>Heads up:</strong> the plan price above does not match the expected{" "}
-              {snapshot.stripePrice.expectedLabel}. Please get in touch with
-              support@warm-hello.com so we can confirm your subscription details.
-            </p>
-          ) : null}
         </article>
       </section>
 
