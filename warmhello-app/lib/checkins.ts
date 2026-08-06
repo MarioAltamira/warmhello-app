@@ -95,7 +95,10 @@ function buildDashboardSnapshot(
       relationship: contact.relationship,
       phoneNumber: contact.phoneNumber,
     })),
-    escalationPolicy: `Second attempt after ${senior.secondAttemptHours} hour${senior.secondAttemptHours === 1 ? "" : "s"}, contact alerts after another ${senior.secondAttemptHours} hour${senior.secondAttemptHours === 1 ? "" : "s"}.`,
+    escalationPolicy:
+      senior.secondAttemptHours === 1
+        ? "Friendly follow-up after 1 hour, then contact your trusted emergency contacts one hour after that if your loved one still hasn't confirmed they're okay."
+        : `Friendly follow-up after ${senior.secondAttemptHours} hours, then contact your trusted emergency contacts after another ${senior.secondAttemptHours} hours if your loved one still hasn't confirmed they're okay.`,
     integrationStatus: getIntegrationStatus(),
     stripePrice: options?.stripePrice ?? null,
   };

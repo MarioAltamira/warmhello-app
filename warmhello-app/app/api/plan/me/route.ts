@@ -1,0 +1,67 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { getSubscriberSession } from "@/lib/subscriber-session";
+import { getSubscriberPlanSummary } from "@/lib/subscriber-plan";
+import { protectAuthHref } from "@/lib/routes";
+
+export async function GET() {
+  const session = await getSubscriberSession();
+
+  if (!session.subscriberId) {
+    return NextResponse.json({
+      ok: true,
+      loggedIn: false,
+      loginHref: protectAuthHref,
+    });
+  }
+
+  if (!prisma) {
+    return NextResponse.json({
+      ok: false,
+      loggedIn: true,
+      subscriberId: session.subscriberId,
+      message: "Database is not configured yet.",
+    });
+  }
+
+  const subscriber = await prisma.subscriber.findUnique({
+    where: { id: session.subscriberId },
+    select: {
+      id: true,
+      subscriptionStatus: true,
+      created: true,
+      currentPeriodEndsAt: true,
+    },
+  });
+
+  if (!subscriber) {
+    return NextResponse.json({
+      ok: false,
+      loggedIn: true,
+      subscriberId: session.subscriberId,
+      message: "Subscriber not found.",
+      loginHref: protectAuthHref,
+    });
+  }
+
+  const plan = getSubscriberPlanSummary({
+    created: subscriber.created,
+    subscriptionStatus: subscriber.subscriptionStatus as
+      | "TRIAL"
+      | "ACTIVE"
+      | "PAST_DUE"
+      | "CANCELED",
+    currentPeriodEndsAt: subscriber.currentPeriodEndsAt,
+  });
+
+  return NextResponse.json({
+    ok: true,
+    loggedIn: true,
+    subscriberId: subscriber.id,
+    buyNowIntent: plan.buyNowIntent,
+    timeRemainingLabel: plan.timeRemainingLabel,
+    // Always allow Buy Now to be clickable (it uses intent for smart popup vs navigate)
+    allowNavigation: true,
+    subscribeHref: `/subscribe/${encodeURIComponent(subscriber.id)}`,
+  });
+}

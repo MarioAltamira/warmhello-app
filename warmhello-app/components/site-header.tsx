@@ -2,11 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   dashboardAuthHref,
-  protectAuthHref,
   trialAuthHref,
 } from "@/lib/routes";
 import { HeaderAuthActions } from "@/components/header-auth-actions";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SmartBuyNowButton } from "@/components/smart-buy-now-button";
 
 export async function SiteHeader() {
   return (
@@ -27,9 +27,7 @@ export async function SiteHeader() {
           <Link href="/" className="button secondary site-header-button">
             Home
           </Link>
-          <Link href={protectAuthHref} className="button buy-now-button site-header-button">
-            Buy Now
-          </Link>
+          <SmartBuyNowButton className="button buy-now-button site-header-button" />
           <Link href={trialAuthHref} className="button primary site-header-button">
             Start Free Trial
           </Link>

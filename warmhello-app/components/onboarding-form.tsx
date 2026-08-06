@@ -463,7 +463,7 @@ export function OnboardingForm({
           >
             {editMode ? "Update + Test" : "Create + Test"}
           </button>
-          {currentHousehold?.plan.showBuyNow ? (
+          {currentHousehold ? (
             <BuyNowButton
               subscriberId={savedHousehold?.subscriber.id ?? currentHousehold.subscriber.id}
               intent={currentHousehold.plan.buyNowIntent}

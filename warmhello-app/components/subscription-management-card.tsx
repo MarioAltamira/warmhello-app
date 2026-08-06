@@ -64,7 +64,7 @@ export function SubscriptionManagementCard({
       </p>
 
       <div className="actions" style={{ marginTop: 16, flexWrap: "wrap" }}>
-        {showBuyNow ? (
+        {subscriberId ? (
           <BuyNowButton
             subscriberId={subscriberId}
             intent={buyNowIntent ?? "BUY_NOW"}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { protectAuthHref } from "@/lib/routes";
+import { SmartBuyNowButton } from "@/components/smart-buy-now-button";
 
 type SectionKey = "privacy" | "terms" | "about" | "contact" | "howto" | "faq";
 const contactEmail = "sales@warm-hello.com";
@@ -97,9 +97,7 @@ export function LegalLinksPanel() {
       <div className="card footer-links-card">
         <h3 className="footer-brand">Warm-Hello</h3>
         <div className="footer-cta-row">
-          <Link href={protectAuthHref} className="button buy-now-button footer-buy-cta">
-            Buy Now
-          </Link>
+          <SmartBuyNowButton className="button buy-now-button footer-buy-cta" />
         </div>
         <p className="footer-links-heading">
           <strong>Quick Links</strong>

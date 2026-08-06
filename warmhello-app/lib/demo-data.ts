@@ -77,7 +77,8 @@ export const demoDashboard: DashboardSnapshot = {
       phoneNumber: "+15551230004",
     },
   ],
-  escalationPolicy: "Reminder after 60 minutes, contact alerts after another 60 minutes.",
+  escalationPolicy:
+    "Friendly follow-up after 1 hour, then contact your trusted emergency contacts one hour after that if your loved one still hasn't confirmed they're okay.",
   integrationStatus: {
     database: false,
     stripe: false,

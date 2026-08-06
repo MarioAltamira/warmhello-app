@@ -11,7 +11,7 @@ function getSafeRedirect(redirect: string | null): Route {
     return redirect as Route;
   }
 
-  return "/onboard";
+  return "/dashboard";
 }
 
 function getHeading(source: string | null, redirectPath: Route) {

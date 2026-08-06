@@ -52,25 +52,35 @@ export default async function DashboardPage() {
         </article>
 
         <article className="card">
-          <h2>Escalation policy</h2>
-          <p>{snapshot.escalationPolicy}</p>
+          <h2>How we step in for you</h2>
           <p>
-            Reminder, escalation, and trial follow-up jobs are designed to be triggered via delayed
-            QStash delivery.
+            Every morning at the time you chose, your loved one receives a gentle, one-tap check-in
+            text. No passwords, no apps to open — just one confirmation that everything is fine.
           </p>
           <p>
-            <strong>Billing:</strong> {snapshot.billingCustomerLabel}
+            <strong>How the warm follow-up works:</strong>
+          </p>
+          <ul className="prompt-list" style={{ marginTop: 10 }}>
+            <li>{snapshot.escalationPolicy}</li>
+          </ul>
+          <p>
+            When Warm-Hello reaches out to your emergency contacts, the message clearly explains
+            that two gentle check-in attempts have gone unanswered, so your trusted circle can
+            check in with care.
+          </p>
+          <p>
+            <strong>Billing account:</strong> {snapshot.billingCustomerLabel}
           </p>
           {snapshot.stripePrice?.displayLabel ? (
             <p>
-              <strong>Checkout price:</strong> {snapshot.stripePrice.displayLabel}
+              <strong>Your plan:</strong> {snapshot.stripePrice.displayLabel}
             </p>
           ) : null}
           {snapshot.stripePrice && !snapshot.stripePrice.aligned ? (
             <p style={{ marginTop: 12 }}>
-              <strong>Heads up:</strong> the checkout price above does not match the expected plan
-              ({snapshot.stripePrice.expectedLabel}). Update <code>STRIPE_PRICE_ID</code> on AWS to
-              match the $6/month price before accepting payments.
+              <strong>Heads up:</strong> the plan price above does not match the expected{" "}
+              {snapshot.stripePrice.expectedLabel}. Please get in touch with
+              support@warm-hello.com so we can confirm your subscription details.
             </p>
           ) : null}
         </article>
@@ -132,7 +142,7 @@ export default async function DashboardPage() {
             Preview Demo Check-In
           </Link>
         </div>
-        {snapshot.showBuyNow && (snapshot.subscriberId ?? subscriberId) ? (
+        {(snapshot.subscriberId ?? subscriberId) ? (
           <div style={{ marginTop: 16 }}>
             <BuyNowButton
               subscriberId={snapshot.subscriberId ?? subscriberId}
