@@ -15,8 +15,10 @@ import { getSubscriberSessionId } from "@/lib/subscriber-session";
 import { resolveCurrencyForCurrentVisitor } from "@/lib/visitor-currency";
 
 export const metadata: Metadata = {
-  title:
-    "Warm-Hello | Gentle Daily SMS Check-Ins for Seniors Living Alone — No App, One Tap",
+  title: {
+    absolute:
+      "Warm-Hello | Gentle Daily SMS Check-Ins for Seniors Living Alone — No App, One Tap",
+  },
   description:
     "Warm-Hello is an automated, SMS-based daily safety check-in for seniors who live alone. One gentle morning text, one tap to confirm safety, and automatic escalation to family if they miss two checks. Start a free 7-day trial today.",
   alternates: {
@@ -178,15 +180,28 @@ export default async function HomePage() {
 
   return (
     <>
+      {/* JSON-LD: Organization Schema (site-wide brand) */}
       <script
+        key="jsonld-organization"
+        id="ld-json-organization"
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd.organization) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd.organization),
+        }}
       />
+
+      {/* JSON-LD: Product Schema with dual USD/CAD Offers */}
       <script
+        key="jsonld-product"
+        id="ld-json-product"
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd.product) }}
       />
+
+      {/* JSON-LD: FAQPage Schema from homepage FAQ copy */}
       <script
+        key="jsonld-faq"
+        id="ld-json-faq"
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd.faq) }}
       />
