@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { pricingPlanFor } from "@/lib/pricing";
+import { isBillingCurrency, pricingPlanFor } from "@/lib/pricing";
 import { getSubscriberSession } from "@/lib/subscriber-session";
 import { getSubscriberPlanSummary } from "@/lib/subscriber-plan";
 import { protectAuthHref } from "@/lib/routes";
@@ -54,11 +54,9 @@ export async function GET() {
   const visitorCurrency = await resolveCurrencyForCurrentVisitor({
     subscriberId: subscriber.id,
   });
-  const billingCurrency =
-    typeof subscriber.billingCurrency === "string" &&
-    (subscriber.billingCurrency === "USD" || subscriber.billingCurrency === "CAD")
-      ? subscriber.billingCurrency
-      : visitorCurrency.currency;
+  const billingCurrency = isBillingCurrency(subscriber.billingCurrency)
+    ? subscriber.billingCurrency
+    : visitorCurrency.currency;
   const planCopy = pricingPlanFor(billingCurrency);
 
   const plan = getSubscriberPlanSummary({
@@ -79,7 +77,6 @@ export async function GET() {
     billingPlanLabel: planCopy.monthlyLabel,
     buyNowIntent: plan.buyNowIntent,
     timeRemainingLabel: plan.timeRemainingLabel,
-    // Always allow Buy Now to be clickable (it uses intent for smart popup vs navigate)
     allowNavigation: true,
     subscribeHref: `/subscribe/${encodeURIComponent(subscriber.id)}`,
   });

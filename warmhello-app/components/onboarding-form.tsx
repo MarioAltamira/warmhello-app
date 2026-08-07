@@ -357,62 +357,51 @@ export function OnboardingForm({
           />
         </label>
         <div className="form-grid-wide">
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
-              <p style={{ margin: 0, fontWeight: 600 }}>Your region & pricing</p>
-              <p style={{ margin: 0, fontSize: 13, color: "var(--muted)" }}>
-                This sets the currency you&apos;ll see and the price you&apos;ll pay after your free trial.
+          <div className="region-pick-heading-row">
+            <div>
+              <p className="region-pick-heading-title">Your region &amp; pricing</p>
+              <p className="region-pick-heading-note">
+                Choose the region that matches where you live. This sets the currency and the price you&apos;ll pay after your free trial. You can change it later from your dashboard or using the currency switcher next to any price.
               </p>
             </div>
-            <div
-              role="radiogroup"
-              aria-label="Region and pricing"
-              className="currency-toggle-row"
-              style={{ padding: 6, gap: 6 }}
-            >
-              {[
-                {
-                  value: "USD" as BillingCurrency,
-                  label: "🇺🇸 United States",
-                  price: "USD 5.00 / month",
-                  detail: "($60.00 / year, ~USD 0.16 per day)",
-                },
-                {
-                  value: "CAD" as BillingCurrency,
-                  label: "🇨🇦 Canada",
-                  price: "CAD 6.00 / month",
-                  detail: "($72.00 / year, ~CAD 0.20 per day)",
-                },
-              ].map((option) => {
-                const selected = form.billingCurrency === option.value;
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    role="radio"
-                    aria-checked={selected}
-                    onClick={() => updateField("billingCurrency", option.value)}
-                    className={selected ? "currency-chip currency-chip-active" : "currency-chip"}
-                    style={{
-                      flex: "1 1 0",
-                      padding: "14px 16px",
-                      borderRadius: 16,
-                      flexDirection: "column",
-                      alignItems: "flex-start",
-                      gap: 4,
-                    }}
-                  >
-                    <span style={{ fontSize: 14, fontWeight: 700 }}>{option.label}</span>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: "inherit" }}>
-                      {option.price}
-                    </span>
-                    <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 500 }}>
-                      {option.detail}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+          </div>
+          <div
+            className="region-pick-row"
+            role="radiogroup"
+            aria-label="Region and pricing"
+          >
+            {[
+              {
+                value: "USD" as BillingCurrency,
+                label: "🇺🇸 United States",
+                price: "USD 5.00 / month",
+                detail: "Equivalent to USD 60.00 per year · about USD 0.16 per day",
+              },
+              {
+                value: "CAD" as BillingCurrency,
+                label: "🇨🇦 Canada",
+                price: "CAD 6.00 / month",
+                detail: "Equivalent to CAD 72.00 per year · about CAD 0.20 per day",
+              },
+            ].map((option) => {
+              const selected = form.billingCurrency === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => updateField("billingCurrency", option.value)}
+                  className={
+                    selected ? "region-pick-card region-pick-card-active" : "region-pick-card"
+                  }
+                >
+                  <p className="region-pick-title">{option.label}</p>
+                  <p className="region-pick-price">{option.price}</p>
+                  <p className="region-pick-detail">{option.detail}</p>
+                </button>
+              );
+            })}
           </div>
         </div>
         <label>
