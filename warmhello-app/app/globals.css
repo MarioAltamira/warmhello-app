@@ -148,6 +148,11 @@ body {
   align-items: center;
 }
 
+.hero-grid-wide {
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 1fr);
+  column-gap: 32px;
+}
+
 .hero-copy {
   display: grid;
   gap: 10px;
@@ -822,6 +827,136 @@ h3 {
   margin: 4px 0 0;
   border: 0;
   background: var(--border);
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   Comparison table: Warm-Hello vs PERS pendant vs call-center check-ins
+   ────────────────────────────────────────────────────────────────── */
+
+.comparison-wrap {
+  display: grid;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--card);
+  overflow: hidden;
+  box-shadow: 0 2px 18px color-mix(in srgb, var(--primary) 6%, transparent);
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 900px) {
+  .comparison-wrap {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
+.comparison-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.2fr) repeat(3, minmax(180px, 1fr));
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+}
+
+.comparison-row:last-child {
+  border-bottom: 0;
+}
+
+@media (max-width: 900px) {
+  .comparison-row {
+    display: inline-grid;
+    grid-auto-flow: column;
+    grid-template-columns: minmax(210px, 1.25fr) repeat(3, minmax(230px, 1fr));
+    min-width: 880px;
+  }
+}
+
+.comparison-cell {
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  white-space: normal;
+  word-break: break-word;
+  border-right: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+}
+
+.comparison-cell:last-child {
+  border-right: 0;
+}
+
+.comparison-corner {
+  background: color-mix(in srgb, var(--card) 92%, #000 8%);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 16px 20px;
+}
+
+.comparison-head-cell {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  padding: 18px 20px;
+  background: color-mix(in srgb, var(--card) 92%, #000 8%);
+}
+
+.comparison-head-warmhello {
+  background: color-mix(in srgb, var(--primary) 12%, var(--card));
+}
+
+.comparison-head-title {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.005em;
+}
+
+.comparison-head-sub {
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.comparison-feature {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.35;
+  color: color-mix(in srgb, var(--text) 88%, transparent);
+  background: color-mix(in srgb, var(--card) 97%, #000 3%);
+}
+
+.comparison-value {
+  color: var(--muted);
+}
+
+.comparison-value-warmhello {
+  background: color-mix(in srgb, var(--primary) 4%, var(--card));
+  color: color-mix(in srgb, var(--text) 94%, transparent);
+  font-weight: 500;
+}
+
+.comparison-cell-text {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.comparison-value.is-check {
+  color: color-mix(in srgb, var(--success) 88%, var(--text) 12%);
+  font-weight: 600;
+}
+
+.comparison-value.is-dash {
+  color: color-mix(in srgb, var(--muted) 70%, transparent);
+}
+
+.comparison-value.is-highlight {
+  font-weight: 700;
+  color: var(--primary-strong);
 }
 
 .footer-disclaimer {

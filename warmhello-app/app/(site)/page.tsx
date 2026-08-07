@@ -4,6 +4,7 @@ import Link from "next/link";
 import CurrencyToggle from "@/components/currency-toggle";
 import { LegalLinksPanel } from "@/components/legal-links-panel";
 import { SmartBuyNowButton } from "@/components/smart-buy-now-button";
+import { ComparisonTable } from "@/components/comparison-table";
 import { getIntegrationStatus } from "@/lib/env";
 import {
   PRICING_PLANS,
@@ -373,6 +374,21 @@ export default async function HomePage() {
               </p>
             </article>
           </div>
+        </section>
+
+        <section className="section">
+          <div className="section-heading">
+            <p className="eyebrow">Compare</p>
+            <h2>
+              Warm-Hello vs medical alert pendants and call-center daily check-ins
+            </h2>
+            <p className="section-copy">
+              Caregivers often reach for a traditional medical-alert pendant or a
+              human-operated call-center service first. Warm-Hello fills the daily
+              routine gap neither one covers — at a fraction of the cost.
+            </p>
+          </div>
+          <ComparisonTable currency={visitorCurrency.currency} />
         </section>
 
         <section className="section">

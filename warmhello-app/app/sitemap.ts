@@ -13,6 +13,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1,
     },
     {
+      url: `${base}/alternatives-to-medical-alert-systems`,
+      lastModified: modified,
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
+    {
       url: `${base}/auth`,
       lastModified: modified,
       changeFrequency: "monthly",
