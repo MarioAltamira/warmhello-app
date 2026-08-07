@@ -178,25 +178,18 @@ export default async function AlternativesLandingPage() {
     sameAs: ["https://warm-hello.com/"],
   };
 
+  const jsonLdGraph = {
+    "@context": "https://schema.org",
+    "@graph": [jsonLdOrg, jsonLdProduct, jsonLdFaq],
+  };
+
   return (
     <>
       <script
-        key="alt-jsonld-organization"
-        id="ld-json-organization"
+        key="alt-jsonld-graph"
+        id="ld-json-graph"
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdOrg) }}
-      />
-      <script
-        key="alt-jsonld-product"
-        id="ld-json-product"
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdProduct) }}
-      />
-      <script
-        key="alt-jsonld-faq"
-        id="ld-json-faq"
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdFaq) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdGraph) }}
       />
 
       <main className="shell">

@@ -179,32 +179,19 @@ export default async function HomePage() {
     faq,
   });
 
+  const jsonLdGraph = {
+    "@context": "https://schema.org",
+    "@graph": [jsonLd.organization, jsonLd.product, jsonLd.faq],
+  };
+
   return (
     <>
-      {/* JSON-LD: Organization Schema (site-wide brand) */}
+      {/* JSON-LD: Organization + Product/dual-Offers + FAQPage via @graph */}
       <script
-        key="jsonld-organization"
-        id="ld-json-organization"
+        key="home-jsonld-graph"
+        id="ld-json-graph"
         type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(jsonLd.organization),
-        }}
-      />
-
-      {/* JSON-LD: Product Schema with dual USD/CAD Offers */}
-      <script
-        key="jsonld-product"
-        id="ld-json-product"
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd.product) }}
-      />
-
-      {/* JSON-LD: FAQPage Schema from homepage FAQ copy */}
-      <script
-        key="jsonld-faq"
-        id="ld-json-faq"
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd.faq) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdGraph) }}
       />
 
       <main className="shell">
