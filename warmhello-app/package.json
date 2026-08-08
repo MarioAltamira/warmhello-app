@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev --webpack -p 8080",
     "build": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\" && prisma generate && next build",
+    "build:deploy": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\" && prisma generate && next build",
     "start": "next start -p 8080",
     "lint": "eslint .",
     "db:seed": "tsx prisma/seed.ts",

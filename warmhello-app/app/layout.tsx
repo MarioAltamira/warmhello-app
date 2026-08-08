@@ -42,10 +42,10 @@ export const metadata: Metadata = {
       "A no-app, one-tap daily SMS check-in service for seniors living independently. Seniors confirm safety with a single tap; families get automatic escalation if they miss two checks.",
     images: [
       {
-        url: "/og-default-share.png",
+        url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "Warm-Hello — Gentle daily SMS check-ins for seniors living alone.",
+        alt: "Warm-Hello — Gentle daily SMS check-ins for seniors living alone. Caregiver peace of mind, senior dignity first.",
       },
     ],
   },
@@ -56,7 +56,7 @@ export const metadata: Metadata = {
     title: "Warm-Hello | Gentle Daily SMS Check-Ins for Seniors Living Alone",
     description:
       "A no-app, one-tap daily SMS check-in service for seniors living independently. Peace of mind for caregivers, dignity for seniors.",
-    images: ["/og-default-share.png"],
+    images: ["/twitter-image"],
   },
   robots: {
     index: true,

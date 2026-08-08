@@ -34,10 +34,10 @@ export const metadata: Metadata = {
       "An automated SMS-based daily safety check-in service for elderly seniors living independently. Adult children get automatic peace of mind; seniors keep their dignity with a single-tap confirmation and no app downloads.",
     images: [
       {
-        url: "/og-default-share.png",
+        url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "Warm-Hello — Gentle daily SMS check-ins for seniors living alone.",
+        alt: "Warm-Hello — Gentle daily SMS check-ins for seniors living alone. Caregiver peace of mind, senior dignity first.",
       },
     ],
   },
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
       "Warm-Hello | Gentle Daily SMS Check-Ins for Seniors Living Alone — No App, One Tap",
     description:
       "Senior living alone? Get a gentle daily SMS check-in with one-tap confirmation and automatic family escalation if two checks are missed. No app, no wearables, no stress.",
-    images: ["/og-default-share.png"],
+    images: ["/twitter-image"],
   },
 };
 
@@ -115,7 +115,7 @@ function buildJsonLd(args: {
     "@type": "Organization",
     name: "Warm-Hello",
     url: "https://warm-hello.com",
-    logo: "https://warm-hello.com/og-default-share.png",
+    logo: "https://warm-hello.com/opengraph-image",
     description:
       "Warm-Hello is an automated SMS-based daily safety check-in service designed for elderly seniors living independently and the adult children who care for them.",
     sameAs: [
@@ -130,6 +130,7 @@ function buildJsonLd(args: {
     image: [
       "https://warm-hello.com/hero-warmhello.png",
       "https://warm-hello.com/og-default-share.png",
+      "https://warm-hello.com/opengraph-image",
     ],
     description:
       "Warm-Hello is an automated SMS-based daily safety check-in service designed for elderly seniors living independently and the adult children who care for them. Seniors confirm they are safe with a single tap on a secure text link — no app installs, no logins, no wearable buttons required. If two consecutive check-ins are missed, Warm-Hello automatically alerts designated family contacts by text and email.",

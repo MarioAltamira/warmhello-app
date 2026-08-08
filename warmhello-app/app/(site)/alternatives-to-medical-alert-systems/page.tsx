@@ -42,7 +42,7 @@ export const metadata: Metadata = {
       "Compare Warm-Hello vs medical-alert pendants and call-center check-ins. Gentle daily SMS check-ins for seniors living alone — no wearables, no operators, no contracts, USD $5 or CAD $6/month.",
     images: [
       {
-        url: "/og-default-share.png",
+        url: `/opengraph-image?title=${encodeURIComponent("Better Alternatives to Medical Alert Systems for Seniors Living Alone")}&subtitle=${encodeURIComponent("Gentle daily SMS check-ins: no wearables, no call-center operators, no contracts. USD $5 or CAD $6/month.")}`,
         width: 1200,
         height: 630,
         alt: "Warm-Hello alternatives to medical alert systems — compare Warm-Hello vs Life Alert style pendants and call-center check-ins.",
@@ -57,7 +57,9 @@ export const metadata: Metadata = {
       "Warm-Hello — Better Alternatives to Medical Alert Systems (2026 Compare)",
     description:
       "Seniors hate pendant buttons. Adult children hate call centers. Compare Warm-Hello (SMS one-tap daily check-in) against medical-alert pendants and call-center operators, with transparent USD/CAD pricing.",
-    images: ["/og-default-share.png"],
+    images: [
+      `/twitter-image?title=${encodeURIComponent("Better Alternatives to Medical Alert Systems for Seniors Living Alone")}`,
+    ],
   },
   robots: {
     index: true,
@@ -125,7 +127,7 @@ export default async function AlternativesLandingPage() {
     name: "Warm-Hello — Alternative to Medical Alert Systems",
     image: [
       "https://warm-hello.com/hero-warmhello.png",
-      "https://warm-hello.com/og-default-share.png",
+      "https://warm-hello.com/opengraph-image",
     ],
     description:
       "Warm-Hello is a no-wearable, no-call-center alternative to medical alert systems for seniors living alone. It sends a daily SMS check-in; the senior taps one secure link then one large 'I'm OK' button. If two checks are missed, the family is alerted automatically by text and email.",
@@ -172,7 +174,7 @@ export default async function AlternativesLandingPage() {
     "@type": "Organization" as const,
     name: "Warm-Hello",
     url: "https://warm-hello.com",
-    logo: "https://warm-hello.com/og-default-share.png",
+    logo: "https://warm-hello.com/opengraph-image",
     description:
       "Warm-Hello is an automated SMS-based daily safety check-in service designed for elderly seniors living independently and the adult children who care for them. It is a wearable-free alternative to traditional medical alert systems and call-center daily check-in services.",
     sameAs: ["https://warm-hello.com/"],

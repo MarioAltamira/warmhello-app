@@ -14,6 +14,7 @@ export type PricingPlan = {
   marketing: {
     dailyCard: string;
     yearlyCard: string;
+    monthlyCard: string;
     peaceOfMind: string;
   };
 };
@@ -32,6 +33,7 @@ const USD: PricingPlan = {
   marketing: {
     dailyCard: `$0.16 <span class="pricing-amount-label">/ day</span>`,
     yearlyCard: "(Billed at $60 annually equivalent — $5/month)",
+    monthlyCard: `$5 USD <span class="pricing-amount-label">/ month</span>`,
     peaceOfMind:
       "That is just $0.16 a day to eliminate the daily \"what-if\" anxiety and make sure you know within hours, not days, if something is wrong.",
   },
@@ -51,6 +53,7 @@ const CAD: PricingPlan = {
   marketing: {
     dailyCard: `$0.20 <span class="pricing-amount-label">/ day</span>`,
     yearlyCard: "(Billed at $72 annually equivalent — $6/month)",
+    monthlyCard: `$6 CAD <span class="pricing-amount-label">/ month</span>`,
     peaceOfMind:
       "That is just $0.20 a day to eliminate the daily \"what-if\" anxiety and make sure you know within hours, not days, if something is wrong.",
   },
