@@ -233,7 +233,7 @@ export function LegalLinksPanel({ initialCurrency }: Props) {
                 </p>
                 <p>
                   Our goal is to keep families connected with reliable, secure, and
-                  affordable technology — {plan.dailyLabel} ({plan.monthlyLabel}), billed annually at {plan.yearlyAmount.toFixed(2)} {plan.currency}.
+                  affordable technology.
                 </p>
               </>
             ) : null}
