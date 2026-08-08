@@ -7,6 +7,7 @@ import {
 import { HeaderAuthActions } from "@/components/header-auth-actions";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SmartBuyNowButton } from "@/components/smart-buy-now-button";
+import { ShareAppButton } from "@/components/share-app-modal";
 
 export async function SiteHeader() {
   return (
@@ -14,10 +15,10 @@ export async function SiteHeader() {
       <div className="site-header-inner">
         <Link href="/" className="site-header-brand" aria-label="Warm-Hello home">
           <Image
-            src="/warmhello-logo%20b.PNG"
+            src="/warmhello-logo.png"
             alt="Warm-Hello"
-            width={160}
-            height={42}
+            width={176}
+            height={44}
             priority
             className="site-header-logo"
           />
@@ -36,6 +37,7 @@ export async function SiteHeader() {
           </Link>
           <HeaderAuthActions />
           <ThemeToggle />
+          <ShareAppButton label="Share" />
         </nav>
       </div>
     </header>
