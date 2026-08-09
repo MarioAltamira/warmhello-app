@@ -1,6 +1,18 @@
 import { addHours } from "@/lib/dates";
 import { env } from "@/lib/env";
 
+function cleanUrl(raw: string | undefined): string {
+  if (!raw) return "";
+  return String(raw)
+    .replace(/\r/g, "")
+    .trim()
+    .replace(/^[`'" ]+|[`'" ]+$/g, "")
+    .trim();
+}
+
+const APP_URL_CLEAN = cleanUrl(env.APP_URL);
+const QSTASH_URL_CLEAN = cleanUrl(env.QSTASH_URL);
+
 export async function enqueueJsonJob(
   path: string,
   payload: Record<string, unknown>,
@@ -23,13 +35,21 @@ export async function enqueueJsonJobAt(
   if (!env.QSTASH_TOKEN) {
     return { ok: false as const, message: "QStash is not configured." };
   }
+  if (!APP_URL_CLEAN) {
+    return { ok: false as const, message: "APP_URL is not set (after cleaning)." };
+  }
+  if (!QSTASH_URL_CLEAN) {
+    return { ok: false as const, message: "QSTASH_URL is not set (after cleaning)." };
+  }
 
   const delaySeconds = Math.max(0, Math.floor((runAt.getTime() - Date.now()) / 1000));
   const delayHeader =
     delayOverride ?? (delaySeconds > 0 ? `${delaySeconds}s` : undefined);
 
+  const destination = `${APP_URL_CLEAN}${path}`;
+
   const response = await fetch(
-    `${env.QSTASH_URL}/v2/publish/${encodeURIComponent(`${env.APP_URL}${path}`)}`,
+    `${QSTASH_URL_CLEAN}/v2/publish/${encodeURIComponent(destination)}`,
     {
       method: "POST",
       headers: {
@@ -47,7 +67,10 @@ export async function enqueueJsonJobAt(
 
   if (!response.ok) {
     const text = await response.text();
-    return { ok: false as const, message: text };
+    return {
+      ok: false as const,
+      message: `QStash enqueue failed (qstash=${QSTASH_URL_CLEAN}, dest=${destination}): ${text}`,
+    };
   }
 
   const data = (await response.json()) as { messageId?: string };
@@ -63,10 +86,16 @@ export async function publishCronJsonJob(
   if (!env.QSTASH_TOKEN) {
     return { ok: false as const, message: "QStash is not configured." };
   }
+  if (!APP_URL_CLEAN) {
+    return { ok: false as const, message: "APP_URL is not set (after cleaning)." };
+  }
+  if (!QSTASH_URL_CLEAN) {
+    return { ok: false as const, message: "QSTASH_URL is not set (after cleaning)." };
+  }
 
-  const destination = `${env.APP_URL}${path}`;
+  const destination = `${APP_URL_CLEAN}${path}`;
   const response = await fetch(
-    `${env.QSTASH_URL}/v2/publish/${encodeURIComponent(destination)}`,
+    `${QSTASH_URL_CLEAN}/v2/publish/${encodeURIComponent(destination)}`,
     {
       method: "POST",
       headers: {
@@ -82,7 +111,10 @@ export async function publishCronJsonJob(
 
   if (!response.ok) {
     const text = await response.text();
-    return { ok: false as const, message: text };
+    return {
+      ok: false as const,
+      message: `QStash schedule failed (qstash=${QSTASH_URL_CLEAN}, dest=${destination}): ${text}`,
+    };
   }
 
   const data = (await response.json()) as { scheduleId?: string };
