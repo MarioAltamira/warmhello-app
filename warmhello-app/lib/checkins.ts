@@ -364,16 +364,25 @@ export async function markInitialSent(checkInId: string) {
       },
     );
 
-    await prisma.alertJob.create({
-      data: {
-        checkInId,
-        kind: "initial_sms",
-        status: sms.ok ? "SENT" : "FAILED",
-        providerMessageId: sms.ok ? sms.sid : null,
-        payload: { phoneNumber: checkIn.senior.phoneNumber },
-        runAt: new Date(),
-      },
-    });
+    const now = new Date();
+    await prisma.$transaction([
+      prisma.checkIn.update({
+        where: { id: checkInId },
+        data: {
+          firstSmsSentAt: sms.ok ? now : checkIn.firstSmsSentAt,
+        },
+      }),
+      prisma.alertJob.create({
+        data: {
+          checkInId,
+          kind: "initial_sms",
+          status: sms.ok ? "SENT" : "FAILED",
+          providerMessageId: sms.ok ? sms.sid : null,
+          payload: { phoneNumber: checkIn.senior.phoneNumber },
+          runAt: now,
+        },
+      }),
+    ]);
 
     if (!sms.ok) {
       return { ok: false as const, message: sms.message };
@@ -476,6 +485,7 @@ export async function markReminderSent(checkInId: string) {
 
   try {
     const { sendSms } = await import("@/lib/sms");
+    const now = new Date();
     const checkIn = await prisma.checkIn.findUnique({
       where: { id: checkInId },
       include: {
@@ -486,7 +496,7 @@ export async function markReminderSent(checkInId: string) {
       },
     });
 
-    if (!checkIn || checkIn.status === "CONFIRMED") {
+    if (!checkIn || checkIn.status === "CONFIRMED" || checkIn.confirmedAt != null) {
       return { ok: false as const, message: "No reminder needed." };
     }
 
@@ -515,21 +525,26 @@ export async function markReminderSent(checkInId: string) {
       },
     );
 
-    await prisma.checkIn.update({
-      where: { id: checkInId },
-      data: { status: "REMINDER_SENT" },
-    });
-
-    await prisma.alertJob.create({
-      data: {
-        checkInId,
-        kind: "reminder_sms",
-        status: sms.ok ? "SENT" : "FAILED",
-        providerMessageId: sms.ok ? sms.sid : null,
-        payload: { phoneNumber: checkIn.senior.phoneNumber },
-        runAt: new Date(),
-      },
-    });
+    await prisma.$transaction([
+      prisma.checkIn.update({
+        where: { id: checkInId },
+        data: {
+          status: "REMINDER_SENT",
+          firstAlertUnresponsiveAt: { set: now },
+          secondSmsSentAt: sms.ok ? now : checkIn.secondSmsSentAt,
+        },
+      }),
+      prisma.alertJob.create({
+        data: {
+          checkInId,
+          kind: "reminder_sms",
+          status: sms.ok ? "SENT" : "FAILED",
+          providerMessageId: sms.ok ? sms.sid : null,
+          payload: { phoneNumber: checkIn.senior.phoneNumber },
+          runAt: now,
+        },
+      }),
+    ]);
 
     return { ok: true as const, message: "Reminder processed." };
   } catch {
@@ -544,6 +559,7 @@ export async function markEscalationSent(checkInId: string) {
 
   try {
     const { sendSms } = await import("@/lib/sms");
+    const now = new Date();
     const checkIn = await prisma.checkIn.findUnique({
       where: { id: checkInId },
       include: {
@@ -554,7 +570,7 @@ export async function markEscalationSent(checkInId: string) {
       },
     });
 
-    if (!checkIn || checkIn.status === "CONFIRMED") {
+    if (!checkIn || checkIn.status === "CONFIRMED" || checkIn.confirmedAt != null) {
       return { ok: false as const, message: "No escalation needed." };
     }
 
@@ -591,21 +607,27 @@ export async function markEscalationSent(checkInId: string) {
       ),
     );
 
-    await prisma.checkIn.update({
-      where: { id: checkInId },
-      data: { status: "ESCALATED" },
-    });
-
-    await prisma.alertJob.createMany({
-      data: contacts.map((contact, index) => ({
-        checkInId,
-        kind: "escalation_sms",
-        status: results[index]?.ok ? "SENT" : "FAILED",
-        providerMessageId: results[index]?.ok ? results[index].sid : null,
-        payload: { contactId: contact.id, phoneNumber: contact.phoneNumber },
-        runAt: new Date(),
-      })),
-    });
+    const anyEscalationSmsSent = results.some((r) => r?.ok);
+    await prisma.$transaction([
+      prisma.checkIn.update({
+        where: { id: checkInId },
+        data: {
+          status: "ESCALATED",
+          secondAlertUnresponsiveAt: { set: now },
+          primaryContactSmsSentAt: anyEscalationSmsSent ? now : checkIn.primaryContactSmsSentAt,
+        },
+      }),
+      prisma.alertJob.createMany({
+        data: contacts.map((contact, index) => ({
+          checkInId,
+          kind: "escalation_sms",
+          status: results[index]?.ok ? "SENT" : "FAILED",
+          providerMessageId: results[index]?.ok ? results[index].sid : null,
+          payload: { contactId: contact.id, phoneNumber: contact.phoneNumber },
+          runAt: now,
+        })),
+      }),
+    ]);
 
     return { ok: true as const, message: "Escalation processed." };
   } catch {

@@ -99,22 +99,27 @@ model Contact {
 }
 
 model CheckIn {
-  id           String        @id @default(cuid())
-  subscriberId String
-  seniorId     String
-  token        String        @unique
-  status       CheckInStatus @default(PENDING)
-  scheduledFor DateTime
-  reminderAt   DateTime
-  escalationAt DateTime
-  confirmedAt  DateTime?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  subscriber   Subscriber    @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
-  senior       Senior        @relation(fields: [seniorId], references: [id], onDelete: Cascade)
-  alertJobs    AlertJob[]
-  smsLogs      SmsLog[]
-  shortLink    ShortLink?
+  id                       String        @id @default(cuid())
+  subscriberId             String
+  seniorId                 String
+  token                    String        @unique
+  status                   CheckInStatus @default(PENDING)
+  scheduledFor             DateTime
+  reminderAt               DateTime
+  escalationAt             DateTime
+  confirmedAt              DateTime?
+  firstSmsSentAt           DateTime?
+  secondSmsSentAt          DateTime?
+  firstAlertUnresponsiveAt DateTime?
+  secondAlertUnresponsiveAt DateTime?
+  primaryContactSmsSentAt  DateTime?
+  createdAt                DateTime      @default(now())
+  updatedAt                DateTime      @updatedAt
+  subscriber               Subscriber    @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  senior                   Senior        @relation(fields: [seniorId], references: [id], onDelete: Cascade)
+  alertJobs                AlertJob[]
+  smsLogs                  SmsLog[]
+  shortLink                ShortLink?
 }
 
 model AlertJob {
