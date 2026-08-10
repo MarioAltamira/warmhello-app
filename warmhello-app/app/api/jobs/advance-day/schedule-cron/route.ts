@@ -40,7 +40,7 @@ export async function POST(request: Request) {
 
   if (!scheduled.ok) {
     return NextResponse.json(
-      { ok: false, message: `QStash schedule failed: ${scheduled.message}` },
+      { ok: false, message: scheduled.message },
       { status: 502 },
     );
   }

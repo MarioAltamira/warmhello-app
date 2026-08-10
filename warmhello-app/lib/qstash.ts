@@ -1,20 +1,35 @@
 import { addHours } from "@/lib/dates";
 import { env } from "@/lib/env";
 
+const URL_EXTRACT_RE = /https?:\/\/[^\s`'"<>\\,;\u00a0\u2000-\u200b\u2018-\u201f\ufeff]+/i;
+
 function cleanUrl(raw: string | undefined): string {
   if (!raw) return "";
   let s = String(raw);
+
   s = s.replace(/\r/g, "");
   s = s.replace(/[\u00a0\u2000-\u200b\u2028-\u2029\ufeff]/g, " ");
   s = s.replace(/[\u2018\u2019\u201a\u201b]/g, "'");
   s = s.replace(/[\u201c\u201d\u201e\u201f]/g, '"');
+  s = s.replace(/\u00b4|\u02cb|\u0060/g, "`");
+
+  const m = s.match(URL_EXTRACT_RE);
+  if (m && m[0]) {
+    let extracted = m[0];
+    // drop common trailing punctuation even if not caught by the char class
+    extracted = extracted.replace(/[).,;:!?`'"]+$/g, "");
+    extracted = extracted.replace(/^[`'"(]+/g, "");
+    extracted = extracted.trim();
+    return extracted;
+  }
+
   s = s.trim();
   let prev = "";
   let guard = 0;
-  while (prev !== s && guard < 10) {
+  while (prev !== s && guard < 12) {
     prev = s;
     guard++;
-    s = s.replace(/^[`'" \t]+|[`'" ,;\t]+$/g, "");
+    s = s.replace(/^[`'" \t(]+|[`'" ,;)\t]+$/g, "");
     s = s.trim();
   }
   if (/^[`'" ]+|[`'" ]+$/.test(s)) {
