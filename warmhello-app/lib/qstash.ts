@@ -129,8 +129,32 @@ export async function publishCronJsonJob(
   }
 
   const destination = APP_URL_CLEAN + path;
+
+  try {
+    const destUrl = new URL(destination);
+    if (destUrl.protocol !== "http:" && destUrl.protocol !== "https:") {
+      return {
+        ok: false as const,
+        message:
+          "Invalid destination protocol (must be http: or https:) after cleaning. dest=" +
+          JSON.stringify(destination) +
+          " proto=" +
+          destUrl.protocol,
+      };
+    }
+  } catch (e) {
+    return {
+      ok: false as const,
+      message:
+        "Destination URL fails to parse after cleaning: " +
+        (e instanceof Error ? e.message : String(e)) +
+        ". dest=" +
+        JSON.stringify(destination),
+    };
+  }
+
   const response = await fetch(
-    QSTASH_URL_CLEAN + "/v2/schedules/" + encodeURIComponent(destination),
+    QSTASH_URL_CLEAN + "/v2/schedules/" + destination,
     {
       method: "POST",
       headers: {
