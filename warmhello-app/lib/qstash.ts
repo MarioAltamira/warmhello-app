@@ -3,11 +3,24 @@ import { env } from "@/lib/env";
 
 function cleanUrl(raw: string | undefined): string {
   if (!raw) return "";
-  return String(raw)
-    .replace(/\r/g, "")
-    .trim()
-    .replace(/^[`'" ]+|[`'" ]+$/g, "")
-    .trim();
+  let s = String(raw);
+  s = s.replace(/\r/g, "");
+  s = s.replace(/[\u00a0\u2000-\u200b\u2028-\u2029\ufeff]/g, " ");
+  s = s.replace(/[\u2018\u2019\u201a\u201b]/g, "'");
+  s = s.replace(/[\u201c\u201d\u201e\u201f]/g, '"');
+  s = s.trim();
+  let prev = "";
+  let guard = 0;
+  while (prev !== s && guard < 10) {
+    prev = s;
+    guard++;
+    s = s.replace(/^[`'" \t]+|[`'" ,;\t]+$/g, "");
+    s = s.trim();
+  }
+  if (/^[`'" ]+|[`'" ]+$/.test(s)) {
+    s = s.replace(/^[`'" ]+/, "").replace(/[`'" ]+$/, "").trim();
+  }
+  return s;
 }
 
 const APP_URL_CLEAN = cleanUrl(env.APP_URL);
@@ -46,14 +59,14 @@ export async function enqueueJsonJobAt(
   const delayHeader =
     delayOverride ?? (delaySeconds > 0 ? `${delaySeconds}s` : undefined);
 
-  const destination = `${APP_URL_CLEAN}${path}`;
+  const destination = APP_URL_CLEAN + path;
 
   const response = await fetch(
-    `${QSTASH_URL_CLEAN}/v2/publish/${encodeURIComponent(destination)}`,
+    QSTASH_URL_CLEAN + "/v2/publish/" + encodeURIComponent(destination),
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${env.QSTASH_TOKEN}`,
+        Authorization: "Bearer " + env.QSTASH_TOKEN,
         "Content-Type": "application/json",
         ...(delayHeader ? { "Upstash-Delay": delayHeader } : {}),
         "X-Job-Secret": env.JOB_SIGNING_SECRET,
@@ -69,7 +82,13 @@ export async function enqueueJsonJobAt(
     const text = await response.text();
     return {
       ok: false as const,
-      message: `QStash enqueue failed (qstash=${QSTASH_URL_CLEAN}, dest=${destination}): ${text}`,
+      message:
+        "QStash enqueue failed [qstash=" +
+        QSTASH_URL_CLEAN +
+        ", dest=" +
+        destination +
+        "]: " +
+        text,
     };
   }
 
@@ -93,13 +112,13 @@ export async function publishCronJsonJob(
     return { ok: false as const, message: "QSTASH_URL is not set (after cleaning)." };
   }
 
-  const destination = `${APP_URL_CLEAN}${path}`;
+  const destination = APP_URL_CLEAN + path;
   const response = await fetch(
-    `${QSTASH_URL_CLEAN}/v2/publish/${encodeURIComponent(destination)}`,
+    QSTASH_URL_CLEAN + "/v2/publish/" + encodeURIComponent(destination),
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${env.QSTASH_TOKEN}`,
+        Authorization: "Bearer " + env.QSTASH_TOKEN,
         "Content-Type": "application/json",
         "Upstash-Cron": cron,
         "Upstash-Retries": String(Math.max(0, Math.floor(retries))),
@@ -113,7 +132,13 @@ export async function publishCronJsonJob(
     const text = await response.text();
     return {
       ok: false as const,
-      message: `QStash schedule failed (qstash=${QSTASH_URL_CLEAN}, dest=${destination}): ${text}`,
+      message:
+        "QStash schedule failed [qstash=" +
+        QSTASH_URL_CLEAN +
+        ", dest=" +
+        destination +
+        "]: " +
+        text,
     };
   }
 
