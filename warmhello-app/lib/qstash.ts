@@ -116,6 +116,7 @@ export async function publishCronJsonJob(
   payload: Record<string, unknown>,
   cron: string,
   retries = 0,
+  scheduleId?: string,
 ) {
   if (!env.QSTASH_TOKEN) {
     return { ok: false as const, message: "QStash is not configured." };
@@ -129,7 +130,7 @@ export async function publishCronJsonJob(
 
   const destination = APP_URL_CLEAN + path;
   const response = await fetch(
-    QSTASH_URL_CLEAN + "/v2/publish/" + encodeURIComponent(destination),
+    QSTASH_URL_CLEAN + "/v2/schedules/" + encodeURIComponent(destination),
     {
       method: "POST",
       headers: {
@@ -137,6 +138,7 @@ export async function publishCronJsonJob(
         "Content-Type": "application/json",
         "Upstash-Cron": cron,
         "Upstash-Retries": String(Math.max(0, Math.floor(retries))),
+        ...(scheduleId ? { "Upstash-Schedule-Id": scheduleId } : {}),
         "X-Job-Secret": env.JOB_SIGNING_SECRET,
       },
       body: JSON.stringify(payload),
