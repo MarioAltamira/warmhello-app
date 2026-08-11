@@ -448,6 +448,9 @@ export async function createCheckInSession(input: {
 
     const { enqueueJsonJobAt } = await import("@/lib/qstash");
     const shouldSendNow = scheduledFor.getTime() - now.getTime() <= 30_000;
+    let firstJobMessageId: string | null = null;
+    let reminderJobMessageId: string | null = null;
+    let escalationJobMessageId: string | null = null;
     if (shouldSendNow) {
       const sent = await markInitialSent(checkIn.id);
       if (!sent.ok && input.requireSmsSuccess) {
@@ -464,13 +467,28 @@ export async function createCheckInSession(input: {
         if (!sent.ok && input.requireSmsSuccess) {
           return { ok: false as const, message: sent.message };
         }
+      } else {
+        firstJobMessageId = scheduled.messageId ?? null;
       }
     }
 
-    await Promise.all([
+    const [reminderJob, escalationJob] = await Promise.all([
       enqueueJsonJobAt("/api/jobs/reminder", { checkInId: checkIn.id }, reminderAt),
       enqueueJsonJobAt("/api/jobs/escalation", { checkInId: checkIn.id }, escalationAt),
     ]);
+    if (reminderJob.ok) reminderJobMessageId = reminderJob.messageId ?? null;
+    if (escalationJob.ok) escalationJobMessageId = escalationJob.messageId ?? null;
+
+    if (firstJobMessageId || reminderJobMessageId || escalationJobMessageId) {
+      await prisma.checkIn.update({
+        where: { id: checkIn.id },
+        data: {
+          firstJobMessageId,
+          reminderJobMessageId,
+          escalationJobMessageId,
+        },
+      });
+    }
 
     return { ok: true as const, checkIn };
   } catch {
