@@ -101,7 +101,7 @@ export async function POST(request: Request) {
       }
 
       const timeZone = normalizeTimeZone(senior.timezone);
-      const from = runImmediately ? now : addDays(now, 1);
+      const from = now;
       const scheduledFor = getNextOccurrenceAtHourInTimeZone({
         timeZone,
         hour: senior.checkInHour,
@@ -109,9 +109,32 @@ export async function POST(request: Request) {
         from,
       });
 
-      const dayStart = new Date(scheduledFor);
-      dayStart.setUTCHours(0, 0, 0, 0);
-      const dayEnd = addDays(dayStart, 1);
+      const localHour = parseInt(
+        new Intl.DateTimeFormat("en-CA", {
+          timeZone,
+          hour: "2-digit",
+          hour12: false,
+        }).format(scheduledFor),
+        10,
+      );
+      const localMinute = parseInt(
+        new Intl.DateTimeFormat("en-CA", {
+          timeZone,
+          minute: "2-digit",
+        }).format(scheduledFor),
+        10,
+      );
+      const localSecond = parseInt(
+        new Intl.DateTimeFormat("en-CA", {
+          timeZone,
+          second: "2-digit",
+        }).format(scheduledFor),
+        10,
+      );
+      const msSinceSeniorMidnight =
+        (localHour * 60 * 60 + localMinute * 60 + localSecond) * 1000;
+      const dayStart = new Date(scheduledFor.getTime() - msSinceSeniorMidnight);
+      const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
       const existingSameDay = await prisma.checkIn.findFirst({
         where: {
           seniorId: senior.id,
