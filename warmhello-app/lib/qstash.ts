@@ -1,41 +1,24 @@
 import { addHours } from "@/lib/dates";
 import { env } from "@/lib/env";
 
-const URL_EXTRACT_RE = /https?:\/\/[^\s`'"<>\\,;\u00a0\u2000-\u200b\u2018-\u201f\ufeff]+/i;
+const URL_SAFE_CHARS = new Set(
+  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~:/?#[]@!$&'()*+,;=%".split("")
+);
 
 function cleanUrl(raw: string | undefined): string {
   if (!raw) return "";
-  let s = String(raw);
-
-  s = s.replace(/\r/g, "");
-  s = s.replace(/[\u00a0\u2000-\u200b\u2028-\u2029\ufeff]/g, " ");
-  s = s.replace(/[\u2018\u2019\u201a\u201b]/g, "'");
-  s = s.replace(/[\u201c\u201d\u201e\u201f]/g, '"');
-  s = s.replace(/\u00b4|\u02cb|\u0060/g, "`");
-
-  const m = s.match(URL_EXTRACT_RE);
-  if (m && m[0]) {
-    let extracted = m[0];
-    // drop common trailing punctuation even if not caught by the char class
-    extracted = extracted.replace(/[).,;:!?`'"]+$/g, "");
-    extracted = extracted.replace(/^[`'"(]+/g, "");
-    extracted = extracted.trim();
-    return extracted;
+  const s = String(raw);
+  let out = "";
+  for (let i = 0; i < s.length; i++) {
+    const cc = s.charCodeAt(i);
+    const ch = s[i];
+    if (cc >= 0x80) continue;
+    if (cc < 0x20) continue;
+    if (URL_SAFE_CHARS.has(ch)) out += ch;
   }
-
-  s = s.trim();
-  let prev = "";
-  let guard = 0;
-  while (prev !== s && guard < 12) {
-    prev = s;
-    guard++;
-    s = s.replace(/^[`'" \t(]+|[`'" ,;)\t]+$/g, "");
-    s = s.trim();
-  }
-  if (/^[`'" ]+|[`'" ]+$/.test(s)) {
-    s = s.replace(/^[`'" ]+/, "").replace(/[`'" ]+$/, "").trim();
-  }
-  return s;
+  while (out.length > 0 && " `'\";,)".includes(out[0])) out = out.slice(1);
+  while (out.length > 0 && " `'\";,(".includes(out[out.length - 1])) out = out.slice(0, -1);
+  return out.trim();
 }
 
 const APP_URL_CLEAN = cleanUrl(env.APP_URL);
@@ -168,6 +151,8 @@ export async function publishCronJsonJob(
       body: JSON.stringify(payload),
     },
   );
+
+  void 0;
 
   if (!response.ok) {
     const text = await response.text();
