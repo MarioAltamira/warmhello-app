@@ -60,7 +60,7 @@ export async function enqueueJsonJobAt(
   const destination = APP_URL_CLEAN + path;
 
   const response = await fetch(
-    QSTASH_URL_CLEAN + "/v2/publish/" + encodeURIComponent(destination),
+    QSTASH_URL_CLEAN + "/v2/publish/" + destination,
     {
       method: "POST",
       headers: {
@@ -151,8 +151,6 @@ export async function publishCronJsonJob(
       body: JSON.stringify(payload),
     },
   );
-
-  void 0;
 
   if (!response.ok) {
     const text = await response.text();
