@@ -46,6 +46,16 @@ export async function enqueueJsonJobAt(
   }
 }
 
+export async function enqueueJsonJob(
+  path: string,
+  payload: Record<string, unknown>,
+  delayHours: number,
+): Promise<{ ok: true; messageId: string } | { ok: false; message: string }> {
+  const delaySec = Math.max(0, Math.round(delayHours * 3600));
+  const delayStr = `${delaySec}s`;
+  return enqueueJsonJobAt(path, payload, new Date(), delayStr);
+}
+
 export async function publishCronJsonJob(
   path: string,
   payload: Record<string, unknown>,
