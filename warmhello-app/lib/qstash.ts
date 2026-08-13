@@ -21,7 +21,7 @@ export async function enqueueJsonJobAt(
       "Content-Type": "application/json",
       "X-Job-Secret": JOB_SIGNING_SECRET,
     };
-    let res: { messageId: string };
+    let res;
     if (delayOverride) {
       res = await qstash.publishJSON({
         url,
@@ -29,7 +29,7 @@ export async function enqueueJsonJobAt(
         headers,
         delay: delayOverride,
         retries: 0,
-      });
+      }) as { messageId: string };
     } else {
       res = await qstash.publishJSON({
         url,
@@ -37,7 +37,7 @@ export async function enqueueJsonJobAt(
         headers,
         notBefore,
         retries: 0,
-      });
+      }) as { messageId: string };
     }
     return { ok: true, messageId: res.messageId };
   } catch (error) {
