@@ -12,7 +12,7 @@ export async function enqueueJsonJobAt(
   path: string,
   payload: Record<string, unknown>,
   runAt: Date,
-  delayOverride?: string,
+  delayOverride?: `${bigint}s` | `${bigint}m` | `${bigint}h` | `${bigint}d`,
 ): Promise<{ ok: true; messageId: string } | { ok: false; message: string }> {
   try {
     const notBefore = Math.max(0, Math.floor(runAt.getTime() / 1000));
@@ -51,8 +51,8 @@ export async function enqueueJsonJob(
   payload: Record<string, unknown>,
   delayHours: number,
 ): Promise<{ ok: true; messageId: string } | { ok: false; message: string }> {
-  const delaySec = Math.max(0, Math.round(delayHours * 3600));
-  const delayStr = `${delaySec}s`;
+  const delaySec = BigInt(Math.max(0, Math.round(delayHours * 3600)));
+  const delayStr = `${delaySec}s` as const;
   return enqueueJsonJobAt(path, payload, new Date(), delayStr);
 }
 
