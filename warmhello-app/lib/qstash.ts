@@ -1,6 +1,6 @@
 import { Client } from "@upstash/qstash";
+import { timingSafeEqual } from "crypto";
 import { env } from "@/lib/env";
-import { dates } from "@/lib/dates";
 
 const JOB_SIGNING_SECRET: string = env.JOB_SIGNING_SECRET;
 
@@ -79,5 +79,12 @@ export function verifyJobSecret(request: Request): boolean {
   if (process.env.NODE_ENV !== "production") return true;
   const supplied = request.headers.get("X-Job-Secret");
   if (!supplied) return false;
-  return dates.timingSafeEqual(supplied, JOB_SIGNING_SECRET);
+  try {
+    const a = Buffer.from(supplied, "utf8");
+    const b = Buffer.from(JOB_SIGNING_SECRET, "utf8");
+    if (a.length !== b.length) return false;
+    return timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
 }
