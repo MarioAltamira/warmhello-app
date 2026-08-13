@@ -75,7 +75,7 @@ export async function publishCronJsonJob(
       retries,
       method: "POST",
       headers,
-      body: payload,
+      body: JSON.stringify(payload),
       scheduleId,
     });
     return { ok: true, scheduleId: result.scheduleId, destination };
