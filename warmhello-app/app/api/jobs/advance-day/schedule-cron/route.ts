@@ -18,6 +18,14 @@ const bodySchema = z.object({
     })
     .optional()
     .default(DEFAULT_CRON),
+  scheduleId: z
+    .string()
+    .min(1)
+    .max(256)
+    .regex(/^[A-Za-z0-9_.\-]+$/, {
+      message: "scheduleId must contain only A-Z a-z 0-9 _ . -",
+    })
+    .optional(),
 });
 
 export async function POST(request: Request) {
@@ -39,6 +47,7 @@ export async function POST(request: Request) {
     {},
     parsed.data.cron,
     parsed.data.retries,
+    parsed.data.scheduleId,
   );
 
   if (!scheduled.ok) {
@@ -55,6 +64,7 @@ export async function POST(request: Request) {
     ok: true,
     cronExpression: parsed.data.cron,
     retries: parsed.data.retries,
+    requestedScheduleId: parsed.data.scheduleId ?? null,
     scheduleId: scheduled.scheduleId,
     jobPath: "/api/jobs/advance-day",
     destination: {
