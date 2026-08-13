@@ -394,12 +394,29 @@ export async function markInitialSent(checkInId: string) {
   }
 }
 
+export type CreateCheckInSessionResultEnqueue = {
+  firstJobMessageId: string | null;
+  reminderJobMessageId: string | null;
+  escalationJobMessageId: string | null;
+  firstSmsDeliveredImmediately: boolean;
+  enqueueErrors: string[];
+  enqueueOk: number;
+  enqueueFailed: number;
+};
+
 export async function createCheckInSession(input: {
   subscriberId: string;
   seniorId: string;
   scheduledFor?: Date;
   requireSmsSuccess?: boolean;
-}) {
+}): Promise<
+  | {
+      ok: true;
+      checkIn: { id: string; token: string; scheduledFor: Date; reminderAt: Date; escalationAt: Date };
+      enqueue: CreateCheckInSessionResultEnqueue;
+    }
+  | { ok: false; message: string }
+> {
   if (!prisma) {
     return { ok: false as const, message: "Database is not configured yet." };
   }
@@ -444,6 +461,13 @@ export async function createCheckInSession(input: {
         reminderAt,
         escalationAt,
       },
+      select: {
+        id: true,
+        token: true,
+        scheduledFor: true,
+        reminderAt: true,
+        escalationAt: true,
+      },
     });
 
     const { enqueueJsonJobAt } = await import("@/lib/qstash");
@@ -451,10 +475,22 @@ export async function createCheckInSession(input: {
     let firstJobMessageId: string | null = null;
     let reminderJobMessageId: string | null = null;
     let escalationJobMessageId: string | null = null;
+    const enqueueErrors: string[] = [];
+    let enqueueOk = 0;
+    let enqueueFailed = 0;
+    let firstSmsDeliveredImmediately = false;
+
     if (shouldSendNow) {
       const sent = await markInitialSent(checkIn.id);
-      if (!sent.ok && input.requireSmsSuccess) {
-        return { ok: false as const, message: sent.message };
+      firstSmsDeliveredImmediately = sent.ok;
+      if (!sent.ok) {
+        enqueueErrors.push(`firstImmediate: ${sent.message}`);
+        enqueueFailed += 1;
+        if (input.requireSmsSuccess) {
+          return { ok: false as const, message: sent.message };
+        }
+      } else {
+        enqueueOk += 1;
       }
     } else {
       const scheduled = await enqueueJsonJobAt(
@@ -463,12 +499,11 @@ export async function createCheckInSession(input: {
         scheduledFor,
       );
       if (!scheduled.ok) {
-        const sent = await markInitialSent(checkIn.id);
-        if (!sent.ok && input.requireSmsSuccess) {
-          return { ok: false as const, message: sent.message };
-        }
+        enqueueErrors.push(`first: ${scheduled.message}`);
+        enqueueFailed += 1;
       } else {
         firstJobMessageId = scheduled.messageId ?? null;
+        enqueueOk += 1;
       }
     }
 
@@ -476,8 +511,21 @@ export async function createCheckInSession(input: {
       enqueueJsonJobAt("/api/jobs/reminder", { checkInId: checkIn.id }, reminderAt),
       enqueueJsonJobAt("/api/jobs/escalation", { checkInId: checkIn.id }, escalationAt),
     ]);
-    if (reminderJob.ok) reminderJobMessageId = reminderJob.messageId ?? null;
-    if (escalationJob.ok) escalationJobMessageId = escalationJob.messageId ?? null;
+
+    if (reminderJob.ok) {
+      reminderJobMessageId = reminderJob.messageId ?? null;
+      enqueueOk += 1;
+    } else {
+      enqueueErrors.push(`reminder: ${reminderJob.message}`);
+      enqueueFailed += 1;
+    }
+    if (escalationJob.ok) {
+      escalationJobMessageId = escalationJob.messageId ?? null;
+      enqueueOk += 1;
+    } else {
+      enqueueErrors.push(`escalation: ${escalationJob.message}`);
+      enqueueFailed += 1;
+    }
 
     if (firstJobMessageId || reminderJobMessageId || escalationJobMessageId) {
       await prisma.checkIn.update({
@@ -490,9 +538,22 @@ export async function createCheckInSession(input: {
       });
     }
 
-    return { ok: true as const, checkIn };
-  } catch {
-    return { ok: false as const, message: "Database is not reachable right now." };
+    return {
+      ok: true as const,
+      checkIn,
+      enqueue: {
+        firstJobMessageId,
+        reminderJobMessageId,
+        escalationJobMessageId,
+        firstSmsDeliveredImmediately,
+        enqueueErrors,
+        enqueueOk,
+        enqueueFailed,
+      },
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Database is not reachable right now.";
+    return { ok: false as const, message };
   }
 }
 

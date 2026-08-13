@@ -15,6 +15,16 @@ const bodySchema = z.object({
   runImmediately: z.boolean().default(false),
 });
 
+type AdvanceDayResultEnqueue = {
+  firstJobMessageId: string | null;
+  reminderJobMessageId: string | null;
+  escalationJobMessageId: string | null;
+  firstSmsDeliveredImmediately: boolean;
+  enqueueErrors: string[];
+  enqueueOk: number;
+  enqueueFailed: number;
+};
+
 type AdvanceDayResult = {
   seniorId: string;
   subscriberId: string;
@@ -25,6 +35,7 @@ type AdvanceDayResult = {
   skipReason?: string;
   ok: boolean;
   message?: string;
+  enqueue?: AdvanceDayResultEnqueue;
 };
 
 export async function POST(request: Request) {
@@ -61,6 +72,9 @@ export async function POST(request: Request) {
     });
 
     const results: AdvanceDayResult[] = [];
+    let totalEnqueueOk = 0;
+    let totalEnqueueFailed = 0;
+    let immediateSmsDeliveredCount = 0;
 
     for (const senior of seniors) {
       if (!senior.subscriber || senior.subscriber.unsubscribedAt != null) {
@@ -162,6 +176,12 @@ export async function POST(request: Request) {
         scheduledFor,
       });
 
+      if (created.ok) {
+        totalEnqueueOk += created.enqueue.enqueueOk;
+        totalEnqueueFailed += created.enqueue.enqueueFailed;
+        if (created.enqueue.firstSmsDeliveredImmediately) immediateSmsDeliveredCount += 1;
+      }
+
       results.push({
         seniorId: senior.id,
         subscriberId: senior.subscriberId,
@@ -171,12 +191,16 @@ export async function POST(request: Request) {
         skipped: false,
         ok: created.ok,
         message: created.ok ? undefined : created.message,
+        enqueue: created.ok ? created.enqueue : undefined,
       });
     }
 
     const createdCount = results.filter((r) => r.created).length;
     const skippedCount = results.filter((r) => r.skipped).length;
     const failedCount = results.filter((r) => !r.ok).length;
+    const rowsWithAnyEnqueueFailure = results.filter(
+      (r) => r.enqueue && r.enqueue.enqueueFailed > 0,
+    ).length;
 
     return NextResponse.json({
       ok: true,
@@ -184,6 +208,12 @@ export async function POST(request: Request) {
       created: createdCount,
       skipped: skippedCount,
       failed: failedCount,
+      enqueueSummary: {
+        totalEnqueueOk,
+        totalEnqueueFailed,
+        rowsWithAnyEnqueueFailure,
+        immediateSmsDeliveredCount,
+      },
       results,
     });
   } catch (err) {
