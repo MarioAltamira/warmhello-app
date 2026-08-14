@@ -235,9 +235,9 @@ export function AuthPageContent({ sessionExpired = false }: AuthPageContentProps
           <form
             id="loginForm"
             className="form-grid"
-            autoComplete="on"
-            data-lpignore="false"
-            data-form-type="login"
+            autoComplete="off"
+            data-lpignore="true"
+            data-form-type="other"
             onSubmit={handleLoginSubmit}
             noValidate
           >
@@ -247,7 +247,7 @@ export function AuthPageContent({ sessionExpired = false }: AuthPageContentProps
                 form="loginForm"
                 type="email"
                 name="loginEmail"
-                autoComplete="username email"
+                autoComplete="off"
                 placeholder="jordan@example.com"
                 value={loginForm.email}
                 onChange={(event) => updateLoginField("email", event.target.value)}
@@ -259,7 +259,7 @@ export function AuthPageContent({ sessionExpired = false }: AuthPageContentProps
                 form="loginForm"
                 type="password"
                 name="loginPassword"
-                autoComplete="current-password"
+                autoComplete="new-password"
                 placeholder="Enter your password"
                 value={loginForm.password}
                 onChange={(event) => updateLoginField("password", event.target.value)}
