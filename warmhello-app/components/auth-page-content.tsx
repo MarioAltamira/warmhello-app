@@ -78,6 +78,14 @@ export function AuthPageContent({ sessionExpired = false }: AuthPageContentProps
     }));
   }
 
+  function resetSignupForm() {
+    setSignupForm({
+      fullName: "",
+      email: "",
+      password: "",
+    });
+  }
+
   function handleCreateAccount() {
     const trimmedName = signupForm.fullName.trim();
     const trimmedEmail = signupForm.email.trim();
@@ -91,6 +99,7 @@ export function AuthPageContent({ sessionExpired = false }: AuthPageContentProps
     destination.set("subscriberName", trimmedName);
     destination.set("subscriberEmail", trimmedEmail);
     setSignupStatus("");
+    resetSignupForm();
     router.push(`/onboard?${destination.toString()}`);
   }
 
@@ -151,6 +160,8 @@ export function AuthPageContent({ sessionExpired = false }: AuthPageContentProps
               Full name
               <input
                 type="text"
+                name="signupName"
+                autoComplete="name"
                 placeholder="Jordan Miller"
                 value={signupForm.fullName}
                 onChange={(event) => updateSignupField("fullName", event.target.value)}
@@ -160,6 +171,8 @@ export function AuthPageContent({ sessionExpired = false }: AuthPageContentProps
               Email address
               <input
                 type="email"
+                name="signupEmail"
+                autoComplete="email"
                 placeholder="jordan@example.com"
                 value={signupForm.email}
                 onChange={(event) => updateSignupField("email", event.target.value)}
@@ -169,6 +182,8 @@ export function AuthPageContent({ sessionExpired = false }: AuthPageContentProps
               Password
               <input
                 type="password"
+                name="signupPassword"
+                autoComplete="new-password"
                 placeholder="Create a password"
                 value={signupForm.password}
                 onChange={(event) => updateSignupField("password", event.target.value)}
@@ -200,6 +215,8 @@ export function AuthPageContent({ sessionExpired = false }: AuthPageContentProps
               Email address
               <input
                 type="email"
+                name="loginEmail"
+                autoComplete="username email"
                 placeholder="jordan@example.com"
                 value={loginForm.email}
                 onChange={(event) => updateLoginField("email", event.target.value)}
@@ -209,6 +226,8 @@ export function AuthPageContent({ sessionExpired = false }: AuthPageContentProps
               Password
               <input
                 type="password"
+                name="loginPassword"
+                autoComplete="current-password"
                 placeholder="Enter your password"
                 value={loginForm.password}
                 onChange={(event) => updateLoginField("password", event.target.value)}
