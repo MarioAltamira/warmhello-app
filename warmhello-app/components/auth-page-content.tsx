@@ -140,6 +140,16 @@ export function AuthPageContent({ sessionExpired = false }: AuthPageContentProps
     }
   }
 
+  function handleSignupSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    handleCreateAccount();
+  }
+
+  function handleLoginSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    handleLogin();
+  }
+
   return (
     <main className="shell">
       <section className="card auth-hero">
@@ -155,13 +165,22 @@ export function AuthPageContent({ sessionExpired = false }: AuthPageContentProps
           <p className="auth-copy">
             Create your account, then continue into the setup flow for your family.
           </p>
-          <div className="form-grid">
+          <form
+            id="signupForm"
+            className="form-grid"
+            autoComplete="off"
+            data-lpignore="true"
+            data-form-type="other"
+            onSubmit={handleSignupSubmit}
+            noValidate
+          >
             <label>
               Full name
               <input
+                form="signupForm"
                 type="text"
                 name="signupName"
-                autoComplete="name"
+                autoComplete="off"
                 placeholder="Jordan Miller"
                 value={signupForm.fullName}
                 onChange={(event) => updateSignupField("fullName", event.target.value)}
@@ -170,9 +189,10 @@ export function AuthPageContent({ sessionExpired = false }: AuthPageContentProps
             <label>
               Email address
               <input
+                form="signupForm"
                 type="email"
                 name="signupEmail"
-                autoComplete="email"
+                autoComplete="off"
                 placeholder="jordan@example.com"
                 value={signupForm.email}
                 onChange={(event) => updateSignupField("email", event.target.value)}
@@ -181,6 +201,7 @@ export function AuthPageContent({ sessionExpired = false }: AuthPageContentProps
             <label>
               Password
               <input
+                form="signupForm"
                 type="password"
                 name="signupPassword"
                 autoComplete="new-password"
@@ -189,9 +210,10 @@ export function AuthPageContent({ sessionExpired = false }: AuthPageContentProps
                 onChange={(event) => updateSignupField("password", event.target.value)}
               />
             </label>
-          </div>
+          </form>
           <button
-            type="button"
+            type="submit"
+            form="signupForm"
             className="button primary auth-submit"
             onClick={handleCreateAccount}
             disabled={submitting === "signup"}
@@ -210,10 +232,19 @@ export function AuthPageContent({ sessionExpired = false }: AuthPageContentProps
           {showSessionExpiredMessage ? (
             <p className="auth-copy">Session expired, please log in again.</p>
           ) : null}
-          <div className="form-grid">
+          <form
+            id="loginForm"
+            className="form-grid"
+            autoComplete="on"
+            data-lpignore="false"
+            data-form-type="login"
+            onSubmit={handleLoginSubmit}
+            noValidate
+          >
             <label>
               Email address
               <input
+                form="loginForm"
                 type="email"
                 name="loginEmail"
                 autoComplete="username email"
@@ -225,6 +256,7 @@ export function AuthPageContent({ sessionExpired = false }: AuthPageContentProps
             <label>
               Password
               <input
+                form="loginForm"
                 type="password"
                 name="loginPassword"
                 autoComplete="current-password"
@@ -233,9 +265,10 @@ export function AuthPageContent({ sessionExpired = false }: AuthPageContentProps
                 onChange={(event) => updateLoginField("password", event.target.value)}
               />
             </label>
-          </div>
+          </form>
           <button
-            type="button"
+            type="submit"
+            form="loginForm"
             className="button secondary auth-submit"
             onClick={handleLogin}
             disabled={submitting === "login"}

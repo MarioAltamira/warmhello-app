@@ -2,9 +2,6 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import CurrencyToggle from "@/components/currency-toggle";
-import { SmartBuyNowButton } from "@/components/smart-buy-now-button";
-import type { BillingCurrency } from "@/lib/pricing";
 import { pricingPlanFor } from "@/lib/pricing";
 
 type SectionKey = "privacy" | "terms" | "about" | "contact" | "howto" | "faq";
@@ -19,25 +16,10 @@ const sectionLabels: Record<SectionKey, string> = {
   faq: "FAQ",
 };
 
-type Props = { initialCurrency?: BillingCurrency | string | null };
+type Props = { initialCurrency?: unknown };
 
-export function LegalLinksPanel({ initialCurrency }: Props) {
+export function LegalLinksPanel(_props: Props) {
   const [activeSection, setActiveSection] = useState<SectionKey | null>(null);
-  const [currency, setCurrency] = useState<BillingCurrency>(() => {
-    const raw = initialCurrency;
-    if (raw === "USD" || raw === "CAD") return raw;
-    if (typeof document !== "undefined") {
-      const match = document.cookie
-        .split("; ")
-        .map((chunk) => chunk.split("="))
-        .find(([name]) => name === "wh_billing_currency");
-      const fromCookie = match ? decodeURIComponent(match[1]) : null;
-      if (fromCookie === "USD" || fromCookie === "CAD") return fromCookie;
-    }
-    const lang = (typeof navigator !== "undefined" && navigator.language) || "";
-    if (/(-ca|fr-ca|en-ca)/i.test(lang)) return "CAD";
-    return "USD";
-  });
   const [contactForm, setContactForm] = useState({
     name: "",
     email: "",
@@ -45,7 +27,7 @@ export function LegalLinksPanel({ initialCurrency }: Props) {
   });
   const [contactSubmitting, setContactSubmitting] = useState(false);
   const [contactStatus, setContactStatus] = useState("");
-  const plan = pricingPlanFor(currency);
+  const plan = pricingPlanFor("USD");
 
   function toggleSection(section: SectionKey) {
     setActiveSection((current) => (current === section ? null : section));
@@ -117,12 +99,6 @@ export function LegalLinksPanel({ initialCurrency }: Props) {
     <section className="section">
       <div className="card footer-links-card">
         <h3 className="footer-brand">Warm-Hello</h3>
-        <div className="footer-cta-row">
-          <SmartBuyNowButton className="button buy-now-button footer-buy-cta" />
-          <div style={{ marginLeft: "auto" }}>
-            <CurrencyToggle initial={currency} compact onChanged={(next) => setCurrency(next)} />
-          </div>
-        </div>
         <p className="footer-links-heading">
           <strong>Quick Links</strong>
         </p>
