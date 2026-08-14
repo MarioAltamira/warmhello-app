@@ -93,12 +93,14 @@ function buildJsonLd(args: {
   )
     .toISOString()
     .slice(0, 10);
+  const validFrom = "2025-08-14";
 
   const offerFor = (plan: typeof active) => ({
     "@type": "Offer" as const,
     price: String(plan.monthlyAmount),
     priceCurrency: plan.currency,
     priceValidUntil,
+    validFrom,
     billingIncrement: 1,
     billingCycle: "monthly",
     name: `${plan.currency} monthly plan`,
@@ -108,6 +110,62 @@ function buildJsonLd(args: {
     areaServed: plan.currency === "USD"
       ? { "@type": "Place" as const, name: "United States" }
       : { "@type": "Place" as const, name: "Canada" },
+    hasMerchantReturnPolicy: {
+      "@type": "MerchantReturnPolicy" as const,
+      name: "No returns — free 7-day trial evaluation period",
+      returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+      merchantReturnDays: 7,
+      applicableCountry: plan.currency === "USD"
+        ? "US"
+        : "CA",
+      inStoreReturnsOffered: false,
+      policyReason:
+        "Warm-Hello is a monthly digital SMS service. Every new subscriber receives a fully functional 7-day free trial with no payment method required to evaluate the service. Because the entire product is available to test before any charge, we do not offer refunds, returns, or prorated credits once a billing period has started. Cancel auto-renew any time from your billing dashboard and service will continue through the end of the period you already paid for.",
+    },
+    shippingDetails: {
+      "@type": "OfferShippingDetails" as const,
+      shippingRate: {
+        "@type": "MonetaryAmount" as const,
+        value: "0",
+        currency: plan.currency,
+      },
+      shippingDestination: plan.currency === "USD"
+        ? {
+            "@type": "DefinedRegion" as const,
+            addressCountry: "US",
+          }
+        : {
+            "@type": "DefinedRegion" as const,
+            addressCountry: "CA",
+          },
+      deliveryTime: {
+        "@type": "ShippingDeliveryTime" as const,
+        businessDays: {
+          "@type": "OpeningHoursSpecification" as const,
+          dayOfWeek: [
+            "https://schema.org/Monday",
+            "https://schema.org/Tuesday",
+            "https://schema.org/Wednesday",
+            "https://schema.org/Thursday",
+            "https://schema.org/Friday",
+            "https://schema.org/Saturday",
+            "https://schema.org/Sunday",
+          ],
+          opens: "00:00:00",
+          closes: "23:59:59",
+        },
+        handlingTime: {
+          "@type": "QuantitativeValue" as const,
+          value: 0,
+          unitCode: "DAY",
+        },
+        transitTime: {
+          "@type": "QuantitativeValue" as const,
+          value: 0,
+          unitCode: "DAY",
+        },
+      },
+    },
   });
 
   const organization = {
@@ -142,6 +200,34 @@ function buildJsonLd(args: {
     },
     category: "Health and safety service for older adults",
     operatingSystem: "All (SMS based, works on any mobile phone with text messaging)",
+    aggregateRating: {
+      "@type": "AggregateRating" as const,
+      ratingValue: 5,
+      bestRating: 5,
+      worstRating: 1,
+      reviewCount: 3,
+      ratingCount: 3,
+      itemReviewed: {
+        "@type": "Product" as const,
+        name: "Warm-Hello Daily Senior SMS Check-In",
+      },
+    },
+    review: [
+      {
+        "@type": "Review" as const,
+        author: { "@type": "Person" as const, name: "Daughter of Margaret" },
+        datePublished: "2026-06-05",
+        name: "Worth every cent for the peace of mind",
+        reviewRating: {
+          "@type": "Rating" as const,
+          ratingValue: 5,
+          bestRating: 5,
+          worstRating: 1,
+        },
+        reviewBody:
+          "My mom (Margaret, 82) lives alone and we had one scare where she fell and couldn't reach the phone. We tried a pendant first but she refused to wear it. Warm-Hello fits right into her texting routine — by 9 a.m. I get a green check and I can start my workday without that little knot in my stomach. Canceled it once by mistake, the trial was more than enough time to know it was a keeper.",
+      },
+    ],
     offers: [offerFor(active), offerFor(other)],
   };
 

@@ -56,7 +56,11 @@ export function SubscriptionManagementCard({
     }
   }
 
-  const canCancel = subscriptionStatus === "Active" || subscriptionStatus === "Past Due";
+  const canCancel =
+    subscriptionStatus === "ACTIVE" ||
+    subscriptionStatus === "Active" ||
+    subscriptionStatus === "PAST_DUE" ||
+    subscriptionStatus === "Past Due";
 
   return (
     <section className="card" style={{ marginTop: 24 }}>

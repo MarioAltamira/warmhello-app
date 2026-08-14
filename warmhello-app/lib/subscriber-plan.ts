@@ -57,15 +57,23 @@ export function getSubscriberPlanSummary(input: {
   now?: Date;
 }) {
   const now = input.now ?? new Date();
-  const trialEndsAt = addDays(input.created, TRIAL_LENGTH_DAYS);
+  const createdPlus7 = addDays(input.created, TRIAL_LENGTH_DAYS);
+  const explicitEnd = input.currentPeriodEndsAt ?? null;
+
+  let trialEndsAt: Date;
+  if (input.subscriptionStatus === "TRIAL" && explicitEnd) {
+    trialEndsAt = explicitEnd.getTime() > createdPlus7.getTime() ? explicitEnd : createdPlus7;
+  } else {
+    trialEndsAt = createdPlus7;
+  }
+
   const isFreeTrial = input.subscriptionStatus === "TRIAL";
   const isTrialExpired = isFreeTrial && trialEndsAt.getTime() <= now.getTime();
   const isPaidSubscriber = input.subscriptionStatus === "ACTIVE";
 
-  const explicitPaidEnd = input.currentPeriodEndsAt ?? null;
   let periodEndsAt: Date;
-  if (explicitPaidEnd) {
-    periodEndsAt = explicitPaidEnd;
+  if (explicitEnd) {
+    periodEndsAt = explicitEnd;
   } else if (isPaidSubscriber || input.subscriptionStatus === "CANCELED") {
     periodEndsAt = trialEndsAt;
   } else {

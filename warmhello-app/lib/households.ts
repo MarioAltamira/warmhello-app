@@ -1,10 +1,29 @@
 import { createCheckInSession } from "@/lib/checkins";
 import { getNextOccurrenceAtHourInTimeZone } from "@/lib/dates";
+import { normalizePhone } from "@/lib/phone";
 import { prisma } from "@/lib/prisma";
 import { BillingCurrency, isBillingCurrency } from "@/lib/pricing";
 import { getSubscriberPlanSummary } from "@/lib/subscriber-plan";
 import { normalizeTimeZone } from "@/lib/timezones";
 import { sendTrialWelcomeEmail } from "@/lib/trial-emails";
+
+function normalizePhoneInput(input: CreateHouseholdInput): CreateHouseholdInput {
+  return {
+    ...input,
+    subscriber: {
+      ...input.subscriber,
+      phoneNumber: normalizePhone(input.subscriber.phoneNumber),
+    },
+    senior: {
+      ...input.senior,
+      phoneNumber: normalizePhone(input.senior.phoneNumber),
+    },
+    primaryContact: {
+      ...input.primaryContact,
+      phoneNumber: normalizePhone(input.primaryContact.phoneNumber),
+    },
+  };
+}
 
 export type CreateHouseholdInput = {
   subscriber: {
@@ -21,6 +40,7 @@ export type CreateHouseholdInput = {
     checkInHour: number;
     checkInMinute: number;
     secondAttemptHours: number;
+    active: boolean;
   };
   primaryContact: {
     fullName: string;
@@ -78,6 +98,7 @@ export async function getHouseholdForSubscriber(subscriberId: string) {
         checkInHour: senior.checkInHour,
         checkInMinute: senior.checkInMinute,
         secondAttemptHours: senior.secondAttemptHours,
+        active: senior.active,
       },
       contact: {
         id: contact.id,
@@ -98,8 +119,9 @@ export async function createHousehold(input: CreateHouseholdInput) {
   }
 
   try {
+    const normalized = normalizePhoneInput(input);
     const existingSubscriber = await prisma.subscriber.findUnique({
-      where: { email: input.subscriber.email },
+      where: { email: normalized.subscriber.email },
     });
 
     if (existingSubscriber) {
@@ -114,15 +136,15 @@ export async function createHousehold(input: CreateHouseholdInput) {
       const trialEndsAt = new Date(now);
       trialEndsAt.setDate(trialEndsAt.getDate() + 7);
 
-      const billingCurrency: BillingCurrency = isBillingCurrency(input.subscriber.billingCurrency)
-        ? input.subscriber.billingCurrency
+      const billingCurrency: BillingCurrency = isBillingCurrency(normalized.subscriber.billingCurrency)
+        ? normalized.subscriber.billingCurrency
         : "USD";
 
       const subscriber = await tx.subscriber.create({
         data: {
-          email: input.subscriber.email,
-          fullName: input.subscriber.fullName,
-          phoneNumber: input.subscriber.phoneNumber,
+          email: normalized.subscriber.email,
+          fullName: normalized.subscriber.fullName,
+          phoneNumber: normalized.subscriber.phoneNumber,
           subscriptionStatus: "TRIAL",
           billingCurrency,
           currentPeriodEndsAt: trialEndsAt,
@@ -133,13 +155,14 @@ export async function createHousehold(input: CreateHouseholdInput) {
       const senior = await tx.senior.create({
         data: {
           subscriberId: subscriber.id,
-          firstName: input.senior.firstName,
-          lastName: input.senior.lastName,
-          phoneNumber: input.senior.phoneNumber,
-          timezone: input.senior.timezone,
-          checkInHour: input.senior.checkInHour,
-          checkInMinute: input.senior.checkInMinute,
-          secondAttemptHours: input.senior.secondAttemptHours,
+          firstName: normalized.senior.firstName,
+          lastName: normalized.senior.lastName,
+          phoneNumber: normalized.senior.phoneNumber,
+          timezone: normalized.senior.timezone,
+          checkInHour: normalized.senior.checkInHour,
+          checkInMinute: normalized.senior.checkInMinute,
+          secondAttemptHours: normalized.senior.secondAttemptHours,
+          active: normalized.senior.active,
         },
       });
 
@@ -147,9 +170,9 @@ export async function createHousehold(input: CreateHouseholdInput) {
         data: {
           subscriberId: subscriber.id,
           seniorId: senior.id,
-          fullName: input.primaryContact.fullName,
-          relationship: input.primaryContact.relationship,
-          phoneNumber: input.primaryContact.phoneNumber,
+          fullName: normalized.primaryContact.fullName,
+          relationship: normalized.primaryContact.relationship,
+          phoneNumber: normalized.primaryContact.phoneNumber,
           priority: 1,
         },
       });
@@ -157,11 +180,11 @@ export async function createHousehold(input: CreateHouseholdInput) {
       return { subscriber, senior, contact };
     });
 
-    const timeZone = normalizeTimeZone(input.senior.timezone);
+    const timeZone = normalizeTimeZone(normalized.senior.timezone);
     const firstScheduledFor = getNextOccurrenceAtHourInTimeZone({
       timeZone,
-      hour: input.senior.checkInHour,
-      minute: input.senior.checkInMinute,
+      hour: normalized.senior.checkInHour,
+      minute: normalized.senior.checkInMinute,
     });
 
     const firstCheckIn = await createCheckInSession({
@@ -202,6 +225,7 @@ export async function updateHousehold(subscriberId: string, input: CreateHouseho
   }
 
   try {
+    const normalized = normalizePhoneInput(input);
     const existingSubscriber = await prisma.subscriber.findUnique({
       where: { id: subscriberId },
       include: {
@@ -221,7 +245,7 @@ export async function updateHousehold(subscriberId: string, input: CreateHouseho
     }
 
     const emailOwner = await prisma.subscriber.findUnique({
-      where: { email: input.subscriber.email },
+      where: { email: normalized.subscriber.email },
     });
 
     if (emailOwner && emailOwner.id !== subscriberId) {
@@ -232,16 +256,16 @@ export async function updateHousehold(subscriberId: string, input: CreateHouseho
     }
 
     const result = await prisma.$transaction(async (tx) => {
-      const billingCurrency: BillingCurrency = isBillingCurrency(input.subscriber.billingCurrency)
-        ? input.subscriber.billingCurrency
+      const billingCurrency: BillingCurrency = isBillingCurrency(normalized.subscriber.billingCurrency)
+        ? normalized.subscriber.billingCurrency
         : existingSubscriber.billingCurrency;
 
       const subscriber = await tx.subscriber.update({
         where: { id: subscriberId },
         data: {
-          email: input.subscriber.email,
-          fullName: input.subscriber.fullName,
-          phoneNumber: input.subscriber.phoneNumber,
+          email: normalized.subscriber.email,
+          fullName: normalized.subscriber.fullName,
+          phoneNumber: normalized.subscriber.phoneNumber,
           billingCurrency,
         },
       });
@@ -250,25 +274,27 @@ export async function updateHousehold(subscriberId: string, input: CreateHouseho
         ? await tx.senior.update({
             where: { id: existingSubscriber.seniors[0].id },
             data: {
-              firstName: input.senior.firstName,
-              lastName: input.senior.lastName,
-              phoneNumber: input.senior.phoneNumber,
-              timezone: input.senior.timezone,
-              checkInHour: input.senior.checkInHour,
-              checkInMinute: input.senior.checkInMinute,
-              secondAttemptHours: input.senior.secondAttemptHours,
+              firstName: normalized.senior.firstName,
+              lastName: normalized.senior.lastName,
+              phoneNumber: normalized.senior.phoneNumber,
+              timezone: normalized.senior.timezone,
+              checkInHour: normalized.senior.checkInHour,
+              checkInMinute: normalized.senior.checkInMinute,
+              secondAttemptHours: normalized.senior.secondAttemptHours,
+              active: normalized.senior.active,
             },
           })
         : await tx.senior.create({
             data: {
               subscriberId,
-              firstName: input.senior.firstName,
-              lastName: input.senior.lastName,
-              phoneNumber: input.senior.phoneNumber,
-              timezone: input.senior.timezone,
-              checkInHour: input.senior.checkInHour,
-              checkInMinute: input.senior.checkInMinute,
-              secondAttemptHours: input.senior.secondAttemptHours,
+              firstName: normalized.senior.firstName,
+              lastName: normalized.senior.lastName,
+              phoneNumber: normalized.senior.phoneNumber,
+              timezone: normalized.senior.timezone,
+              checkInHour: normalized.senior.checkInHour,
+              checkInMinute: normalized.senior.checkInMinute,
+              secondAttemptHours: normalized.senior.secondAttemptHours,
+              active: normalized.senior.active,
             },
           });
 
@@ -276,9 +302,9 @@ export async function updateHousehold(subscriberId: string, input: CreateHouseho
         ? await tx.contact.update({
             where: { id: existingSubscriber.contacts[0].id },
             data: {
-              fullName: input.primaryContact.fullName,
-              relationship: input.primaryContact.relationship,
-              phoneNumber: input.primaryContact.phoneNumber,
+              fullName: normalized.primaryContact.fullName,
+              relationship: normalized.primaryContact.relationship,
+              phoneNumber: normalized.primaryContact.phoneNumber,
               seniorId: senior.id,
             },
           })
@@ -286,9 +312,9 @@ export async function updateHousehold(subscriberId: string, input: CreateHouseho
             data: {
               subscriberId,
               seniorId: senior.id,
-              fullName: input.primaryContact.fullName,
-              relationship: input.primaryContact.relationship,
-              phoneNumber: input.primaryContact.phoneNumber,
+              fullName: normalized.primaryContact.fullName,
+              relationship: normalized.primaryContact.relationship,
+              phoneNumber: normalized.primaryContact.phoneNumber,
               priority: 1,
             },
           });

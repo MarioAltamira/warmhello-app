@@ -9,6 +9,7 @@ import { shouldSendCheckInMessaging } from "@/lib/subscriber-lifecycle";
 import { getNextOccurrenceAtHourInTimeZone } from "@/lib/dates";
 import { normalizeTimeZone } from "@/lib/timezones";
 import { verifyJobSecret } from "@/lib/qstash";
+import { isSeniorActive } from "@/lib/senior-active";
 import { z } from "zod";
 
 const bodySchema = z.object({
@@ -64,6 +65,7 @@ export async function POST(request: Request) {
             id: true,
             subscriptionStatus: true,
             created: true,
+            currentPeriodEndsAt: true,
             unsubscribedAt: true,
           },
         },
@@ -91,6 +93,20 @@ export async function POST(request: Request) {
         continue;
       }
 
+      if (!isSeniorActive(senior)) {
+        results.push({
+          seniorId: senior.id,
+          subscriberId: senior.subscriberId,
+          seniorName: `${senior.firstName} ${senior.lastName}`,
+          scheduledFor: null,
+          created: false,
+          skipped: true,
+          skipReason: "senior_toggled_inactive",
+          ok: true,
+        });
+        continue;
+      }
+
       const canSend = shouldSendCheckInMessaging({
         subscriptionStatus: senior.subscriber.subscriptionStatus as
           | "TRIAL"
@@ -98,6 +114,7 @@ export async function POST(request: Request) {
           | "PAST_DUE"
           | "CANCELED",
         created: senior.subscriber.created,
+        currentPeriodEndsAt: senior.subscriber.currentPeriodEndsAt,
         now,
       });
       if (!canSend) {

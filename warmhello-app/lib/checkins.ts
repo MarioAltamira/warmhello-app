@@ -330,7 +330,7 @@ export async function markInitialSent(checkInId: string) {
       include: {
         senior: true,
         subscriber: {
-          select: { id: true, subscriptionStatus: true, created: true },
+          select: { id: true, subscriptionStatus: true, created: true, currentPeriodEndsAt: true },
         },
       },
     });
@@ -344,6 +344,7 @@ export async function markInitialSent(checkInId: string) {
       !shouldSendCheckInMessaging({
         subscriptionStatus: checkIn.subscriber.subscriptionStatus,
         created: checkIn.subscriber.created,
+        currentPeriodEndsAt: checkIn.subscriber.currentPeriodEndsAt,
       })
     ) {
       return {
@@ -435,6 +436,7 @@ export async function createCheckInSession(input: {
       !shouldSendCheckInMessaging({
         subscriptionStatus: senior.subscriber.subscriptionStatus,
         created: senior.subscriber.created,
+        currentPeriodEndsAt: senior.subscriber.currentPeriodEndsAt,
       })
     ) {
       return {
@@ -570,7 +572,7 @@ export async function markReminderSent(checkInId: string) {
       include: {
         senior: true,
         subscriber: {
-          select: { id: true, subscriptionStatus: true, created: true },
+          select: { id: true, subscriptionStatus: true, created: true, currentPeriodEndsAt: true },
         },
       },
     });
@@ -584,6 +586,7 @@ export async function markReminderSent(checkInId: string) {
       !shouldSendCheckInMessaging({
         subscriptionStatus: checkIn.subscriber.subscriptionStatus,
         created: checkIn.subscriber.created,
+        currentPeriodEndsAt: checkIn.subscriber.currentPeriodEndsAt,
       })
     ) {
       return {
@@ -644,7 +647,7 @@ export async function markEscalationSent(checkInId: string) {
       include: {
         senior: true,
         subscriber: {
-          select: { id: true, subscriptionStatus: true, created: true },
+          select: { id: true, subscriptionStatus: true, created: true, currentPeriodEndsAt: true },
         },
       },
     });
@@ -658,6 +661,7 @@ export async function markEscalationSent(checkInId: string) {
       !shouldSendCheckInMessaging({
         subscriptionStatus: checkIn.subscriber.subscriptionStatus,
         created: checkIn.subscriber.created,
+        currentPeriodEndsAt: checkIn.subscriber.currentPeriodEndsAt,
       })
     ) {
       return {

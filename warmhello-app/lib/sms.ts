@@ -1,4 +1,5 @@
 import { env } from "@/lib/env";
+import { normalizePhone } from "@/lib/phone";
 import { prisma } from "@/lib/prisma";
 
 type SmsResult =
@@ -22,6 +23,8 @@ export async function sendSms(
     };
   }
 
+  const normalizedTo = normalizePhone(to);
+
   const response = await fetch("https://api.telnyx.com/v2/messages", {
     method: "POST",
     headers: {
@@ -30,7 +33,7 @@ export async function sendSms(
     },
     body: JSON.stringify({
       from: env.TELNYX_FROM_NUMBER,
-      to,
+      to: normalizedTo,
       text: body,
     }),
   });
@@ -45,7 +48,7 @@ export async function sendSms(
           provider: "telnyx",
           kind: meta?.kind ?? null,
           fromNumber: env.TELNYX_FROM_NUMBER,
-          toNumber: to,
+          toNumber: normalizedTo,
           body,
           subscriberId: meta?.subscriberId ?? null,
           seniorId: meta?.seniorId ?? null,
@@ -73,7 +76,7 @@ export async function sendSms(
         providerMessageId: data.data?.id ?? null,
         kind: meta?.kind ?? null,
         fromNumber: env.TELNYX_FROM_NUMBER,
-        toNumber: to,
+        toNumber: normalizedTo,
         body,
         subscriberId: meta?.subscriberId ?? null,
         seniorId: meta?.seniorId ?? null,

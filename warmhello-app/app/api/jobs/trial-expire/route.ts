@@ -46,6 +46,7 @@ export async function POST(request: Request) {
     const summary = getSubscriberPlanSummary({
       created: subscriber.created,
       subscriptionStatus: subscriber.subscriptionStatus,
+      currentPeriodEndsAt: subscriber.currentPeriodEndsAt,
     });
 
     if (subscriber.subscriptionStatus !== "TRIAL") {
@@ -55,6 +56,7 @@ export async function POST(request: Request) {
       });
     }
 
+    let newStatus: "TRIAL" | "ACTIVE" | "PAST_DUE" | "CANCELED" = subscriber.subscriptionStatus as any;
     if (summary.isFreeTrial && summary.isTrialExpired) {
       await prisma.subscriber.update({
         where: { id: subscriber.id },
@@ -63,14 +65,18 @@ export async function POST(request: Request) {
           currentPeriodEndsAt: summary.trialEndsAt,
         },
       });
+      newStatus = "PAST_DUE";
     }
 
     const canSendSms = shouldSendCheckInMessaging({
-      subscriptionStatus: subscriber.subscriptionStatus,
+      subscriptionStatus: newStatus,
       created: subscriber.created,
+      currentPeriodEndsAt: subscriber.currentPeriodEndsAt ?? summary.trialEndsAt,
     });
 
-    if (canSendSms && subscriber.seniors[0]) {
+    const shouldSendTrialThankYouSms = summary.isFreeTrial && summary.isTrialExpired;
+
+    if (subscriber.seniors[0] && shouldSendTrialThankYouSms) {
       const body = buildThankYouSmsBody({
         seniorFirstName: subscriber.seniors[0].firstName,
         subscriberName: subscriber.fullName,

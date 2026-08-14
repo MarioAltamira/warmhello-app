@@ -25,6 +25,7 @@ const bodySchema = z.object({
       .max(45)
       .refine((value) => value % 15 === 0),
     secondAttemptHours: z.number().int().min(1).max(3),
+    active: z.boolean().default(true),
   }),
   primaryContact: z.object({
     fullName: z.string().min(2),

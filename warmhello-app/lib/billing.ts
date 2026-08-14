@@ -2,12 +2,18 @@ import type Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { BillingCurrency, isBillingCurrency } from "@/lib/pricing";
 
-function mapStripeSubscriptionStatus(status: string) {
-  if (status === "active" || status === "trialing") {
+function mapStripeSubscriptionStatus(
+  subscription: Pick<Stripe.Subscription, "status" | "cancel_at_period_end">,
+) {
+  if (subscription.cancel_at_period_end && (subscription.status === "active" || subscription.status === "trialing")) {
+    return "CANCELED" as const;
+  }
+
+  if (subscription.status === "active" || subscription.status === "trialing") {
     return "ACTIVE" as const;
   }
 
-  if (status === "past_due" || status === "unpaid") {
+  if (subscription.status === "past_due" || subscription.status === "unpaid") {
     return "PAST_DUE" as const;
   }
 
@@ -123,7 +129,7 @@ export async function applyStripeEvent(event: Stripe.Event) {
         data: {
           stripeCustomerId: customerId,
           stripeSubscriptionId: subscription.id,
-          subscriptionStatus: mapStripeSubscriptionStatus(subscription.status),
+          subscriptionStatus: mapStripeSubscriptionStatus(subscription),
           billingCurrency: billingCurrencyFromStripe,
           currentPeriodEndsAt: currentPeriodEndsAt ?? undefined,
         },

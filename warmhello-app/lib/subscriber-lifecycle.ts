@@ -1,10 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { getSubscriberPlanSummary } from "@/lib/subscriber-plan";
 import { addDays, addHours } from "@/lib/dates";
+import { isSeniorActive } from "@/lib/senior-active";
 
 export function shouldSendCheckInMessaging(input: {
   subscriptionStatus: "TRIAL" | "ACTIVE" | "PAST_DUE" | "CANCELED";
   created: Date;
+  currentPeriodEndsAt?: Date | null;
   now?: Date;
 }) {
   if (input.subscriptionStatus === "ACTIVE") {
@@ -15,8 +17,20 @@ export function shouldSendCheckInMessaging(input: {
     const plan = getSubscriberPlanSummary({
       created: input.created,
       subscriptionStatus: "TRIAL",
+      currentPeriodEndsAt: input.currentPeriodEndsAt ?? null,
+      now: input.now,
     });
     return !plan.isTrialExpired;
+  }
+
+  if (input.subscriptionStatus === "CANCELED") {
+    const plan = getSubscriberPlanSummary({
+      created: input.created,
+      subscriptionStatus: "CANCELED",
+      currentPeriodEndsAt: input.currentPeriodEndsAt ?? null,
+      now: input.now,
+    });
+    return !plan.periodHasExpired;
   }
 
   return false;
@@ -33,6 +47,7 @@ export async function getActiveSubscriberForSmsOrSchedule(subscriberId: string) 
       id: true,
       subscriptionStatus: true,
       created: true,
+      currentPeriodEndsAt: true,
       seniors: {
         orderBy: { createdAt: "asc" },
         take: 1,
@@ -65,6 +80,7 @@ export async function getActiveSubscriberForSmsOrSchedule(subscriberId: string) 
   const canSend = shouldSendCheckInMessaging({
     subscriptionStatus: subscriber.subscriptionStatus,
     created: subscriber.created,
+    currentPeriodEndsAt: subscriber.currentPeriodEndsAt,
   });
 
   if (!canSend) {
@@ -72,7 +88,7 @@ export async function getActiveSubscriberForSmsOrSchedule(subscriberId: string) 
   }
 
   const senior = subscriber.seniors[0] ?? null;
-  if (!senior || !senior.active) {
+  if (!senior || !isSeniorActive(senior)) {
     return null;
   }
 

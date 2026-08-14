@@ -30,6 +30,7 @@ type HouseholdResponse = {
       checkInHour?: number;
       checkInMinute?: number;
       secondAttemptHours?: number;
+      active?: boolean;
     };
     contact: {
       id: string;
@@ -57,6 +58,7 @@ type CurrentHousehold = {
     checkInHour: number;
     checkInMinute: number;
     secondAttemptHours: number;
+    active: boolean;
   };
   contact: {
     id: string;
@@ -113,9 +115,27 @@ const initialForm = {
   timezone: "America/Toronto",
   checkInTime: "540",
   secondAttemptHours: "1",
+  seniorActive: true,
   contactName: "David Johnson",
   contactRelationship: "Son",
   contactPhone: "+15551230003",
+};
+
+const blankDefaultForm = {
+  subscriberName: "",
+  subscriberEmail: "",
+  subscriberPhone: "",
+  billingCurrency: "USD" as BillingCurrency,
+  seniorFirstName: "",
+  seniorLastName: "",
+  seniorPhone: "",
+  timezone: "America/Toronto",
+  checkInTime: "540",
+  secondAttemptHours: "1",
+  seniorActive: true,
+  contactName: "",
+  contactRelationship: "",
+  contactPhone: "",
 };
 
 function buildInitialForm(
@@ -136,6 +156,7 @@ function buildInitialForm(
         currentHousehold.senior.checkInHour * 60 + currentHousehold.senior.checkInMinute,
       ),
       secondAttemptHours: String(currentHousehold.senior.secondAttemptHours),
+      seniorActive: currentHousehold.senior.active,
       contactName: currentHousehold.contact.fullName,
       contactRelationship: currentHousehold.contact.relationship,
       contactPhone: currentHousehold.contact.phoneNumber,
@@ -180,6 +201,7 @@ export function OnboardingForm({
   const [form, setForm] = useState(resolvedInitialForm);
   const [submitting, setSubmitting] = useState(false);
   const submitIntent = useRef<"save" | "saveAndTest">("save");
+  const priorActiveRef = useRef<boolean | null>(null);
   const [statusMessage, setStatusMessage] = useState("");
   const [savedHousehold, setSavedHousehold] = useState<HouseholdResponse["household"]>();
   const [firstCheckIn, setFirstCheckIn] = useState<HouseholdResponse["firstCheckIn"]>();
@@ -196,6 +218,13 @@ export function OnboardingForm({
     setForm((current) => ({
       ...current,
       [name]: value,
+    }));
+  }
+
+  function updateActiveField(value: boolean) {
+    setForm((current) => ({
+      ...current,
+      seniorActive: value,
     }));
   }
 
@@ -244,6 +273,7 @@ export function OnboardingForm({
     setFirstCheckInMessage(undefined);
     setTestMessage(undefined);
     setTestCheckInToken(undefined);
+    priorActiveRef.current = form.seniorActive;
     setStatusMessage(editMode ? "Updating household..." : "Creating household...");
 
     try {
@@ -266,6 +296,7 @@ export function OnboardingForm({
           checkInHour,
           checkInMinute,
           secondAttemptHours: Number(form.secondAttemptHours),
+          active: form.seniorActive,
         },
         primaryContact: {
           fullName: form.contactName,
@@ -303,11 +334,28 @@ export function OnboardingForm({
           }),
         });
       }
-      setStatusMessage(
-        editMode
-          ? data.message ?? "Household updated successfully."
-          : "Household created successfully.",
-      );
+      const baseMessage = editMode
+        ? data.message ?? "Household updated successfully."
+        : "Household created successfully.";
+      const wasActive = priorActiveRef.current;
+      const isNowActive = data.household?.senior?.active ?? true;
+      if (editMode && typeof wasActive === "boolean" && wasActive !== isNowActive) {
+        if (!isNowActive) {
+          setStatusMessage(
+            `${baseMessage} Tomorrow and future check-ins for ${data.household?.senior?.firstName ?? form.seniorFirstName} will not be scheduled. Any check-in already scheduled for later today may still run.`,
+          );
+        } else {
+          setStatusMessage(
+            `${baseMessage} Check-ins for ${data.household?.senior?.firstName ?? form.seniorFirstName} will start again tomorrow morning at her preferred hour. Today will NOT be auto-scheduled.`,
+          );
+        }
+      } else {
+        setStatusMessage(baseMessage);
+      }
+      priorActiveRef.current = null;
+      if (!editMode) {
+        setForm(blankDefaultForm);
+      }
       if (submitIntent.current === "saveAndTest") {
         await createTestCheckIn(data.household);
       }
@@ -464,6 +512,22 @@ export function OnboardingForm({
             <option value="2">2 hours</option>
             <option value="3">3 hours</option>
           </select>
+        </label>
+        <label className="form-grid-wide checkbox-grid-row">
+          <input
+            type="checkbox"
+            checked={form.seniorActive}
+            onChange={(event) => updateActiveField(event.target.checked)}
+          />
+          <div>
+            <div className="checkbox-title">
+              Schedule daily check-in calls for {form.seniorFirstName || "your loved one"}
+            </div>
+            <div className="checkbox-note">
+              We&apos;ll call at her preferred hour every morning. Un-check to pause while she&apos;s on vacation or staying with family.
+              Remember to turn it back on when she returns — we will not auto-resume.
+            </div>
+          </div>
         </label>
         <label>
           Primary contact name

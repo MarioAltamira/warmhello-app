@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { env } from "@/lib/env";
+import { normalizePhone } from "@/lib/phone";
 
 function extractInboundMessage(body: any) {
   const payload = body?.data?.payload ?? body?.payload ?? body?.data ?? body;
@@ -30,8 +31,8 @@ function extractInboundMessage(body: any) {
 
   return {
     text: String(text ?? "").trim(),
-    from: String(from ?? "").trim(),
-    to: String(to ?? "").trim(),
+    from: normalizePhone(String(from ?? "").trim()),
+    to: normalizePhone(String(to ?? "").trim()),
     providerMessageId: providerMessageId ? String(providerMessageId) : null,
     kind: kind ? String(kind) : null,
   };
