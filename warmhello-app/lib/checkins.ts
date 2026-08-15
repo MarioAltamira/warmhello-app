@@ -241,10 +241,10 @@ export async function getCheckInPageData(token: string) {
   }
 }
 
-export async function confirmCheckInToken(token: string) {
+export async function confirmCheckInToken(token: string, mode: "okay" | "call_me" = "okay") {
   if (!prisma) {
     if (token === demoCheckIn.token) {
-      return { ok: true as const, message: "Demo check-in confirmed." };
+      return { ok: true as const, message: mode === "call_me" ? "Demo check-in confirmed. Call request noted." : "Demo check-in confirmed." };
     }
 
     return { ok: false as const, message: "This link is not active." };
@@ -284,14 +284,18 @@ export async function confirmCheckInToken(token: string) {
         orderBy: { priority: "asc" },
       });
       const { sendSms } = await import("@/lib/sms");
-      const message = `${existing.senior.firstName} is okay and has completed today's Warm-Hello check-in.`;
+      const confirmationMessageKind = mode === "call_me" ? "confirmation_sms_call_request" : "confirmation_sms";
+      const message =
+        mode === "call_me"
+          ? `${existing.senior.firstName} has asked for a call from you. This will complete today's Warm-Hello check-in`
+          : `${existing.senior.firstName} is okay and has completed today's Warm-Hello check-in.`;
       const notifications = await Promise.all(
         contacts.map((contact) =>
           sendSms(contact.phoneNumber, message, {
             subscriberId: existing.subscriberId,
             seniorId: existing.seniorId,
             checkInId: existing.id,
-            kind: "confirmation_sms",
+            kind: confirmationMessageKind,
           }),
         ),
       );
@@ -300,10 +304,10 @@ export async function confirmCheckInToken(token: string) {
         await prisma.alertJob.createMany({
           data: contacts.map((contact, index) => ({
             checkInId: existing.id,
-            kind: "confirmation_sms",
+            kind: confirmationMessageKind,
             status: notifications[index]?.ok ? "SENT" : "FAILED",
             providerMessageId: notifications[index]?.ok ? notifications[index].sid : null,
-            payload: { contactId: contact.id, phoneNumber: contact.phoneNumber },
+            payload: { contactId: contact.id, phoneNumber: contact.phoneNumber, mode },
             runAt: new Date(),
           })),
         });
@@ -312,7 +316,13 @@ export async function confirmCheckInToken(token: string) {
       // Confirmation itself should still succeed even if notifications are not configured yet.
     }
 
-    return { ok: true as const, message: "Check-in confirmed successfully." };
+    return {
+      ok: true as const,
+      message:
+        mode === "call_me"
+          ? "Check-in confirmed. We'll let your contacts know you'd like a call."
+          : "Check-in confirmed successfully.",
+    };
   } catch {
     return { ok: false as const, message: "Database is not reachable right now." };
   }
