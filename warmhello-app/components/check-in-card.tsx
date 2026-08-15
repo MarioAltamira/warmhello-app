@@ -25,11 +25,13 @@ export function CheckInCard({
         ? "This link is expired."
         : "Tap one button below to complete today's check-in.",
   );
-  const [submitting, setSubmitting] = useState(false);
+  const [submittingOkay, setSubmittingOkay] = useState(false);
+  const [submittingCall, setSubmittingCall] = useState(false);
   const [confirmed, setConfirmed] = useState(status === "confirmed");
 
   async function handleConfirm(mode: "okay" | "call_me") {
-    setSubmitting(true);
+    if (mode === "okay") setSubmittingOkay(true);
+    if (mode === "call_me") setSubmittingCall(true);
 
     try {
       const response = await fetch(`/api/checkins/${token}/confirm`, {
@@ -45,11 +47,14 @@ export function CheckInCard({
     } catch {
       setMessage("We could not confirm the check-in right now.");
     } finally {
-      setSubmitting(false);
+      setSubmittingOkay(false);
+      setSubmittingCall(false);
     }
   }
 
-  const disabled = status !== "pending" || submitting;
+  const anySubmitting = submittingOkay || submittingCall;
+  const disabledOkay = status !== "pending" || anySubmitting;
+  const disabledCall = status !== "pending" || anySubmitting;
   const errorMessage = message.includes("could not") || message.includes("expired");
   const callRequested = confirmed && message.toLowerCase().includes("call");
 
@@ -61,12 +66,12 @@ export function CheckInCard({
         Your scheduled check-in window is <strong>{scheduledLabel}</strong>.
       </p>
       <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginTop: 8 }}>
-        <button className="button primary" disabled={disabled} onClick={() => handleConfirm("okay")}>
-          {submitting ? "Confirming..." : "I am okay"}
+        <button className="button primary" disabled={disabledOkay} onClick={() => handleConfirm("okay")}>
+          {submittingOkay ? "Confirming..." : "I am okay"}
         </button>
         <button
           className="button"
-          disabled={disabled}
+          disabled={disabledCall}
           onClick={() => handleConfirm("call_me")}
           style={{
             backgroundColor: "rgb(34, 197, 94)",
@@ -74,7 +79,7 @@ export function CheckInCard({
             border: "1px solid rgb(22, 163, 74)",
           }}
         >
-          {submitting ? "Requesting call..." : "Call me"}
+          {submittingCall ? "Requesting call..." : "Call me"}
         </button>
       </div>
       <p
