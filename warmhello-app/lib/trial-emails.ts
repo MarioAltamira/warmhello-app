@@ -55,7 +55,12 @@ function getUnsubscribeLink(subscriberId: string) {
 export async function sendTrialWelcomeEmail(subscriberId: string) {
   const subscriber = await getTrialSubscriber(subscriberId);
   if (!subscriber) {
-    return { ok: true as const, id: null };
+    return {
+      ok: false as const,
+      message:
+        "Trial welcome email skipped: subscriber not found, not in TRIAL status, or already unsubscribed.",
+      id: null,
+    };
   }
 
   const dashboardLink = getDashboardLink();
@@ -94,7 +99,12 @@ Unsubscribe: ${unsubscribeLink}`,
 export async function sendTrialNudgeEmail(subscriberId: string) {
   const subscriber = await getTrialSubscriber(subscriberId);
   if (!subscriber) {
-    return { ok: true as const, id: null };
+    return {
+      ok: false as const,
+      message:
+        "Trial nudge email skipped: subscriber not found, not in TRIAL status, or already unsubscribed.",
+      id: null,
+    };
   }
 
   const buyNowLink = getBuyNowLink(subscriber.id);
@@ -135,7 +145,12 @@ Unsubscribe: ${unsubscribeLink}`,
 export async function sendTrialFinalEmail(subscriberId: string) {
   const subscriber = await getTrialSubscriber(subscriberId);
   if (!subscriber) {
-    return { ok: true as const, id: null };
+    return {
+      ok: false as const,
+      message:
+        "Trial final email skipped: subscriber not found, not in TRIAL status, or already unsubscribed.",
+      id: null,
+    };
   }
 
   const buyNowLink = getBuyNowLink(subscriber.id);
@@ -173,7 +188,11 @@ Unsubscribe: ${unsubscribeLink}`,
 export async function sendThankYouForSubscriptionEmail(subscriberId: string) {
   const subscriber = await getSubscriberForEmail(subscriberId);
   if (!subscriber) {
-    return { ok: true as const, id: null };
+    return {
+      ok: false as const,
+      message: "Thank-you email skipped: subscriber not found or already unsubscribed.",
+      id: null,
+    };
   }
 
   const dashboardLink = getDashboardLink();

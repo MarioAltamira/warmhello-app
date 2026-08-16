@@ -149,6 +149,7 @@ export async function createHousehold(input: CreateHouseholdInput) {
           billingCurrency,
           currentPeriodEndsAt: trialEndsAt,
           created: now,
+          unsubscribedAt: null,
         },
       });
 
@@ -194,12 +195,46 @@ export async function createHousehold(input: CreateHouseholdInput) {
     });
 
     const { enqueueJsonJob } = await import("@/lib/qstash");
-    await Promise.allSettled([
+    const sideEffectLabel = (index: number) =>
+      [
+        "sendTrialWelcomeEmail",
+        "enqueue trial-nudge",
+        "enqueue trial-final",
+        "enqueue trial-expire",
+      ][index] ?? `sideEffect[${index}]`;
+    const sideEffects = await Promise.allSettled([
       sendTrialWelcomeEmail(result.subscriber.id),
       enqueueJsonJob("/api/jobs/trial-nudge", { subscriberId: result.subscriber.id }, 72),
       enqueueJsonJob("/api/jobs/trial-final", { subscriberId: result.subscriber.id }, 168),
       enqueueJsonJob("/api/jobs/trial-expire", { subscriberId: result.subscriber.id }, 192),
     ]);
+    sideEffects.forEach((outcome, index) => {
+      const label = sideEffectLabel(index);
+      if (outcome.status === "rejected") {
+        console.error(
+          `[createHousehold][sideEffect:${label}] rejected for subscriber ${result.subscriber.id}:`,
+          outcome.reason,
+        );
+        return;
+      }
+      const value = outcome.value as
+        | { ok?: boolean; message?: string; id?: string | null }
+        | null
+        | undefined;
+      if (value && typeof value === "object" && value.ok === false) {
+        console.warn(
+          `[createHousehold][sideEffect:${label}] skipped for subscriber ${result.subscriber.id}: ${
+            value.message ?? "no message provided"
+          }`,
+        );
+        return;
+      }
+      console.info(
+        `[createHousehold][sideEffect:${label}] succeeded for subscriber ${result.subscriber.id}${
+          value && typeof value === "object" && value.id ? ` (providerId=${value.id})` : ""
+        }`,
+      );
+    });
 
     return {
       ok: true as const,
