@@ -104,21 +104,28 @@ const checkInTimeOptions = Array.from({ length: 96 }, (_, index) => {
   };
 });
 
+function stripNorthAmericanCountryCode(raw: string): string {
+  const value = String(raw ?? "").trim();
+  if (value.startsWith("+1")) return value.slice(2);
+  if (value.startsWith("1") && value.length === 11) return value.slice(1);
+  return value;
+}
+
 const initialForm = {
   subscriberName: "Caregiver Demo",
   subscriberEmail: "caregiver@example.com",
-  subscriberPhone: "+15551230001",
+  subscriberPhone: stripNorthAmericanCountryCode("+15551230001"),
   billingCurrency: "USD" as BillingCurrency,
   seniorFirstName: "Margaret",
   seniorLastName: "Johnson",
-  seniorPhone: "+15551230002",
+  seniorPhone: stripNorthAmericanCountryCode("+15551230002"),
   timezone: "America/Toronto",
   checkInTime: "540",
   secondAttemptHours: "1",
   seniorActive: true,
   contactName: "David Johnson",
   contactRelationship: "Son",
-  contactPhone: "+15551230003",
+  contactPhone: stripNorthAmericanCountryCode("+15551230003"),
 };
 
 const blankDefaultForm = {
@@ -146,11 +153,11 @@ function buildInitialForm(
     return {
       subscriberName: currentHousehold.subscriber.fullName,
       subscriberEmail: currentHousehold.subscriber.email,
-      subscriberPhone: currentHousehold.subscriber.phoneNumber,
+      subscriberPhone: stripNorthAmericanCountryCode(currentHousehold.subscriber.phoneNumber),
       billingCurrency: currentHousehold.subscriber.billingCurrency,
       seniorFirstName: currentHousehold.senior.firstName,
       seniorLastName: currentHousehold.senior.lastName,
-      seniorPhone: currentHousehold.senior.phoneNumber,
+      seniorPhone: stripNorthAmericanCountryCode(currentHousehold.senior.phoneNumber),
       timezone: normalizeTimeZone(currentHousehold.senior.timezone),
       checkInTime: String(
         currentHousehold.senior.checkInHour * 60 + currentHousehold.senior.checkInMinute,
@@ -159,7 +166,7 @@ function buildInitialForm(
       seniorActive: currentHousehold.senior.active,
       contactName: currentHousehold.contact.fullName,
       contactRelationship: currentHousehold.contact.relationship,
-      contactPhone: currentHousehold.contact.phoneNumber,
+      contactPhone: stripNorthAmericanCountryCode(currentHousehold.contact.phoneNumber),
     };
   }
 
@@ -398,11 +405,18 @@ export function OnboardingForm({
         </label>
         <label>
           Caregiver phone
-          <input
-            value={form.subscriberPhone}
-            onChange={(event) => updateField("subscriberPhone", event.target.value)}
-            onFocus={handleSelectOnFocus}
-          />
+          <div className="phone-input-group">
+            <span className="phone-input-prefix">+1</span>
+            <input
+              type="tel"
+              inputMode="numeric"
+              autoComplete="tel-national"
+              placeholder="10-digit number"
+              value={form.subscriberPhone}
+              onChange={(event) => updateField("subscriberPhone", event.target.value)}
+              onFocus={handleSelectOnFocus}
+            />
+          </div>
         </label>
         <div className="form-grid-wide">
           <div className="region-pick-heading-row">
@@ -470,11 +484,18 @@ export function OnboardingForm({
         </label>
         <label>
           Senior phone
-          <input
-            value={form.seniorPhone}
-            onChange={(event) => updateField("seniorPhone", event.target.value)}
-            onFocus={handleSelectOnFocus}
-          />
+          <div className="phone-input-group">
+            <span className="phone-input-prefix">+1</span>
+            <input
+              type="tel"
+              inputMode="numeric"
+              autoComplete="tel-national"
+              placeholder="10-digit number"
+              value={form.seniorPhone}
+              onChange={(event) => updateField("seniorPhone", event.target.value)}
+              onFocus={handleSelectOnFocus}
+            />
+          </div>
         </label>
         <label className="form-grid-wide">
           Timezone
@@ -547,11 +568,18 @@ export function OnboardingForm({
         </label>
         <label>
           Contact phone
-          <input
-            value={form.contactPhone}
-            onChange={(event) => updateField("contactPhone", event.target.value)}
-            onFocus={handleSelectOnFocus}
-          />
+          <div className="phone-input-group">
+            <span className="phone-input-prefix">+1</span>
+            <input
+              type="tel"
+              inputMode="numeric"
+              autoComplete="tel-national"
+              placeholder="10-digit number"
+              value={form.contactPhone}
+              onChange={(event) => updateField("contactPhone", event.target.value)}
+              onFocus={handleSelectOnFocus}
+            />
+          </div>
         </label>
         <div className="form-actions">
           <button
