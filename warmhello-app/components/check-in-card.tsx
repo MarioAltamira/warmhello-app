@@ -23,7 +23,7 @@ export function CheckInCard({
       ? `Already confirmed${confirmedLabel ? ` on ${confirmedLabel}` : ""}.`
       : status === "expired"
         ? "This link is expired."
-        : "Tap one button below to complete today's check-in.",
+        : "Tap one button above to complete today's check-in.",
   );
   const [submittingOkay, setSubmittingOkay] = useState(false);
   const [submittingCall, setSubmittingCall] = useState(false);
