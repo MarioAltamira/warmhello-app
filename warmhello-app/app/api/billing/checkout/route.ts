@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createCheckoutSession } from "@/lib/stripe";
 import { getSubscriberSession } from "@/lib/subscriber-session";
+import { parseJsonBody } from "@/lib/zod-parse";
 
 const bodySchema = z.object({
   customerEmail: z.string().email(),
@@ -17,16 +18,17 @@ export async function POST(request: Request) {
     );
   }
 
-  const parsed = bodySchema.parse(await request.json());
+  const parsed = await parseJsonBody(request, bodySchema);
+  if (!parsed.ok) return parsed.response;
 
-  if (!sessionSubscriberId || sessionSubscriberId !== parsed.subscriberId) {
+  if (!sessionSubscriberId || sessionSubscriberId !== parsed.data.subscriberId) {
     return NextResponse.json(
       { ok: false, message: "You are not authorized to create a checkout for this subscriber." },
       { status: 403 },
     );
   }
 
-  const result = await createCheckoutSession(parsed);
+  const result = await createCheckoutSession(parsed.data);
 
   if (!result.ok) {
     return NextResponse.json(result, { status: 400 });

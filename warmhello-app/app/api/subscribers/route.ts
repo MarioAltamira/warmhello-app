@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createHousehold, updateHousehold } from "@/lib/households";
 import { getSubscriberSession } from "@/lib/subscriber-session";
+import { parseJsonBody } from "@/lib/zod-parse";
 
 const BillingCurrencySchema = z.enum(["USD", "CAD"]);
 
@@ -36,8 +37,9 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const parsed = bodySchema.parse(await request.json());
-  const result = await createHousehold(parsed);
+  const parsed = await parseJsonBody(request, bodySchema);
+  if (!parsed.ok) return parsed.response;
+  const result = await createHousehold(parsed.data);
 
   if (!result.ok) {
     return NextResponse.json(result, { status: 400 });
@@ -60,23 +62,24 @@ export async function PUT(request: Request) {
     );
   }
 
-  const parsed = bodySchema.parse(await request.json());
+  const parsed = await parseJsonBody(request, bodySchema);
+  if (!parsed.ok) return parsed.response;
 
-  if (!parsed.subscriberId) {
+  if (!parsed.data.subscriberId) {
     return NextResponse.json(
       { ok: false, message: "Subscriber ID is required to update a household." },
       { status: 400 },
     );
   }
 
-  if (!sessionSubscriberId || sessionSubscriberId !== parsed.subscriberId) {
+  if (!sessionSubscriberId || sessionSubscriberId !== parsed.data.subscriberId) {
     return NextResponse.json(
       { ok: false, message: "You are not authorized to update this household." },
       { status: 403 },
     );
   }
 
-  const result = await updateHousehold(parsed.subscriberId, parsed);
+  const result = await updateHousehold(parsed.data.subscriberId, parsed.data);
 
   if (!result.ok) {
     return NextResponse.json(result, { status: 400 });

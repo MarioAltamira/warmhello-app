@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { env } from "@/lib/env";
 import { normalizePhone } from "@/lib/phone";
@@ -40,9 +41,24 @@ function extractInboundMessage(body: any) {
 
 export async function POST(request: Request) {
   const url = new URL(request.url);
-  const providedSecret = url.searchParams.get("secret");
-  if (env.TELNYX_WEBHOOK_SECRET && providedSecret !== env.TELNYX_WEBHOOK_SECRET) {
-    return NextResponse.json({ ok: false, message: "Unauthorized webhook request." }, { status: 401 });
+  const providedSecret = url.searchParams.get("secret") ?? "";
+  const expectedSecret = env.TELNYX_WEBHOOK_SECRET ?? "";
+  if (expectedSecret) {
+    try {
+      const a = Buffer.from(providedSecret, "utf8");
+      const b = Buffer.from(expectedSecret, "utf8");
+      if (a.length !== b.length || !timingSafeEqual(a, b)) {
+        return NextResponse.json(
+          { ok: false, message: "Unauthorized webhook request." },
+          { status: 401 },
+        );
+      }
+    } catch {
+      return NextResponse.json(
+        { ok: false, message: "Unauthorized webhook request." },
+        { status: 401 },
+      );
+    }
   }
 
   const body = await request.json().catch(() => null);

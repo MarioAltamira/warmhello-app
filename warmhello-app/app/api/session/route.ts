@@ -3,10 +3,12 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import {
   getSubscriberSessionBootId,
+  signSessionSubscriberId,
   subscriberSessionBootCookieName,
   subscriberSessionCookieName,
   subscriberSessionCookieOptions,
 } from "@/lib/subscriber-session";
+import { parseJsonBody } from "@/lib/zod-parse";
 
 const bodySchema = z
   .object({
@@ -25,13 +27,15 @@ export async function POST(request: Request) {
     );
   }
 
-  const parsed = bodySchema.parse(await request.json());
-  const subscriber = parsed.subscriberId
+  const parsed = await parseJsonBody(request, bodySchema);
+  if (!parsed.ok) return parsed.response;
+
+  const subscriber = parsed.data.subscriberId
     ? await prisma.subscriber.findUnique({
-        where: { id: parsed.subscriberId },
+        where: { id: parsed.data.subscriberId },
       })
     : await prisma.subscriber.findUnique({
-        where: { email: parsed.email },
+        where: { email: parsed.data.email },
       });
 
   if (!subscriber) {
@@ -55,7 +59,7 @@ export async function POST(request: Request) {
 
   response.cookies.set(
     subscriberSessionCookieName,
-    subscriber.id,
+    signSessionSubscriberId(subscriber.id),
     subscriberSessionCookieOptions,
   );
   response.cookies.set(

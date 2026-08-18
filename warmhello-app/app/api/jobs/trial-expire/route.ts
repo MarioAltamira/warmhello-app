@@ -4,6 +4,7 @@ import { verifyJobSecret } from "@/lib/qstash";
 import { prisma } from "@/lib/prisma";
 import { getSubscriberPlanSummary } from "@/lib/subscriber-plan";
 import { buildThankYouSmsBody, shouldSendCheckInMessaging } from "@/lib/subscriber-lifecycle";
+import { parseJsonBody } from "@/lib/zod-parse";
 
 const bodySchema = z.object({
   subscriberId: z.string().min(1),
@@ -24,8 +25,11 @@ export async function POST(request: Request) {
     );
   }
 
+  const parseRes = await parseJsonBody(request, bodySchema);
+  if (!parseRes.ok) return parseRes.response;
+  const parsed = parseRes.data;
+
   try {
-    const parsed = bodySchema.parse(await request.json());
     const subscriber = await prisma.subscriber.findUnique({
       where: { id: parsed.subscriberId },
       include: {

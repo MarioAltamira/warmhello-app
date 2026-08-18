@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSubscriberTimeline } from "@/lib/timeline";
 import { getSubscriberSession } from "@/lib/subscriber-session";
+import { parseSearchParams } from "@/lib/zod-parse";
 
 const querySchema = z.object({
   days: z.coerce.number().int().min(1).max(30).optional(),
@@ -13,12 +14,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, message: "Unauthorized." }, { status: 401 });
   }
 
-  const url = new URL(request.url);
-  const parsed = querySchema.parse({
-    days: url.searchParams.get("days") ?? undefined,
-  });
+  const parsed = parseSearchParams(request, querySchema);
+  if (!parsed.ok) return parsed.response;
 
-  const timeline = await getSubscriberTimeline(subscriberId, parsed.days ?? 7);
+  const timeline = await getSubscriberTimeline(subscriberId, parsed.data.days ?? 7);
   return NextResponse.json({ ok: true, timeline });
 }
 
