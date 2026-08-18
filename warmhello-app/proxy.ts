@@ -28,7 +28,7 @@ function buildCsp(nonce: string | null) {
   );
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { method, nextUrl, headers } = request;
   const nonce =
     NONCE_GENERATABLE_METHODS.has(method) &&
