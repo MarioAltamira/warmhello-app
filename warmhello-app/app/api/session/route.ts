@@ -7,6 +7,8 @@ import {
   subscriberSessionBootCookieName,
   subscriberSessionCookieName,
   subscriberSessionCookieOptions,
+  subscriberSessionPresenceCookieName,
+  subscriberSessionPresenceCookieOptions,
 } from "@/lib/subscriber-session";
 import { parseJsonBody } from "@/lib/zod-parse";
 
@@ -67,6 +69,11 @@ export async function POST(request: Request) {
     getSubscriberSessionBootId(),
     subscriberSessionCookieOptions,
   );
+  response.cookies.set(
+    subscriberSessionPresenceCookieName,
+    "1",
+    subscriberSessionPresenceCookieOptions,
+  );
 
   return response;
 }
@@ -79,6 +86,10 @@ export async function DELETE() {
   });
   response.cookies.set(subscriberSessionBootCookieName, "", {
     ...subscriberSessionCookieOptions,
+    maxAge: 0,
+  });
+  response.cookies.set(subscriberSessionPresenceCookieName, "", {
+    ...subscriberSessionPresenceCookieOptions,
     maxAge: 0,
   });
   return response;

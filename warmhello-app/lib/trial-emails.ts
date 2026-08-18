@@ -85,7 +85,7 @@ Warmly,
 The Warm-Hello Team
 
 Unsubscribe: ${unsubscribeLink}`,
-    html: `<p><img src="${env.APP_URL}/warmhello-logo%20b.PNG" alt="Warm-Hello" width="140" /></p>
+    html: `<p><img src="${env.APP_URL}/warmhello-logo-b.png" alt="Warm-Hello" width="140" /></p>
 <p>Hi there,</p>
 <p>Thank you for choosing Warm-Hello to help stay connected with your loved one. We know that balancing their independence with your need for peace of mind can be difficult, and we're here to make that rhythm effortless.</p>
 <p><strong>Getting started is simple:</strong><br />If you haven't already, please finish setting up your account and schedule your preferred morning check-in time via your <a href="${dashboardLink}">Dashboard</a>.</p>
@@ -130,7 +130,7 @@ Best,
 The Warm-Hello Team
 
 Unsubscribe: ${unsubscribeLink}`,
-    html: `<p><img src="${env.APP_URL}/warmhello-logo%20b.PNG" alt="Warm-Hello" width="140" /></p>
+    html: `<p><img src="${env.APP_URL}/warmhello-logo-b.png" alt="Warm-Hello" width="140" /></p>
 <p>Hi there,</p>
 <p>We hope the first few days of using Warm-Hello have brought a little more calm to your mornings.</p>
 <p>We designed Warm-Hello to be completely frictionless-a quick "check-in" that feels more like a morning wave than a medical alert. How is it working for you and your loved one so far?</p>
@@ -174,7 +174,7 @@ Warmly,
 The Warm-Hello Team
 
 Unsubscribe: ${unsubscribeLink}`,
-    html: `<p><img src="${env.APP_URL}/warmhello-logo%20b.PNG" alt="Warm-Hello" width="140" /></p>
+    html: `<p><img src="${env.APP_URL}/warmhello-logo-b.png" alt="Warm-Hello" width="140" /></p>
 <p>Hi there,</p>
 <p>Your 7-day free trial of Warm-Hello has concluded. We hope that over the past week, you've experienced how much easier it is to stay connected without having to be "the person who checks in" every single morning.</p>
 <p>We would love to continue helping you protect that sense of peace for your family. If you'd like to keep the automated check-ins running, you can officially activate your subscription today for just $6 a month.</p>
@@ -214,7 +214,7 @@ Warmly,
 The Warm-Hello Team
 
 Unsubscribe: ${unsubscribeLink}`,
-    html: `<p><img src="${env.APP_URL}/warmhello-logo%20b.PNG" alt="Warm-Hello" width="140" /></p>
+    html: `<p><img src="${env.APP_URL}/warmhello-logo-b.png" alt="Warm-Hello" width="140" /></p>
 <p>Hi there,</p>
 <p>Thank you for giving Warm-Hello a try.</p>
 <p>We've canceled your auto-renewal and your subscription will stay active through the end of your current billing cycle. If you'd like to continue protecting your family's peace of mind with Warm-Hello, you can reactivate anytime from your <a href="${dashboardLink}">Dashboard</a>.</p>

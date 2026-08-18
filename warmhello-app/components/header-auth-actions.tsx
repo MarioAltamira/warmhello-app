@@ -12,7 +12,7 @@ function hasSubscriberCookie() {
   return document.cookie
     .split(";")
     .map((part) => part.trim())
-    .some((part) => part.startsWith("warmhello_subscriber_id=") && part !== "warmhello_subscriber_id=");
+    .some((part) => part.startsWith("warmhello_logged_in=") && part === "warmhello_logged_in=1");
 }
 
 export function HeaderAuthActions() {

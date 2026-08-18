@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 type CheckInCardProps = {
   token: string;
@@ -17,7 +18,7 @@ export function CheckInCard({
   status,
   confirmedLabel,
 }: CheckInCardProps) {
-  const returnToMessagesHref = "sms:+16892258343";
+  const router = useRouter();
   const [message, setMessage] = useState(
     status === "confirmed"
       ? `Already confirmed${confirmedLabel ? ` on ${confirmedLabel}` : ""}.`
@@ -50,6 +51,14 @@ export function CheckInCard({
       setSubmittingOkay(false);
       setSubmittingCall(false);
     }
+  }
+
+  function handleReturn() {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push("/");
   }
 
   const anySubmitting = submittingOkay || submittingCall;
@@ -92,15 +101,21 @@ export function CheckInCard({
       >
         {message}
       </p>
-      {confirmed ? (
-        <a
-          className="button secondary"
-          href={returnToMessagesHref}
-          style={{ marginTop: 16 }}
-        >
-          Return to Messages
-        </a>
-      ) : null}
+      <a
+        className="button secondary"
+        onClick={handleReturn}
+        style={{ marginTop: 24, cursor: "pointer" }}
+        role="link"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleReturn();
+          }
+        }}
+      >
+        Return
+      </a>
     </section>
   );
 }

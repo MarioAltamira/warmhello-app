@@ -4,6 +4,7 @@ import { env } from "@/lib/env";
 
 export const subscriberSessionCookieName = "warmhello_subscriber_id";
 export const subscriberSessionBootCookieName = "warmhello_session_boot";
+export const subscriberSessionPresenceCookieName = "warmhello_logged_in";
 
 declare global {
   // Persist the current boot id across module reloads in development.
@@ -53,6 +54,13 @@ function getCurrentSessionBootId() {
 
 export const subscriberSessionCookieOptions = {
   httpOnly: true,
+  sameSite: "lax" as const,
+  secure: process.env.NODE_ENV === "production",
+  path: "/",
+};
+
+export const subscriberSessionPresenceCookieOptions = {
+  httpOnly: false,
   sameSite: "lax" as const,
   secure: process.env.NODE_ENV === "production",
   path: "/",
