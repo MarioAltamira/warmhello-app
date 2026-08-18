@@ -205,8 +205,8 @@ export async function createHousehold(input: CreateHouseholdInput) {
     const sideEffects = await Promise.allSettled([
       sendTrialWelcomeEmail(result.subscriber.id),
       enqueueJsonJob("/api/jobs/trial-nudge", { subscriberId: result.subscriber.id }, 72),
-      enqueueJsonJob("/api/jobs/trial-final", { subscriberId: result.subscriber.id }, 168),
-      enqueueJsonJob("/api/jobs/trial-expire", { subscriberId: result.subscriber.id }, 192),
+      enqueueJsonJob("/api/jobs/trial-final", { subscriberId: result.subscriber.id }, 167),
+      enqueueJsonJob("/api/jobs/trial-expire", { subscriberId: result.subscriber.id }, 167),
     ]);
     sideEffects.forEach((outcome, index) => {
       const label = sideEffectLabel(index);

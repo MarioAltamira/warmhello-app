@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createHousehold, updateHousehold } from "@/lib/households";
+import { getSubscriberSession } from "@/lib/subscriber-session";
 
 const BillingCurrencySchema = z.enum(["USD", "CAD"]);
 
@@ -51,12 +52,27 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
+  const { subscriberId: sessionSubscriberId, sessionExpired } = await getSubscriberSession();
+  if (sessionExpired) {
+    return NextResponse.json(
+      { ok: false, message: "Your session expired. Please log in again." },
+      { status: 401 },
+    );
+  }
+
   const parsed = bodySchema.parse(await request.json());
 
   if (!parsed.subscriberId) {
     return NextResponse.json(
       { ok: false, message: "Subscriber ID is required to update a household." },
       { status: 400 },
+    );
+  }
+
+  if (!sessionSubscriberId || sessionSubscriberId !== parsed.subscriberId) {
+    return NextResponse.json(
+      { ok: false, message: "You are not authorized to update this household." },
+      { status: 403 },
     );
   }
 

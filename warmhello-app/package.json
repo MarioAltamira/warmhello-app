@@ -5,7 +5,7 @@
   "packageManager": "pnpm@10.17.1",
   "scripts": {
     "dev": "next dev --webpack -p 8080",
-    "build": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\" && prisma generate && next build",
+    "build": "next build",
     "build:deploy": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\" && prisma generate && next build",
     "start": "next start -p 8080",
     "lint": "eslint .",
@@ -17,6 +17,7 @@
   "dependencies": {
     "@prisma/client": "^6.9.0",
     "@upstash/qstash": "^2.11.3",
+    "dotenv": "^16.4.7",
     "next": "16.2.7",
     "react": "19.2.4",
     "react-dom": "19.2.4",

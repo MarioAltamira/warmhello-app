@@ -1,5 +1,4 @@
 import { Buffer } from "node:buffer";
-import { Socket } from "node:net";
 import tls from "node:tls";
 import { env } from "@/lib/env";
 
@@ -19,21 +18,29 @@ function encodeHeader(value: string) {
   return `=?UTF-8?B?${Buffer.from(value, "utf8").toString("base64")}?=`;
 }
 
-function readSmtpResponse(socket: Socket) {
+const SMTP_TIMEOUT_MS = 30_000;
+
+function readSmtpResponse(socket: tls.TLSSocket) {
   return new Promise<string>((resolve, reject) => {
     let response = "";
+    let timeout: NodeJS.Timeout | null = null;
 
     const cleanup = () => {
       socket.off("data", onData);
       socket.off("error", onError);
       socket.off("end", onEnd);
+      if (timeout) clearTimeout(timeout);
     };
+
+    timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error("SMTP response timed out."));
+    }, SMTP_TIMEOUT_MS);
 
     const onData = (chunk: Buffer) => {
       response += chunk.toString("utf8");
       const lines = response.split(/\r?\n/).filter(Boolean);
       const lastLine = lines.at(-1);
-
       if (lastLine && /^\d{3} /.test(lastLine)) {
         cleanup();
         resolve(response);
@@ -57,7 +64,7 @@ function readSmtpResponse(socket: Socket) {
 }
 
 async function sendSmtpCommand(
-  socket: Socket,
+  socket: tls.TLSSocket,
   command: string,
   expectedCodes: number[],
 ) {
@@ -70,6 +77,13 @@ async function sendSmtpCommand(
   }
 
   return response;
+}
+
+function extractProviderId(dataResponse: string, fallbackId: string): string | null {
+  if (!dataResponse) return fallbackId;
+  const match = dataResponse.match(/250[^\n]*?(?:ok\s+)?(<[^>\n]+@[^>\n]+>)/i);
+  if (match && match[1]) return match[1];
+  return fallbackId;
 }
 
 async function sendSmtpMail(input: EmailInput) {
@@ -87,22 +101,40 @@ async function sendSmtpMail(input: EmailInput) {
   }
 
   let socket: tls.TLSSocket | null = null;
+  let responseTimeout: NodeJS.Timeout | null = null;
 
   try {
     socket = await new Promise<tls.TLSSocket>((resolve, reject) => {
+      const connectTimeout = setTimeout(() => {
+        reject(new Error(`SMTP connection to ${env.SMTP_HOST}:${env.SMTP_PORT} timed out.`));
+      }, SMTP_TIMEOUT_MS);
+
       const connection = tls.connect(
         {
           host: env.SMTP_HOST,
           port: env.SMTP_PORT,
-          rejectUnauthorized: false,
+          servername: env.SMTP_HOST,
+          minVersion: "TLSv1.2",
+          rejectUnauthorized: true,
         },
-        () => resolve(connection),
+        () => {
+          clearTimeout(connectTimeout);
+          resolve(connection);
+        },
       );
-      connection.once("error", reject);
+      connection.once("error", (err) => {
+        clearTimeout(connectTimeout);
+        reject(err);
+      });
+    });
+
+    socket.setTimeout(SMTP_TIMEOUT_MS);
+    socket.on("timeout", () => {
+      socket?.destroy(new Error("SMTP socket idle timeout."));
     });
 
     const hostName = env.APP_URL.replace(/^https?:\/\//, "").replace(/\/.*$/, "") || "localhost";
-    const messageId = `<warmhello-contact-${Date.now()}@warm-hello.com>`;
+    const localMessageId = `<warmhello-contact-${Date.now()}@warm-hello.com>`;
     const htmlBody = input.html.replace(/\r?\n/g, "");
     const message = [
       `From: Warm-Hello <${env.EMAIL_FROM_ADDRESS}>`,
@@ -111,7 +143,7 @@ async function sendSmtpMail(input: EmailInput) {
       `Subject: ${encodeHeader(input.subject)}`,
       "MIME-Version: 1.0",
       'Content-Type: multipart/alternative; boundary="warmhello-boundary"',
-      `Message-ID: ${messageId}`,
+      `Message-ID: ${localMessageId}`,
       "",
       "--warmhello-boundary",
       'Content-Type: text/plain; charset="UTF-8"',
@@ -146,15 +178,21 @@ async function sendSmtpMail(input: EmailInput) {
     await sendSmtpCommand(socket, `MAIL FROM:<${env.EMAIL_FROM_ADDRESS}>`, [250]);
     await sendSmtpCommand(socket, `RCPT TO:<${input.to}>`, [250, 251]);
     await sendSmtpCommand(socket, "DATA", [354]);
-    await sendSmtpCommand(socket, `${message}\r\n.`, [250]);
+
+    const dataResponse = await sendSmtpCommand(socket, `${message}\r\n.`, [250]);
+    const providerMessageId = extractProviderId(dataResponse, localMessageId);
+
     await sendSmtpCommand(socket, "QUIT", [221]);
 
-    return { ok: true as const, id: messageId };
+    return { ok: true as const, id: providerMessageId };
   } catch (error) {
     const message = error instanceof Error ? error.message : "SMTP delivery failed.";
     return { ok: false as const, message };
   } finally {
-    socket?.destroy();
+    if (responseTimeout) clearTimeout(responseTimeout);
+    try { socket?.destroySoon(); } catch {
+      try { socket?.destroy(); } catch {}
+    }
   }
 }
 
@@ -163,16 +201,9 @@ export async function sendEmail(input: EmailInput): Promise<EmailResult> {
     return sendSmtpMail(input);
   }
 
-  if (!env.EMAIL_PROVIDER || !env.EMAIL_API_KEY) {
-    void input;
-    return {
-      ok: false,
-      message: "Email is not configured yet. Add SMTP or provider credentials to enable delivery.",
-    };
-  }
-
+  void input;
   return {
     ok: false,
-    message: `Email provider "${env.EMAIL_PROVIDER}" is not implemented yet.`,
+    message: "Email is not configured yet. Add SMTP credentials to enable delivery.",
   };
 }

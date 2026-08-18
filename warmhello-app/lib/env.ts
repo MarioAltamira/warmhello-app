@@ -14,8 +14,6 @@ const envSchema = z.object({
   TELNYX_FROM_NUMBER: z.string().optional(),
   TELNYX_WEBHOOK_SECRET: z.string().optional(),
   SHORT_LINK_BASE_URL: z.string().url().optional(),
-  EMAIL_PROVIDER: z.string().optional(),
-  EMAIL_API_KEY: z.string().optional(),
   EMAIL_FROM_ADDRESS: z.string().email().default("sales@warm-hello.com"),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().int().positive().optional(),
@@ -39,8 +37,6 @@ export const env = envSchema.parse({
   TELNYX_FROM_NUMBER: process.env.TELNYX_FROM_NUMBER,
   TELNYX_WEBHOOK_SECRET: process.env.TELNYX_WEBHOOK_SECRET,
   SHORT_LINK_BASE_URL: process.env.SHORT_LINK_BASE_URL,
-  EMAIL_PROVIDER: process.env.EMAIL_PROVIDER,
-  EMAIL_API_KEY: process.env.EMAIL_API_KEY,
   EMAIL_FROM_ADDRESS: process.env.EMAIL_FROM_ADDRESS,
   SMTP_HOST: process.env.SMTP_HOST,
   SMTP_PORT: process.env.SMTP_PORT,
@@ -57,8 +53,10 @@ export function getIntegrationStatus() {
     sms: Boolean(env.TELNYX_API_KEY && env.TELNYX_FROM_NUMBER),
     email: Boolean(
       env.EMAIL_FROM_ADDRESS &&
-        ((env.EMAIL_PROVIDER && env.EMAIL_API_KEY) ||
-          (env.SMTP_HOST && env.SMTP_PORT && env.SMTP_USERNAME && env.SMTP_PASSWORD)),
+        env.SMTP_HOST &&
+        env.SMTP_PORT &&
+        env.SMTP_USERNAME &&
+        env.SMTP_PASSWORD,
     ),
     qstash: Boolean(env.QSTASH_TOKEN),
   };
