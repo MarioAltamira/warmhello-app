@@ -37,13 +37,29 @@ export async function resolveCheckoutCurrency(input: {
   return "USD";
 }
 
-export async function createCheckoutSession(input: {
-  customerEmail: string;
-  subscriberId: string;
-}) {
+export async function createCheckoutSession(input: { subscriberId: string }) {
   const stripe = getStripeClient();
+  if (!prisma) {
+    return {
+      ok: false as const,
+      message: "Database is not configured yet.",
+    };
+  }
 
-  const currency = await resolveCheckoutCurrency({ subscriberId: input.subscriberId });
+  const subscriber = await prisma.subscriber.findUnique({
+    where: { id: input.subscriberId },
+    select: { id: true, email: true, billingCurrency: true },
+  });
+  if (!subscriber) {
+    return {
+      ok: false as const,
+      message: "Subscriber was not found.",
+    };
+  }
+
+  const currency: BillingCurrency = isBillingCurrency(subscriber.billingCurrency)
+    ? subscriber.billingCurrency
+    : "USD";
   const priceId = getStripePriceIdFor(currency);
   if (!stripe || !priceId) {
     return {
@@ -53,20 +69,22 @@ export async function createCheckoutSession(input: {
     };
   }
 
-  const sessionParams: Stripe.Checkout.SessionCreateParams & Record<string, unknown> = {
+  const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     success_url: `${env.APP_URL}/dashboard?checkout=success`,
     cancel_url: `${env.APP_URL}/dashboard?checkout=canceled`,
-    customer_email: input.customerEmail,
-    client_reference_id: input.subscriberId,
-    currency_conversion_enabled: false,
+    customer_email: subscriber.email,
+    client_reference_id: subscriber.id,
+    adaptive_pricing: {
+      enabled: false,
+    },
     subscription_data: {
       metadata: {
-        subscriberId: input.subscriberId,
+        subscriberId: subscriber.id,
       },
     },
     metadata: {
-      subscriberId: input.subscriberId,
+      subscriberId: subscriber.id,
       billingCurrency: currency,
     },
     line_items: [
@@ -75,9 +93,7 @@ export async function createCheckoutSession(input: {
         quantity: 1,
       },
     ],
-  };
-
-  const session = await stripe.checkout.sessions.create(sessionParams as Stripe.Checkout.SessionCreateParams);
+  });
 
   return { ok: true as const, url: session.url };
 }

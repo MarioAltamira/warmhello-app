@@ -22,6 +22,15 @@ function clearPresenceCookie() {
 }
 
 export function SessionExitLogout() {
+  useEffect(() => {
+    function handlePageHide() {
+      clearPresenceCookie();
+    }
+
+    window.addEventListener("pagehide", handlePageHide);
+    return () => window.removeEventListener("pagehide", handlePageHide);
+  }, []);
+
   return null;
 }
 

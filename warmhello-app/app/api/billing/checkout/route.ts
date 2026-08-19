@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const result = await createCheckoutSession(parsed.data);
+  const result = await createCheckoutSession({ subscriberId: parsed.data.subscriberId });
 
   if (!result.ok) {
     return NextResponse.json(result, { status: 400 });

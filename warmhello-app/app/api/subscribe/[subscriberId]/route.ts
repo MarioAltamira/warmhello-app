@@ -1,47 +1,36 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { createCheckoutSession } from "@/lib/stripe";
+import { getSubscriberSession } from "@/lib/subscriber-session";
 
 export async function POST(
   _request: Request,
   { params }: { params: Promise<{ subscriberId: string }> },
 ) {
+  const { subscriberId: sessionSubscriberId, sessionExpired } = await getSubscriberSession();
+  if (sessionExpired) {
+    return NextResponse.json(
+      { ok: false, message: "Your session expired. Please log in again." },
+      { status: 401 },
+    );
+  }
+
   const { subscriberId } = await params;
 
-  if (!prisma) {
+  if (!sessionSubscriberId || sessionSubscriberId !== subscriberId) {
     return NextResponse.json(
-      { ok: false, message: "Database is not configured yet." },
-      { status: 400 },
+      {
+        ok: false,
+        message: "You are not authorized to start checkout for this subscriber.",
+      },
+      { status: 403 },
     );
   }
 
-  try {
-    const subscriber = await prisma.subscriber.findUnique({
-      where: { id: subscriberId },
-      select: { id: true, email: true },
-    });
+  const result = await createCheckoutSession({ subscriberId });
 
-    if (!subscriber) {
-      return NextResponse.json(
-        { ok: false, message: "Subscriber was not found." },
-        { status: 404 },
-      );
-    }
-
-    const result = await createCheckoutSession({
-      customerEmail: subscriber.email,
-      subscriberId: subscriber.id,
-    });
-
-    if (!result.ok) {
-      return NextResponse.json(result, { status: 400 });
-    }
-
-    return NextResponse.json(result);
-  } catch {
-    return NextResponse.json(
-      { ok: false, message: "Database is not reachable right now." },
-      { status: 400 },
-    );
+  if (!result.ok) {
+    return NextResponse.json(result, { status: 400 });
   }
+
+  return NextResponse.json(result);
 }
