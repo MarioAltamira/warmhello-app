@@ -287,8 +287,8 @@ export async function confirmCheckInToken(token: string, mode: "okay" | "call_me
       const confirmationMessageKind = mode === "call_me" ? "confirmation_sms_call_request" : "confirmation_sms";
       const message =
         mode === "call_me"
-          ? `${existing.senior.firstName} has asked for a call from you. This will complete today's Warm-Hello check-in`
-          : `${existing.senior.firstName} is okay and has completed today's Warm-Hello check-in.`;
+          ? `${existing.senior.firstName} has asked for a call from you. This will complete today's Warm-Hello check-in 🟡`
+          : `${existing.senior.firstName} is okay and has completed today's Warm-Hello check-in. 🟢`;
       const notifications = await Promise.all(
         contacts.map((contact) =>
           sendSms(contact.phoneNumber, message, {
@@ -689,7 +689,7 @@ export async function markEscalationSent(checkInId: string) {
       contacts.map((contact) =>
         sendSms(
           contact.phoneNumber,
-          `Warm-Hello alert: ${checkIn.senior.firstName} has not responded to today's check-in.`,
+          `Warm-Hello alert: ${checkIn.senior.firstName} has not responded to today's check-in. 🔴`,
           {
             subscriberId: checkIn.subscriberId,
             seniorId: checkIn.seniorId,

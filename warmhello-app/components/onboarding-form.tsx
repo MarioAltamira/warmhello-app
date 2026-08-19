@@ -66,6 +66,12 @@ type CurrentHousehold = {
     relationship: string;
     phoneNumber: string;
   };
+  additionalContacts: {
+    id: string;
+    fullName: string;
+    relationship: string;
+    phoneNumber: string;
+  }[];
   plan: {
     isPaidSubscriber: boolean;
     isFreeTrial: boolean;
@@ -77,6 +83,14 @@ type CurrentHousehold = {
     timeRemainingLabel: string | null;
   };
 };
+
+type AdditionalContactState = {
+  fullName: string;
+  relationship: string;
+  phone: string;
+};
+
+const MAX_ADDITIONAL_CONTACTS = 3;
 
 type OnboardingFormProps = {
   editMode?: boolean;
@@ -126,6 +140,7 @@ const initialForm = {
   contactName: "David Johnson",
   contactRelationship: "Son",
   contactPhone: stripNorthAmericanCountryCode("+15551230003"),
+  additionalContacts: [] as AdditionalContactState[],
 };
 
 const blankDefaultForm = {
@@ -143,6 +158,7 @@ const blankDefaultForm = {
   contactName: "",
   contactRelationship: "",
   contactPhone: "",
+  additionalContacts: [] as AdditionalContactState[],
 };
 
 function buildInitialForm(
@@ -167,6 +183,11 @@ function buildInitialForm(
       contactName: currentHousehold.contact.fullName,
       contactRelationship: currentHousehold.contact.relationship,
       contactPhone: stripNorthAmericanCountryCode(currentHousehold.contact.phoneNumber),
+      additionalContacts: (currentHousehold.additionalContacts ?? []).map((c) => ({
+        fullName: c.fullName,
+        relationship: c.relationship,
+        phone: stripNorthAmericanCountryCode(c.phoneNumber),
+      })),
     };
   }
 
@@ -221,7 +242,7 @@ export function OnboardingForm({
     savedHousehold?.senior.timezone ?? form.timezone,
   );
 
-  function updateField(name: keyof typeof initialForm, value: string) {
+  function updateField(name: keyof typeof initialForm, value: string | AdditionalContactState[]) {
     setForm((current) => ({
       ...current,
       [name]: value,
@@ -233,6 +254,41 @@ export function OnboardingForm({
       ...current,
       seniorActive: value,
     }));
+  }
+
+  function addAdditionalContact() {
+    setForm((current) => {
+      const existing = current.additionalContacts ?? [];
+      if (existing.length >= MAX_ADDITIONAL_CONTACTS) return current;
+      return {
+        ...current,
+        additionalContacts: [...existing, { fullName: "", relationship: "", phone: "" }],
+      };
+    });
+  }
+
+  function removeAdditionalContact(index: number) {
+    setForm((current) => {
+      const existing = current.additionalContacts ?? [];
+      return {
+        ...current,
+        additionalContacts: existing.filter((_, i) => i !== index),
+      };
+    });
+  }
+
+  function updateAdditionalContact(
+    index: number,
+    field: keyof AdditionalContactState,
+    value: string,
+  ) {
+    setForm((current) => {
+      const existing = current.additionalContacts ?? [];
+      const updated = existing.map((c, i) =>
+        i === index ? { ...c, [field]: value } : c,
+      );
+      return { ...current, additionalContacts: updated };
+    });
   }
 
   function handleSelectOnFocus(
@@ -287,6 +343,11 @@ export function OnboardingForm({
       const totalMinutes = Number(form.checkInTime);
       const checkInHour = Math.floor(totalMinutes / 60);
       const checkInMinute = totalMinutes % 60;
+      const additionalContacts = (form.additionalContacts ?? []).map((c) => ({
+        fullName: c.fullName,
+        relationship: c.relationship,
+        phoneNumber: c.phone,
+      }));
       const payload = {
         subscriberId: currentHousehold?.subscriber.id,
         subscriber: {
@@ -310,6 +371,7 @@ export function OnboardingForm({
           relationship: form.contactRelationship,
           phoneNumber: form.contactPhone,
         },
+        additionalContacts,
       };
 
       const response = await fetch("/api/subscribers", {
@@ -581,6 +643,92 @@ export function OnboardingForm({
             />
           </div>
         </label>
+        {(form.additionalContacts ?? []).map((additional, index) => (
+          <div
+            key={index}
+            className="form-grid-wide"
+            style={{ borderTop: "1px solid rgb(51, 65, 85)", paddingTop: 16, marginTop: 4 }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "baseline",
+                justifyContent: "space-between",
+                gap: 12,
+                marginBottom: 8,
+              }}
+            >
+              <strong>Additional contact #{index + 1}</strong>
+              <button
+                type="button"
+                className="button secondary"
+                onClick={() => removeAdditionalContact(index)}
+                style={{ padding: "6px 12px", fontSize: 14 }}
+              >
+                Remove
+              </button>
+            </div>
+            <div className="form-grid" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
+              <label>
+                Name
+                <input
+                  value={additional.fullName}
+                  onChange={(event) =>
+                    updateAdditionalContact(index, "fullName", event.target.value)
+                  }
+                  onFocus={handleSelectOnFocus}
+                />
+              </label>
+              <label>
+                Relationship
+                <input
+                  value={additional.relationship}
+                  onChange={(event) =>
+                    updateAdditionalContact(index, "relationship", event.target.value)
+                  }
+                  onFocus={handleSelectOnFocus}
+                />
+              </label>
+              <label>
+                Phone
+                <div className="phone-input-group">
+                  <span className="phone-input-prefix">+1</span>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    autoComplete="tel-national"
+                    placeholder="10-digit number"
+                    value={additional.phone}
+                    onChange={(event) =>
+                      updateAdditionalContact(index, "phone", event.target.value)
+                    }
+                    onFocus={handleSelectOnFocus}
+                  />
+                </div>
+              </label>
+            </div>
+          </div>
+        ))}
+        {(form.additionalContacts ?? []).length < MAX_ADDITIONAL_CONTACTS ? (
+          <div className="form-grid-wide" style={{ marginTop: 4 }}>
+            <button
+              type="button"
+              className="button secondary"
+              onClick={addAdditionalContact}
+            >
+              + Add another contact
+            </button>
+            <p
+              style={{
+                marginTop: 8,
+                color: "rgb(148, 163, 184)",
+                fontSize: 13,
+              }}
+            >
+              Up to 4 total emergency contacts (1 primary + 3 additional) will all receive the check-in confirmation and escalation SMS messages.
+            </p>
+          </div>
+        ) : null}
         <div className="form-actions">
           <button
             className="button primary"
@@ -630,6 +778,18 @@ export function OnboardingForm({
           <p className="result-panel-summary">
             Caregiver: {savedHousehold.subscriber.fullName}. Primary contact:{" "}
             {savedHousehold.contact.fullName}.
+            {(savedHousehold as unknown as { additionalContacts?: { fullName: string }[] })
+              .additionalContacts?.length
+              ? `. Additional contacts: ${
+                  (
+                    savedHousehold as unknown as {
+                      additionalContacts: { fullName: string }[];
+                    }
+                  ).additionalContacts
+                    .map((c) => c.fullName)
+                    .join(", ")
+                }.`
+              : ""}
           </p>
           {firstCheckInScheduledLabel ? (
             <p className="result-panel-summary">

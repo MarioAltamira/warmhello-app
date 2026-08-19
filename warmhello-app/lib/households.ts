@@ -7,7 +7,19 @@ import { getSubscriberPlanSummary } from "@/lib/subscriber-plan";
 import { normalizeTimeZone } from "@/lib/timezones";
 import { sendTrialWelcomeEmail } from "@/lib/trial-emails";
 
+export type ContactInput = {
+  fullName: string;
+  relationship: string;
+  phoneNumber: string;
+};
+
+export const MAX_CONTACTS = 4;
+
 function normalizePhoneInput(input: CreateHouseholdInput): CreateHouseholdInput {
+  const additional = (input.additionalContacts ?? []).map((c) => ({
+    ...c,
+    phoneNumber: normalizePhone(c.phoneNumber),
+  }));
   return {
     ...input,
     subscriber: {
@@ -22,6 +34,7 @@ function normalizePhoneInput(input: CreateHouseholdInput): CreateHouseholdInput 
       ...input.primaryContact,
       phoneNumber: normalizePhone(input.primaryContact.phoneNumber),
     },
+    additionalContacts: additional,
   };
 }
 
@@ -42,11 +55,8 @@ export type CreateHouseholdInput = {
     secondAttemptHours: number;
     active: boolean;
   };
-  primaryContact: {
-    fullName: string;
-    relationship: string;
-    phoneNumber: string;
-  };
+  primaryContact: ContactInput;
+  additionalContacts?: ContactInput[];
 };
 
 export async function getHouseholdForSubscriber(subscriberId: string) {
@@ -64,7 +74,7 @@ export async function getHouseholdForSubscriber(subscriberId: string) {
         },
         contacts: {
           orderBy: { priority: "asc" },
-          take: 1,
+          take: MAX_CONTACTS,
         },
       },
     });
@@ -74,7 +84,8 @@ export async function getHouseholdForSubscriber(subscriberId: string) {
     }
 
     const senior = subscriber.seniors[0];
-    const contact = subscriber.contacts[0];
+    const allContacts = subscriber.contacts;
+    const [primaryContact, ...restContacts] = allContacts;
     const plan = getSubscriberPlanSummary({
       created: subscriber.created,
       subscriptionStatus: subscriber.subscriptionStatus,
@@ -101,11 +112,17 @@ export async function getHouseholdForSubscriber(subscriberId: string) {
         active: senior.active,
       },
       contact: {
-        id: contact.id,
-        fullName: contact.fullName,
-        relationship: contact.relationship,
-        phoneNumber: contact.phoneNumber,
+        id: primaryContact.id,
+        fullName: primaryContact.fullName,
+        relationship: primaryContact.relationship,
+        phoneNumber: primaryContact.phoneNumber,
       },
+      additionalContacts: restContacts.map((c) => ({
+        id: c.id,
+        fullName: c.fullName,
+        relationship: c.relationship,
+        phoneNumber: c.phoneNumber,
+      })),
       plan,
     };
   } catch {
@@ -120,6 +137,14 @@ export async function createHousehold(input: CreateHouseholdInput) {
 
   try {
     const normalized = normalizePhoneInput(input);
+    const additionalInput = (normalized.additionalContacts ?? []).filter(
+      (c) =>
+        c &&
+        String(c.fullName ?? "").trim().length >= 2 &&
+        String(c.phoneNumber ?? "").trim().length >= 7,
+    );
+    const validatedAdditional = additionalInput.slice(0, Math.max(0, MAX_CONTACTS - 1));
+
     const existingSubscriber = await prisma.subscriber.findUnique({
       where: { email: normalized.subscriber.email },
     });
@@ -178,7 +203,22 @@ export async function createHousehold(input: CreateHouseholdInput) {
         },
       });
 
-      return { subscriber, senior, contact };
+      const additionalContacts = await Promise.all(
+        validatedAdditional.map((c, index) =>
+          tx.contact.create({
+            data: {
+              subscriberId: subscriber.id,
+              seniorId: senior.id,
+              fullName: c.fullName,
+              relationship: c.relationship,
+              phoneNumber: c.phoneNumber,
+              priority: index + 2,
+            },
+          }),
+        ),
+      );
+
+      return { subscriber, senior, contact, additionalContacts };
     });
 
     const timeZone = normalizeTimeZone(normalized.senior.timezone);
@@ -261,6 +301,14 @@ export async function updateHousehold(subscriberId: string, input: CreateHouseho
 
   try {
     const normalized = normalizePhoneInput(input);
+    const additionalInput = (normalized.additionalContacts ?? []).filter(
+      (c) =>
+        c &&
+        String(c.fullName ?? "").trim().length >= 2 &&
+        String(c.phoneNumber ?? "").trim().length >= 7,
+    );
+    const validatedAdditional = additionalInput.slice(0, Math.max(0, MAX_CONTACTS - 1));
+
     const existingSubscriber = await prisma.subscriber.findUnique({
       where: { id: subscriberId },
       include: {
@@ -270,7 +318,7 @@ export async function updateHousehold(subscriberId: string, input: CreateHouseho
         },
         contacts: {
           orderBy: { priority: "asc" },
-          take: 1,
+          take: MAX_CONTACTS,
         },
       },
     });
@@ -333,9 +381,11 @@ export async function updateHousehold(subscriberId: string, input: CreateHouseho
             },
           });
 
-      const contact = existingSubscriber.contacts[0]
+      const existingContacts = existingSubscriber.contacts;
+      const [existingPrimary, ...existingAdditional] = existingContacts;
+      const contact = existingPrimary
         ? await tx.contact.update({
-            where: { id: existingSubscriber.contacts[0].id },
+            where: { id: existingPrimary.id },
             data: {
               fullName: normalized.primaryContact.fullName,
               relationship: normalized.primaryContact.relationship,
@@ -354,7 +404,50 @@ export async function updateHousehold(subscriberId: string, input: CreateHouseho
             },
           });
 
-      return { subscriber, senior, contact };
+      const additionalContacts: (typeof contact)[] = [];
+      for (let i = 0; i < validatedAdditional.length; i += 1) {
+        const payload = validatedAdditional[i]!;
+        const existingRow = existingAdditional[i];
+        if (existingRow) {
+          additionalContacts.push(
+            await tx.contact.update({
+              where: { id: existingRow.id },
+              data: {
+                fullName: payload.fullName,
+                relationship: payload.relationship,
+                phoneNumber: payload.phoneNumber,
+                priority: i + 2,
+                seniorId: senior.id,
+              },
+            }),
+          );
+        } else {
+          additionalContacts.push(
+            await tx.contact.create({
+              data: {
+                subscriberId,
+                seniorId: senior.id,
+                fullName: payload.fullName,
+                relationship: payload.relationship,
+                phoneNumber: payload.phoneNumber,
+                priority: i + 2,
+              },
+            }),
+          );
+        }
+      }
+
+      const remainingExisting = existingAdditional.slice(validatedAdditional.length);
+      if (remainingExisting.length > 0) {
+        await tx.contact.deleteMany({
+          where: {
+            id: { in: remainingExisting.map((c) => c.id) },
+            subscriberId,
+          },
+        });
+      }
+
+      return { subscriber, senior, contact, additionalContacts };
     });
 
     return {
