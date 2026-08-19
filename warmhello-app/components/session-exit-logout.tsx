@@ -3,32 +3,34 @@
 import { useEffect } from "react";
 
 const PRESENCE_COOKIE_NAME = "warmhello_logged_in";
-const PRESENCE_COOKIE_PATH = "/";
-const PRESENCE_COOKIE_SAMESITE: "lax" | "strict" | "none" = "lax";
-const PRESENCE_COOKIE_SECURE = process.env.NODE_ENV === "production";
-
-function clearPresenceCookie() {
-  const parts: string[] = [];
-  parts.push(`${PRESENCE_COOKIE_NAME}=`);
-  parts.push("path=" + PRESENCE_COOKIE_PATH);
-  if (PRESENCE_COOKIE_SECURE) {
-    parts.push("Secure");
-  }
-  if (PRESENCE_COOKIE_SAMESITE === "lax") parts.push("SameSite=Lax");
-  if (PRESENCE_COOKIE_SAMESITE === "strict") parts.push("SameSite=Strict");
-  if (PRESENCE_COOKIE_SAMESITE === "none") parts.push("SameSite=None");
-  parts.push("Max-Age=0");
-  document.cookie = parts.join("; ");
-}
 
 export function SessionExitLogout() {
   useEffect(() => {
+    function clearPresenceCookie() {
+      if (typeof document === "undefined") return;
+      const secure = typeof window !== "undefined" && window.location.protocol === "https:";
+      const paths = ["/", "/dashboard", "/auth", "/checkout", "/subscribe"];
+      for (const path of paths) {
+        const attrs: string[] = [
+          `${PRESENCE_COOKIE_NAME}=`,
+          `path=${path}`,
+          `Max-Age=0`,
+          `Expires=Thu, 01 Jan 1970 00:00:00 GMT`,
+          `SameSite=Lax`,
+        ];
+        if (secure) attrs.push("Secure");
+        document.cookie = attrs.join("; ");
+      }
+    }
+
     function handlePageHide() {
       clearPresenceCookie();
     }
 
     window.addEventListener("pagehide", handlePageHide);
-    return () => window.removeEventListener("pagehide", handlePageHide);
+    return () => {
+      window.removeEventListener("pagehide", handlePageHide);
+    };
   }, []);
 
   return null;

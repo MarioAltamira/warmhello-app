@@ -69,6 +69,16 @@ export async function createCheckoutSession(input: { subscriberId: string }) {
     };
   }
 
+  const monthlyAmount = currency === "USD" ? "5.00" : "6.00";
+  const yearlyAmount = currency === "USD" ? "60.00" : "72.00";
+  const dailyAmount = currency === "USD" ? "0.16" : "0.20";
+  const currencyLong =
+    currency === "USD" ? "US Dollar (USD)" : "Canadian Dollar (CAD)";
+  const currencyDropdownLabel =
+    currency === "USD"
+      ? `US Dollar (USD) - $${monthlyAmount}/month, $${yearlyAmount}/year`
+      : `Canadian Dollar (CAD) - $${monthlyAmount}/month, $${yearlyAmount}/year`;
+
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     success_url: `${env.APP_URL}/dashboard?checkout=success`,
@@ -78,6 +88,38 @@ export async function createCheckoutSession(input: { subscriberId: string }) {
     adaptive_pricing: {
       enabled: false,
     },
+    custom_fields: [
+      {
+        key: "billing_currency",
+        label: {
+          type: "custom",
+          custom: "Billing currency",
+        },
+        type: "dropdown",
+        dropdown: {
+          options: [
+            {
+              label: currencyDropdownLabel,
+              value: currency.toLowerCase(),
+            },
+          ],
+          default_value: currency.toLowerCase(),
+        },
+        optional: false,
+      },
+      {
+        key: "plan_details",
+        label: {
+          type: "custom",
+          custom: "Plan details",
+        },
+        type: "text",
+        optional: true,
+        text: {
+          default_value: `${currencyLong} — $${monthlyAmount}/month, $${yearlyAmount}/year billed annually, about $${dailyAmount}/day`,
+        },
+      },
+    ],
     subscription_data: {
       metadata: {
         subscriberId: subscriber.id,
