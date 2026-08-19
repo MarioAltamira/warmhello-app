@@ -28,11 +28,11 @@ const USD: PricingPlan = {
   countryHint: "US",
   currencySymbol: "$",
   monthlyLabel: "USD $5.00 per month",
-  yearlyLabel: "USD $60.00 per year (equivalent)",
+  yearlyLabel: "USD $60.00 per year",
   dailyLabel: "USD $0.16 per day",
   marketing: {
     dailyCard: `$0.16 <span class="pricing-amount-label">/ day</span>`,
-    yearlyCard: "(Billed at $60 annually equivalent - $5/month)",
+    yearlyCard: "(Billed at $60 annually - $5/month)",
     monthlyCard: `$5 USD <span class="pricing-amount-label">/ month</span>`,
     peaceOfMind:
       "That is just $0.16 a day to eliminate the daily \"what-if\" anxiety and make sure you know within hours, not days, if something is wrong.",
@@ -48,11 +48,11 @@ const CAD: PricingPlan = {
   countryHint: "CA",
   currencySymbol: "$",
   monthlyLabel: "CAD $6.00 per month",
-  yearlyLabel: "CAD $72.00 per year (equivalent)",
+  yearlyLabel: "CAD $72.00 per year",
   dailyLabel: "CAD $0.20 per day",
   marketing: {
     dailyCard: `$0.20 <span class="pricing-amount-label">/ day</span>`,
-    yearlyCard: "(Billed at $72 annually equivalent - $6/month)",
+    yearlyCard: "(Billed at $72 annually - $6/month)",
     monthlyCard: `$6 CAD <span class="pricing-amount-label">/ month</span>`,
     peaceOfMind:
       "That is just $0.20 a day to eliminate the daily \"what-if\" anxiety and make sure you know within hours, not days, if something is wrong.",

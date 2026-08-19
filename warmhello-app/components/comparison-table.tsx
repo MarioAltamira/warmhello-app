@@ -55,9 +55,7 @@ function buildRows(currency: BillingCurrency): ComparisonRow[] {
     )} · billed ${plan.yearlyLabel.replace(
       new RegExp(`^${plan.currency}\\s+`, "i"),
       "",
-    )} equivalent (or ${other.currency} ${other.monthlyAmount} for ${
-      other.currency === "USD" ? "United States" : "Canada"
-    } customers)`,
+    )} (or ${other.currency} $${other.monthlyAmount.toFixed(2)} per month · $${other.dailyAmount.toFixed(2)} per day · billed $${other.yearlyAmount.toFixed(2)} per year for ${other.currency === "USD" ? "United States" : "Canada"} customers)`,
   };
 
   return [
