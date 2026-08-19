@@ -25,7 +25,7 @@ const gentleCheckinQuestionsPost: BlogPost = {
   title:
     "12 Gentle Daily Check-In Questions for Seniors Living Alone (That Don't Make Them Feel Babied)",
   description:
-    "Caregiver-tested daily check-in questions aging parents will actually enjoy answering. No more 'are you okay?' — try these 12 warm, dignity-first SMS conversation openers instead.",
+      "Caregiver-tested daily check-in questions aging parents will actually enjoy answering. No more 'are you okay?' - try these 12 warm, dignity-first SMS conversation openers instead.",
   keywords: [
     "daily check in questions for seniors",
     "how to check in on elderly parents living alone",
@@ -47,7 +47,7 @@ const gentleCheckinQuestionsPost: BlogPost = {
     {
       kind: "p",
       text:
-        "Most adult children default to a short text every morning: 'Are you okay?' Then they wonder why replies go from 'Yes love you' after week one to a single thumbs-up emoji or radio silence a month later. The problem isn't your parent being stubborn — it's that 'are you okay?' frames every conversation around their potential decline, which feels like being checked on like a medication schedule rather than like a family member who still has things to say.",
+        "Most adult children default to a short text every morning: 'Are you okay?' Then they wonder why replies go from 'Yes love you' after week one to a single thumbs-up emoji or radio silence a month later. The problem isn't your parent being stubborn - it's that 'are you okay?' frames every conversation around their potential decline, which feels like being checked on like a medication schedule rather than like a family member who still has things to say.",
     },
     {
       kind: "p",
@@ -61,7 +61,7 @@ const gentleCheckinQuestionsPost: BlogPost = {
     {
       kind: "p",
       text:
-        "Do NOT send all 12 in one text. Pick 2 maximum per morning check-in. Rotate them so the pattern doesn't feel like a form. If you're using Warm-Hello, these map beautifully to the daily question prompt — drop one in and the replies roll into the family dashboard automatically.",
+        "Do NOT send all 12 in one text. Pick 2 maximum per morning check-in. Rotate them so the pattern doesn't feel like a form. If you're using Warm-Hello, these map beautifully to the daily question prompt - drop one in and the replies roll into the family dashboard automatically.",
     },
     {
       kind: "ol",
@@ -69,13 +69,13 @@ const gentleCheckinQuestionsPost: BlogPost = {
         "What's the first thing you heard or saw this morning that made you smile?",
         "What's one small thing on today's list you're actually looking forward to?",
         "Who did you speak to yesterday, even for five minutes?",
-        "Did anything surprise you — good or silly — in the last 24 hours?",
+        "Did anything surprise you - good or silly - in the last 24 hours?",
         "What's something from the fridge you're planning to turn into lunch today?",
-        "Outside your window this morning — sky was blue, grey, or 'something else'?",
+        "Outside your window this morning - sky was blue, grey, or 'something else'?",
         "Show us one thing you can see from where you're sitting right now.",
         "Is there a song you've been humming lately? (First line counts!)",
         "What do you want saved for dinner tonight if we drop something off?",
-        "Walk us through the morning in one sentence — from wake-up until right now.",
+        "Walk us through the morning in one sentence - from wake-up until right now.",
         "What's one errand we can run for you this week that would save a trip?",
         "If we had 15 minutes on the phone this evening, what should we definitely cover?",
       ],
@@ -123,7 +123,7 @@ const gentleCheckinQuestionsPost: BlogPost = {
     {
       kind: "p",
       text:
-        "Every short answer isn't a crisis. Some days your parent is watching a show, out walking, or just doesn't feel like typing 4 sentences. The rule of thumb caregivers use: ONE short reply is fine. TWO short replies back to back? Check in with a quick call. THREE? Drive by or get a neighbor to knock. That's when Warm-Hello's escalation-after-two-misses pattern kicks in automatically — you set how many unanswered days before the family gets an email, and nobody has to remember to check again.",
+        "Every short answer isn't a crisis. Some days your parent is watching a show, out walking, or just doesn't feel like typing 4 sentences. The rule of thumb caregivers use: ONE short reply is fine. TWO short replies back to back? Check in with a quick call. THREE? Drive by or get a neighbor to knock. That's when Warm-Hello's escalation-after-two-misses pattern kicks in automatically - you set how many unanswered days before the family gets an email, and nobody has to remember to check again.",
     },
     {
       kind: "h2",
@@ -132,19 +132,19 @@ const gentleCheckinQuestionsPost: BlogPost = {
     {
       kind: "p",
       text:
-        "At 7:30 or 8:00 a.m. local time, send a 2-question check-in SMS. By 9:30, most replies are in. Reply to the CONTENT of the answer, not just 'glad you're okay'. If dad mentions he's going to the hardware store, text back at noon: 'What did you end up making with that 2x4?' — that's how you build a habit of real communication on top of the safety layer. Safety and warmth, not one or the other. That's the whole point.",
+        "At 7:30 or 8:00 a.m. local time, send a 2-question check-in SMS. By 9:30, most replies are in. Reply to the CONTENT of the answer, not just 'glad you're okay'. If dad mentions he's going to the hardware store, text back at noon: 'What did you end up making with that 2x4?' - that's how you build a habit of real communication on top of the safety layer. Safety and warmth, not one or the other. That's the whole point.",
     },
   ],
   faq: [
     {
       q: "What time of day should I send a daily check-in text to my elderly parent?",
       a:
-        "Between 7:30 and 9:30 a.m. local time, after breakfast but before doctor appointments or senior center visits. Avoid evenings — that's when fatigue and loneliness can make even neutral questions feel like monitoring.",
+        "Between 7:30 and 9:30 a.m. local time, after breakfast but before doctor appointments or senior center visits. Avoid evenings - that's when fatigue and loneliness can make even neutral questions feel like monitoring.",
     },
     {
       q: "My parent never texts back. Should I switch to phone calls only?",
       a:
-        "No — not yet. Some non-texter parents actually prefer knowing the check-in is there even if they don't reply; the unanswered counter gives them a safety net if they do fall. After 2 silent days, call. Warm-Hello automates that nudge so you never have to remember.",
+        "No - not yet. Some non-texter parents actually prefer knowing the check-in is there even if they don't reply; the unanswered counter gives them a safety net if they do fall. After 2 silent days, call. Warm-Hello automates that nudge so you never have to remember.",
     },
     {
       q: "How long should a daily check-in text be?",

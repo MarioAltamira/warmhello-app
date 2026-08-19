@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   title:
     "Caregiver Blog: Gentle Check-In Scripts & Tips for Aging Parents · Warm-Hello",
   description:
-    "Caregiver-tested scripts, daily check-in questions, and advice for supporting elderly parents living alone with dignity. No 'babying' — real copy-paste SMS templates.",
+    "Caregiver-tested scripts, daily check-in questions, and advice for supporting elderly parents living alone with dignity. No 'babying' - real copy-paste SMS templates.",
   alternates: { canonical: "/blog" },
   keywords: [
     "caregiver blog",

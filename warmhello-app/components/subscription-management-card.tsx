@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { BuyNowButton } from "@/components/buy-now-button";
-import CurrencyToggle from "@/components/currency-toggle";
 
 type SubscriptionManagementCardProps = {
   subscriberId: string;
@@ -75,9 +74,6 @@ export function SubscriptionManagementCard({
           <strong>Plan:</strong> {billingPlanLabel}
         </p>
       ) : null}
-      <div style={{ marginTop: 12 }}>
-        <CurrencyToggle initial={billingCurrency} compact />
-      </div>
 
       <div className="actions" style={{ marginTop: 16, flexWrap: "wrap" }}>
         {subscriberId ? (

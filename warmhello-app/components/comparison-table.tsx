@@ -63,9 +63,9 @@ function buildRows(currency: BillingCurrency): ComparisonRow[] {
   return [
     {
       feature: "Hardware required",
-      warmhello: { value: "None — works on any phone with SMS" },
+      warmhello: { value: "None - works on any phone with SMS" },
       pers: { value: "Pendant or wristband + base station" },
-      callcenter: { value: "None — landline or mobile works" },
+      callcenter: { value: "None - landline or mobile works" },
     },
     {
       feature: "What the senior does",
@@ -77,9 +77,9 @@ function buildRows(currency: BillingCurrency): ComparisonRow[] {
     },
     {
       feature: "Routine check-ins every morning",
-      warmhello: { variant: "check", value: TICK + " — every day at a time you set" },
-      pers: { variant: "dash", value: DASH + " — event-based, button press only" },
-      callcenter: { variant: "check", value: TICK + " — scheduled daily call window" },
+      warmhello: { variant: "check", value: TICK + " - every day at a time you set" },
+      pers: { variant: "dash", value: DASH + " - event-based, button press only" },
+      callcenter: { variant: "check", value: TICK + " - scheduled daily call window" },
     },
     {
       feature: "Escalation after missed checks",
@@ -87,7 +87,7 @@ function buildRows(currency: BillingCurrency): ComparisonRow[] {
         variant: "check",
         value:
           TICK +
-          " — gentle reminder after 1 hour, family alerted by SMS & email after 2 misses",
+          " - gentle reminder after 1 hour, family alerted by SMS & email after 2 misses",
       },
       pers: {
         value:
@@ -100,8 +100,8 @@ function buildRows(currency: BillingCurrency): ComparisonRow[] {
     },
     {
       feature: "How it feels for the senior",
-      warmhello: { value: "A quick morning wave — warm, not clinical" },
-      pers: { value: "Medical-style pendant — often feels like a hospital device" },
+      warmhello: { value: "A quick morning wave - warm, not clinical" },
+      pers: { value: "Medical-style pendant - often feels like a hospital device" },
       callcenter: { value: "Forced call with a stranger reading a script" },
     },
     {
@@ -112,8 +112,8 @@ function buildRows(currency: BillingCurrency): ComparisonRow[] {
     },
     {
       feature: "Cancel anytime, no fees",
-      warmhello: { variant: "check", value: TICK + " — dashboard, one click" },
-      pers: { variant: "dash", value: DASH + " — 1–3 year contracts are standard" },
+      warmhello: { variant: "check", value: TICK + " - dashboard, one click" },
+      pers: { variant: "dash", value: DASH + " - 1–3 year contracts are standard" },
       callcenter: {
         value:
           "Often 30/60-day notice required + early-termination recovery fees",

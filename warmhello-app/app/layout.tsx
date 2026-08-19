@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     template: "%s · Warm-Hello",
   },
   description:
-    "Warm-Hello is a no-app, one-tap daily SMS check-in service for seniors living independently. Give your parents safety and your family peace of mind — from just $0.16 a day.",
+    "Warm-Hello is a no-app, one-tap daily SMS check-in service for seniors living independently. Give your parents safety and your family peace of mind - from just $0.16 a day.",
   keywords: [
     "senior check in service",
     "daily check in for elderly",
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "Warm-Hello — Gentle daily SMS check-ins for seniors living alone. Caregiver peace of mind, senior dignity first.",
+        alt: "Warm-Hello - Gentle daily SMS check-ins for seniors living alone. Caregiver peace of mind, senior dignity first.",
       },
     ],
   },

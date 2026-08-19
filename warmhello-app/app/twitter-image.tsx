@@ -4,7 +4,7 @@ export const runtime = "edge";
 export const contentType = "image/png";
 export const size = { width: 1200, height: 675 };
 export const alt =
-  "Warm-Hello — Gentle daily SMS check-ins for seniors living alone.";
+  "Warm-Hello - Gentle daily SMS check-ins for seniors living alone.";
 
 const DEFAULT_TITLE = "Warm-Hello";
 const DEFAULT_SUBTITLE =

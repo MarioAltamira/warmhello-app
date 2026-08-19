@@ -57,7 +57,7 @@ export const demoDashboard: DashboardSnapshot = {
   subscriberPhone: "+15551230001",
   subscriptionStatus: "Trial",
   billingCurrency: "USD",
-  billingPlanLabel: "USD 5.00 per month",
+  billingPlanLabel: "USD $5.00 per month",
   isPaidSubscriber: false,
   isTrialExpired: false,
   showBuyNow: true,

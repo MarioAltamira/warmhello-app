@@ -58,7 +58,7 @@ export default async function DashboardPage() {
           <h2>How we step in for you</h2>
           <p>
             Every morning at the time you chose, your loved one receives a gentle, one-tap check-in
-            text. No passwords, no apps to open — just one confirmation that everything is fine.
+            text. No passwords, no apps to open - just one confirmation that everything is fine.
           </p>
           <p>
             <strong>How the warm follow-up works:</strong>

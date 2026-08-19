@@ -31,7 +31,7 @@ const DEFAULT_STATE: ShareModalState = {
   defaultUrl: "",
   defaultTitle: "Warm-Hello",
   defaultText:
-    "Warm-Hello — Gentle daily SMS check-ins for seniors living alone. One-tap safety confirmation, automatic family escalation.",
+    "Warm-Hello - Gentle daily SMS check-ins for seniors living alone. One-tap safety confirmation, automatic family escalation.",
 };
 
 type SocialTile = {

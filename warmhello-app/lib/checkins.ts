@@ -366,7 +366,7 @@ export async function markInitialSent(checkInId: string) {
     const checkInUrl = await getShortLinkForCheckIn({ checkInId: checkIn.id, token: checkIn.token });
     const sms = await sendSms(
       checkIn.senior.phoneNumber,
-      `Hi ${checkIn.senior.firstName} — it’s time for your Warm-Hello check-in.\nTap I’m OK: ${checkInUrl}`,
+      `Hi ${checkIn.senior.firstName} - it's time for your Warm-Hello check-in.\nTap I'm OK: ${checkInUrl}`,
       {
         subscriberId: checkIn.subscriberId,
         seniorId: checkIn.seniorId,

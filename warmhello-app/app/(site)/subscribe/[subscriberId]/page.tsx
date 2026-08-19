@@ -1,4 +1,3 @@
-import CurrencyToggle from "@/components/currency-toggle";
 import { expectedMonthlyLabelFor, pricingPlanFor } from "@/lib/pricing";
 import { resolveCurrencyForCurrentVisitor } from "@/lib/visitor-currency";
 import SubscribeClient from "./subscribe-client";
@@ -26,9 +25,6 @@ export default async function SubscribePage({
         <p style={{ marginTop: 10, fontSize: 14, color: "var(--muted)" }}>
           {billingPlanLabel} · equivalent to {plan.yearlyLabel} · {plan.dailyLabel}
         </p>
-        <div style={{ marginTop: 16, display: "flex", justifyContent: "center" }}>
-          <CurrencyToggle initial={resolved.currency} compact />
-        </div>
         <div style={{ marginTop: 20 }}>
           <SubscribeClient subscriberId={subscriberId} />
         </div>

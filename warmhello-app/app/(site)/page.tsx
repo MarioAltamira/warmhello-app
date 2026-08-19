@@ -18,7 +18,7 @@ import { resolveCurrencyForCurrentVisitor } from "@/lib/visitor-currency";
 export const metadata: Metadata = {
   title: {
     absolute:
-      "Warm-Hello | Gentle Daily SMS Check-Ins for Seniors Living Alone — No App, One Tap",
+      "Warm-Hello | Gentle Daily SMS Check-Ins for Seniors Living Alone - No App, One Tap",
   },
   description:
     "Warm-Hello is an automated, SMS-based daily safety check-in for seniors who live alone. One gentle morning text, one tap to confirm safety, and automatic escalation to family if they miss two checks. Start a free 7-day trial today.",
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     type: "website",
     url: "https://warm-hello.com/",
     title:
-      "Warm-Hello | Gentle Daily SMS Check-Ins for Seniors Living Alone — No App, One Tap",
+      "Warm-Hello | Gentle Daily SMS Check-Ins for Seniors Living Alone - No App, One Tap",
     description:
       "An automated SMS-based daily safety check-in service for elderly seniors living independently. Adult children get automatic peace of mind; seniors keep their dignity with a single-tap confirmation and no app downloads.",
     images: [
@@ -37,14 +37,14 @@ export const metadata: Metadata = {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "Warm-Hello — Gentle daily SMS check-ins for seniors living alone. Caregiver peace of mind, senior dignity first.",
+        alt: "Warm-Hello - Gentle daily SMS check-ins for seniors living alone. Caregiver peace of mind, senior dignity first.",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
     title:
-      "Warm-Hello | Gentle Daily SMS Check-Ins for Seniors Living Alone — No App, One Tap",
+      "Warm-Hello | Gentle Daily SMS Check-Ins for Seniors Living Alone - No App, One Tap",
     description:
       "Senior living alone? Get a gentle daily SMS check-in with one-tap confirmation and automatic family escalation if two checks are missed. No app, no wearables, no stress.",
     images: ["/twitter-image"],
@@ -74,7 +74,7 @@ function buildFaq(currency: BillingCurrency): FaqEntry[] {
     },
     {
       question: `What does Warm-Hello cost after the free 7-day trial?`,
-      answer: `Billing is simple and predictable: ${plan.monthlyLabel}, which works out to ${plan.dailyLabel} — about the cost of a cup of coffee each month. Cancel or pause anytime from the dashboard with no fees, no contracts, and no hidden charges.`,
+      answer: `Billing is simple and predictable: ${plan.monthlyLabel}, which works out to ${plan.dailyLabel} - about the cost of a cup of coffee each month. Cancel or pause anytime from the dashboard with no fees, no contracts, and no hidden charges.`,
     },
   ];
 }
@@ -104,7 +104,7 @@ function buildJsonLd(args: {
     billingIncrement: 1,
     billingCycle: "monthly",
     name: `${plan.currency} monthly plan`,
-    description: `${plan.monthlyLabel} — equivalent to ${plan.yearlyLabel} or ${plan.dailyLabel}.`,
+    description: `${plan.monthlyLabel} - equivalent to ${plan.yearlyLabel} or ${plan.dailyLabel}.`,
     url: "https://warm-hello.com/",
     availability: "https://schema.org/InStock",
     areaServed: plan.currency === "USD"
@@ -135,7 +135,7 @@ function buildJsonLd(args: {
       "https://warm-hello.com/opengraph-image",
     ],
     description:
-      "Warm-Hello is an automated SMS-based daily safety check-in service designed for elderly seniors living independently and the adult children who care for them. Seniors confirm they are safe with a single tap on a secure text link — no app installs, no logins, no wearable buttons required. If two consecutive check-ins are missed, Warm-Hello automatically alerts designated family contacts by text and email.",
+      "Warm-Hello is an automated SMS-based daily safety check-in service designed for elderly seniors living independently and the adult children who care for them. Seniors confirm they are safe with a single tap on a secure text link - no app installs, no logins, no wearable buttons required. If two consecutive check-ins are missed, Warm-Hello automatically alerts designated family contacts by text and email.",
     sku: `WARMHELLO-${active.currency}-MONTHLY`,
     mpn: `WARMHELLO-${active.currency}-MONTHLY`,
     brand: {
@@ -169,7 +169,7 @@ function buildJsonLd(args: {
           worstRating: 1,
         },
         reviewBody:
-          "My mom (Margaret, 82) lives alone and we had one scare where she fell and couldn't reach the phone. We tried a pendant first but she refused to wear it. Warm-Hello fits right into her texting routine — by 9 a.m. I get a green check and I can start my workday without that little knot in my stomach. Canceled it once by mistake, the trial was more than enough time to know it was a keeper.",
+          "My mom (Margaret, 82) lives alone and we had one scare where she fell and couldn't reach the phone. We tried a pendant first but she refused to wear it. Warm-Hello fits right into her texting routine - by 9 a.m. I get a green check and I can start my workday without that little knot in my stomach. Canceled it once by mistake, the trial was more than enough time to know it was a keeper.",
       },
     ],
     offers: [offerFor(active), offerFor(other)],
@@ -230,14 +230,14 @@ export default async function HomePage() {
           <div className="hero-copy">
             <p className="eyebrow">Daily Peace Of Mind For Families</p>
             <h1>
-              Gentle daily SMS check-ins for seniors living alone — no app,
+              Gentle daily SMS check-ins for seniors living alone - no app,
               one tap to confirm safety.
             </h1>
             <p className="entity-definition">
               Warm-Hello is an automated SMS-based daily safety check-in
               service designed for elderly seniors living independently and
               the adult children who care for them. Seniors confirm they are
-              safe with a single tap on a secure text link — no app
+              safe with a single tap on a secure text link - no app
               installs, no logins, no wearable buttons required.
             </p>
             <p className="lede">
@@ -291,7 +291,7 @@ export default async function HomePage() {
             <p className="eyebrow">The Problem</p>
             <h2>
               Why caregivers and adult children worry about seniors living
-              alone — and how a gentle daily check-in helps
+              alone - and how a gentle daily check-in helps
             </h2>
           </div>
           <div className="card story-card">
@@ -360,7 +360,7 @@ export default async function HomePage() {
           <div className="section-heading">
             <p className="eyebrow">Why Families Love It</p>
             <h2>
-              Designed to feel warm, not clinical — a quick check-in that
+              Designed to feel warm, not clinical - a quick check-in that
               preserves independence
             </h2>
           </div>
@@ -403,7 +403,7 @@ export default async function HomePage() {
             <p className="section-copy">
               Caregivers often reach for a traditional medical-alert pendant or a
               human-operated call-center service first. Warm-Hello fills the daily
-              routine gap neither one covers — at a fraction of the cost.
+              routine gap neither one covers - at a fraction of the cost.
             </p>
           </div>
           <ComparisonTable currency={visitorCurrency.currency} />
@@ -414,7 +414,7 @@ export default async function HomePage() {
             <div>
               <p className="eyebrow">Simple Pricing</p>
               <h2>
-                Simple, predictable pricing for families — $5 USD or $6 CAD
+                Simple, predictable pricing for families - $5 USD or $6 CAD
                 per month, no contracts, cancel anytime.
               </h2>
               <p className="pricing-amount">

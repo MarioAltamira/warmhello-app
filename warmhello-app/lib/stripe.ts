@@ -2,7 +2,7 @@ import Stripe from "stripe";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { BillingCurrency, isBillingCurrency } from "@/lib/pricing";
-import { getStripePriceIdFor, resolveCurrencyForCurrentVisitor } from "@/lib/visitor-currency";
+import { getStripePriceIdFor } from "@/lib/visitor-currency";
 
 let stripeClient: Stripe | null = null;
 
@@ -21,9 +21,20 @@ export function getStripeClient() {
 export async function resolveCheckoutCurrency(input: {
   subscriberId: string;
 }): Promise<BillingCurrency> {
-  const resolved = await resolveCurrencyForCurrentVisitor({ subscriberId: input.subscriberId });
-  if (!isBillingCurrency(resolved.currency)) return "USD";
-  return resolved.currency;
+  if (prisma) {
+    try {
+      const row = await prisma.subscriber.findUnique({
+        where: { id: input.subscriberId },
+        select: { billingCurrency: true },
+      });
+      if (row?.billingCurrency && isBillingCurrency(row.billingCurrency)) {
+        return row.billingCurrency;
+      }
+    } catch {
+      // ignore and fall through to default
+    }
+  }
+  return "USD";
 }
 
 export async function createCheckoutSession(input: {
@@ -105,8 +116,8 @@ export async function getPriceInfo(priceId?: string) {
       },
       displayLabel:
         period === "one-time"
-          ? `${currency} ${amount.toFixed(2)}`
-          : `${currency} ${amount.toFixed(2)} per ${period}`,
+          ? `${currency} $${amount.toFixed(2)}`
+          : `${currency} $${amount.toFixed(2)} per ${period}`,
     };
   } catch {
     return { ok: false as const, price: null, displayLabel: null };

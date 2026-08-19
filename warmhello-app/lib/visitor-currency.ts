@@ -45,11 +45,6 @@ export function resolveVisitorCurrencyFromRequest(options?: {
 export async function resolveCurrencyForCurrentVisitor(options?: {
   subscriberId?: string | null;
 }): Promise<ResolvedCurrency> {
-  const cookieStore = await cookies();
-
-  const rawCookie = cookieStore.get(CURRENCY_COOKIE_NAME)?.value ?? null;
-  const explicitCookie = isBillingCurrency(rawCookie) ? rawCookie : null;
-
   let subscriberBillingCurrency: BillingCurrency | null = null;
   if (options?.subscriberId && prisma) {
     try {
@@ -59,11 +54,20 @@ export async function resolveCurrencyForCurrentVisitor(options?: {
       });
       if (row?.billingCurrency && isBillingCurrency(row.billingCurrency)) {
         subscriberBillingCurrency = row.billingCurrency;
+        return {
+          currency: subscriberBillingCurrency,
+          source: "subscriber_billing_currency",
+          fromSubscriber: true,
+        };
       }
     } catch {
       // ignore
     }
   }
+
+  const cookieStore = await cookies();
+  const rawCookie = cookieStore.get(CURRENCY_COOKIE_NAME)?.value ?? null;
+  const explicitCookie = isBillingCurrency(rawCookie) ? rawCookie : null;
 
   return resolveVisitorCurrencyFromRequest({
     subscriberBillingCurrency,

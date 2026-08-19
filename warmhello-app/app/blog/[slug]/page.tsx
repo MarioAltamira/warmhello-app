@@ -189,7 +189,7 @@ export default async function BlogPostPage({
               <p className="eyebrow">This was useful?</p>
               <h2>Share this with another caregiver.</h2>
               <p className="section-copy">
-                A sibling, a cousin, a friend — anyone checking in on an aging
+                A sibling, a cousin, a friend - anyone checking in on an aging
                 parent from a distance.
               </p>
             </div>

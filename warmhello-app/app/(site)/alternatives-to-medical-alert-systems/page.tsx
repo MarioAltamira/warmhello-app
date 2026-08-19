@@ -17,10 +17,10 @@ import { getSubscriberSessionId } from "@/lib/subscriber-session";
 export const metadata: Metadata = {
   title: {
     absolute:
-      "Warm-Hello — Better Alternatives to Medical Alert Systems for Seniors Living Alone",
+      "Warm-Hello - Better Alternatives to Medical Alert Systems for Seniors Living Alone",
   },
   description:
-    "Compare Warm-Hello vs Life Alert style medical alert pendants and call-center daily check-ins. Gentle one-tap SMS check-ins for seniors — no wearables, no call centers, no contracts. USD $5/month or CAD $6/month, cancel anytime. Start a free 7-day trial.",
+    "Compare Warm-Hello vs Life Alert style medical alert pendants and call-center daily check-ins. Gentle one-tap SMS check-ins for seniors - no wearables, no call centers, no contracts. USD $5/month or CAD $6/month, cancel anytime. Start a free 7-day trial.",
   alternates: {
     canonical: "/alternatives-to-medical-alert-systems",
   },
@@ -37,15 +37,15 @@ export const metadata: Metadata = {
     type: "website",
     url: "https://warm-hello.com/alternatives-to-medical-alert-systems",
     title:
-      "Warm-Hello — Better Alternatives to Medical Alert Systems for Seniors Living Alone",
+      "Warm-Hello - Better Alternatives to Medical Alert Systems for Seniors Living Alone",
     description:
-      "Compare Warm-Hello vs medical-alert pendants and call-center check-ins. Gentle daily SMS check-ins for seniors living alone — no wearables, no operators, no contracts, USD $5 or CAD $6/month.",
+      "Compare Warm-Hello vs medical-alert pendants and call-center check-ins. Gentle daily SMS check-ins for seniors living alone - no wearables, no operators, no contracts, USD $5 or CAD $6/month.",
     images: [
       {
         url: `/opengraph-image?title=${encodeURIComponent("Better Alternatives to Medical Alert Systems for Seniors Living Alone")}&subtitle=${encodeURIComponent("Gentle daily SMS check-ins: no wearables, no call-center operators, no contracts. USD $5 or CAD $6/month.")}`,
         width: 1200,
         height: 630,
-        alt: "Warm-Hello alternatives to medical alert systems — compare Warm-Hello vs Life Alert style pendants and call-center check-ins.",
+        alt: "Warm-Hello alternatives to medical alert systems - compare Warm-Hello vs Life Alert style pendants and call-center check-ins.",
       },
     ],
   },
@@ -54,7 +54,7 @@ export const metadata: Metadata = {
     site: "@warmhello",
     creator: "@warmhello",
     title:
-      "Warm-Hello — Better Alternatives to Medical Alert Systems (2026 Compare)",
+      "Warm-Hello - Better Alternatives to Medical Alert Systems (2026 Compare)",
     description:
       "Seniors hate pendant buttons. Adult children hate call centers. Compare Warm-Hello (SMS one-tap daily check-in) against medical-alert pendants and call-center operators, with transparent USD/CAD pricing.",
     images: [
@@ -77,15 +77,15 @@ export const metadata: Metadata = {
 const FAQ: { q: string; a: string }[] = [
   {
     q: "Is Warm-Hello a replacement for a medical alert button like Life Alert?",
-    a: "Warm-Hello is designed for daily routine reassurance — the morning check-in that says, 'Everything is fine over here.' It does not dispatch EMTs or replace 911. If a fall or medical emergency happens, seniors should still call 911 or use a medical-alert pendant. Think of Warm-Hello as the automated, warm daily check-in you wish you had time for, not the emergency response button.",
+    a: "Warm-Hello is designed for daily routine reassurance - the morning check-in that says, 'Everything is fine over here.' It does not dispatch EMTs or replace 911. If a fall or medical emergency happens, seniors should still call 911 or use a medical-alert pendant. Think of Warm-Hello as the automated, warm daily check-in you wish you had time for, not the emergency response button.",
   },
   {
     q: "My dad refuses to wear a medical alert pendant. Will he use Warm-Hello?",
-    a: "Yes. The #1 reason caregivers reach out is exactly this: 'Mom won't wear the button.' With Warm-Hello there's nothing to wear, nothing to charge, no passwords to forget. Every morning he taps a link in a text then a large, high-contrast 'I'm OK' button on a secure web page — that's it. No app, no call center, no strangers asking questions.",
+    a: "Yes. The #1 reason caregivers reach out is exactly this: 'Mom won't wear the button.' With Warm-Hello there's nothing to wear, nothing to charge, no passwords to forget. Every morning he taps a link in a text then a large, high-contrast 'I'm OK' button on a secure web page - that's it. No app, no call center, no strangers asking questions.",
   },
   {
     q: "What happens if the morning check-in is missed twice?",
-    a: "If there's no response after the first check-in, Warm-Hello sends a gentle reminder text 60 minutes later. If the reminder also goes unanswered, Warm-Hello immediately texts and emails the family emergency contacts you've listed in the dashboard — siblings, neighbors, whoever needs to know. You decide the alert chain and can edit it anytime.",
+    a: "If there's no response after the first check-in, Warm-Hello sends a gentle reminder text 60 minutes later. If the reminder also goes unanswered, Warm-Hello immediately texts and emails the family emergency contacts you've listed in the dashboard - siblings, neighbors, whoever needs to know. You decide the alert chain and can edit it anytime.",
   },
   {
     q: "How does the cost compare to a traditional medical alert system?",
@@ -124,7 +124,7 @@ export default async function AlternativesLandingPage() {
   const jsonLdProduct = {
     "@context": "https://schema.org",
     "@type": "Product" as const,
-    name: "Warm-Hello — Alternative to Medical Alert Systems",
+    name: "Warm-Hello - Alternative to Medical Alert Systems",
     image: [
       "https://warm-hello.com/hero-warmhello.png",
       "https://warm-hello.com/opengraph-image",
@@ -147,7 +147,7 @@ export default async function AlternativesLandingPage() {
         billingCycle: "monthly",
         name: "USD monthly plan",
         description:
-          "USD 5.00 per month — equivalent to USD 60.00 per year or USD 0.16 per day.",
+          "USD $5.00 per month - equivalent to USD $60.00 per year or USD $0.16 per day.",
         url: "https://warm-hello.com/alternatives-to-medical-alert-systems",
         availability: "https://schema.org/InStock",
         areaServed: { "@type": "Place" as const, name: "United States" },
@@ -161,7 +161,7 @@ export default async function AlternativesLandingPage() {
         billingCycle: "monthly",
         name: "CAD monthly plan",
         description:
-          "CAD 6.00 per month — equivalent to CAD 72.00 per year or CAD 0.20 per day.",
+          "CAD $6.00 per month - equivalent to CAD $72.00 per year or CAD $0.20 per day.",
         url: "https://warm-hello.com/alternatives-to-medical-alert-systems",
         availability: "https://schema.org/InStock",
         areaServed: { "@type": "Place" as const, name: "Canada" },
@@ -218,7 +218,7 @@ export default async function AlternativesLandingPage() {
               Most medical-alert pendants collect dust in a drawer within 60
               days. Most call-center check-ins feel like a scripted sales call.
               Warm-Hello does the quiet daily job that both of those options
-              miss — and it costs about the same as a coffee a month.
+              miss - and it costs about the same as a coffee a month.
             </p>
             <div className="actions">
               <Link href={trialCtaHref} className="button primary hero-primary-cta">
@@ -271,7 +271,7 @@ export default async function AlternativesLandingPage() {
               PERS pendants handle the emergency-but-rare fall button press.
               Call centers can read a script every morning. Warm-Hello does the
               routine daily reassurance that makes the biggest difference for
-              caregivers — with zero friction for the senior.
+              caregivers - with zero friction for the senior.
             </p>
           </div>
           <ComparisonTable currency={visitorCurrency.currency} />
@@ -308,8 +308,8 @@ export default async function AlternativesLandingPage() {
               <p>
                 Human-operated call centers hire operators, and every morning
                 your parent gets a phone call from a stranger following a
-                checklist. A lot of seniors — especially ones who grew up with
-                polite caller etiquette — feel forced to make small talk they
+                checklist. A lot of seniors - especially ones who grew up with
+                polite caller etiquette - feel forced to make small talk they
                 don&apos;t want. Warm-Hello is impersonal in the best way: a
                 two-tap text, no conversation required.
               </p>
@@ -320,7 +320,7 @@ export default async function AlternativesLandingPage() {
               <p>
                 There is no &ldquo;alert button&rdquo; branding on Warm-Hello.
                 There is no dispatch center, no nurse on the line, no medical
-                vibe. The morning message is a gentle wave from a family app —
+                vibe. The morning message is a gentle wave from a family app -
                 which means the senior is more likely to actually use it, and
                 you are more likely to get that 10-second confirmation every
                 single day.
@@ -347,7 +347,7 @@ export default async function AlternativesLandingPage() {
           <div className="section-heading">
             <p className="eyebrow">When to pick what</p>
             <h2>
-              What to use Warm-Hello for — and when a real medical alert still
+              What to use Warm-Hello for - and when a real medical alert still
               makes sense
             </h2>
             <p className="section-copy">
@@ -398,7 +398,7 @@ export default async function AlternativesLandingPage() {
               <p className="pricing-copy">{plan.marketing.yearlyCard}</p>
               <p className="pricing-copy">
                 Compared to a $30–$50/month medical alert system with equipment
-                fees, Warm-Hello pays for itself the first month — and your
+                fees, Warm-Hello pays for itself the first month - and your
                 parent actually uses it.
               </p>
               <div style={{ marginTop: 14 }}>

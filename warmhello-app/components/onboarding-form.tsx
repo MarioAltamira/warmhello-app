@@ -498,14 +498,14 @@ export function OnboardingForm({
               {
                 value: "USD" as BillingCurrency,
                 label: "🇺🇸 United States",
-                price: "USD 5.00 / month",
-                detail: "Equivalent to USD 60.00 per year · about USD 0.16 per day",
+                price: "USD $5.00 / month",
+                detail: "Equivalent to USD $60.00 per year · about USD $0.16 per day",
               },
               {
                 value: "CAD" as BillingCurrency,
                 label: "🇨🇦 Canada",
-                price: "CAD 6.00 / month",
-                detail: "Equivalent to CAD 72.00 per year · about CAD 0.20 per day",
+                price: "CAD $6.00 / month",
+                detail: "Equivalent to CAD $72.00 per year · about CAD $0.20 per day",
               },
             ].map((option) => {
               const selected = form.billingCurrency === option.value;
@@ -608,7 +608,7 @@ export function OnboardingForm({
             </div>
             <div className="checkbox-note">
               We&apos;ll call at her preferred hour every morning. Un-check to pause while she&apos;s on vacation or staying with family.
-              Remember to turn it back on when she returns — we will not auto-resume.
+              Remember to turn it back on when she returns - we will not auto-resume.
             </div>
           </div>
         </label>
