@@ -110,66 +110,6 @@ function buildJsonLd(args: {
     areaServed: plan.currency === "USD"
       ? { "@type": "Place" as const, name: "United States" }
       : { "@type": "Place" as const, name: "Canada" },
-    hasMerchantReturnPolicy: {
-      "@type": "MerchantReturnPolicy" as const,
-      name: "No returns — free 7-day trial evaluation period",
-      returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
-      merchantReturnDays: 7,
-      returnMethod: "https://schema.org/ReturnByMail",
-      returnFees: "https://schema.org/FreeReturn",
-      applicableCountry: plan.currency === "USD"
-        ? "US"
-        : "CA",
-      inStoreReturnsOffered: false,
-      policyReason:
-        "Warm-Hello is a monthly digital SMS service. Every new subscriber receives a fully functional 7-day free trial with no payment method required to evaluate the service. Because the entire product is available to test before any charge, we do not offer refunds, returns, or prorated credits once a billing period has started. Cancel auto-renew any time from your billing dashboard and service will continue through the end of the period you already paid for.",
-    },
-    shippingDetails: {
-      "@type": "OfferShippingDetails" as const,
-      shippingRate: {
-        "@type": "MonetaryAmount" as const,
-        value: "0",
-        currency: plan.currency,
-      },
-      shippingDestination: plan.currency === "USD"
-        ? {
-            "@type": "DefinedRegion" as const,
-            addressCountry: "US",
-          }
-        : {
-            "@type": "DefinedRegion" as const,
-            addressCountry: "CA",
-          },
-      deliveryTime: {
-        "@type": "ShippingDeliveryTime" as const,
-        businessDays: {
-          "@type": "OpeningHoursSpecification" as const,
-          dayOfWeek: [
-            "https://schema.org/Monday",
-            "https://schema.org/Tuesday",
-            "https://schema.org/Wednesday",
-            "https://schema.org/Thursday",
-            "https://schema.org/Friday",
-            "https://schema.org/Saturday",
-            "https://schema.org/Sunday",
-          ],
-          opens: "00:00:00",
-          closes: "23:59:59",
-        },
-        handlingTime: {
-          "@type": "QuantitativeValue" as const,
-          minValue: 0,
-          maxValue: 0,
-          unitCode: "DAY",
-        },
-        transitTime: {
-          "@type": "QuantitativeValue" as const,
-          minValue: 0,
-          maxValue: 0,
-          unitCode: "DAY",
-        },
-      },
-    },
   });
 
   const organization = {
