@@ -1637,6 +1637,9 @@ code {
   position: relative;
   z-index: 1;
   width: min(920px, 100%);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overflow-x: hidden;
   background: linear-gradient(160deg, #141d3b 0%, #101833 50%, #0f1630 100%);
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 24px;
@@ -1649,6 +1652,9 @@ code {
   display: flex;
   flex-direction: column;
   gap: 22px;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.45) transparent;
 }
 
 .share-dialog-head {
@@ -1823,6 +1829,12 @@ code {
   margin-bottom: 2px;
 }
 
+.share-tile-icon svg {
+  max-width: 100%;
+  max-height: 100%;
+  display: block;
+}
+
 .share-tile-label {
   font-size: 26px;
   font-weight: 500;
@@ -1881,11 +1893,66 @@ code {
 }
 
 @media (max-width: 480px) {
-  .share-tiles {
-    grid-template-columns: 1fr;
+  .share-dialog {
+    padding: 16px 14px 18px;
+    gap: 14px;
   }
 
   .share-dialog-title {
-    font-size: 24px;
+    font-size: 22px;
+  }
+
+  .share-dialog-close {
+    padding: 6px;
+  }
+
+  .share-copy-row {
+    gap: 10px;
+  }
+
+  .share-copy-button {
+    font-size: 16px;
+    min-height: 46px;
+  }
+
+  .share-copy-input {
+    min-height: 46px;
+  }
+
+  .share-webshare-button {
+    min-height: 46px;
+    font-size: 16px;
+  }
+
+  .share-tiles {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .share-tiles-center {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: 0;
+  }
+
+  .share-tiles-center .share-tile {
+    max-width: 100%;
+  }
+
+  .share-tile {
+    padding: 12px 8px 10px;
+    border-radius: 14px;
+    gap: 6px;
+  }
+
+  .share-tile-icon {
+    width: 34px;
+    height: 34px;
+    margin-bottom: 0;
+  }
+
+  .share-tile-label {
+    font-size: 12px;
+    font-weight: 500;
   }
 }
+
