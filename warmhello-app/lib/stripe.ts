@@ -53,13 +53,13 @@ export async function createCheckoutSession(input: {
     };
   }
 
-  const session = await stripe.checkout.sessions.create({
+  const sessionParams: Stripe.Checkout.SessionCreateParams & Record<string, unknown> = {
     mode: "subscription",
     success_url: `${env.APP_URL}/dashboard?checkout=success`,
     cancel_url: `${env.APP_URL}/dashboard?checkout=canceled`,
     customer_email: input.customerEmail,
     client_reference_id: input.subscriberId,
-    currency: currency.toLowerCase(),
+    currency_conversion_enabled: false,
     subscription_data: {
       metadata: {
         subscriberId: input.subscriberId,
@@ -75,7 +75,9 @@ export async function createCheckoutSession(input: {
         quantity: 1,
       },
     ],
-  });
+  };
+
+  const session = await stripe.checkout.sessions.create(sessionParams as Stripe.Checkout.SessionCreateParams);
 
   return { ok: true as const, url: session.url };
 }

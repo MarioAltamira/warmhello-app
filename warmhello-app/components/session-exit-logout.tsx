@@ -22,16 +22,6 @@ function clearPresenceCookie() {
 }
 
 export function SessionExitLogout() {
-  useEffect(() => {
-    function handlePageHide() {
-      clearPresenceCookie();
-      fetch("/api/session", { method: "DELETE", keepalive: true }).catch(() => undefined);
-    }
-
-    window.addEventListener("pagehide", handlePageHide);
-    return () => window.removeEventListener("pagehide", handlePageHide);
-  }, []);
-
   return null;
 }
 
