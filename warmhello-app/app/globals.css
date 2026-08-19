@@ -109,6 +109,8 @@ body {
 .site-header-logo {
   width: auto;
   height: 42px;
+  object-fit: contain;
+  display: block;
 }
 
 .site-header-nav {
@@ -1068,6 +1070,13 @@ h3 {
 .checkin-card {
   max-width: 560px;
   margin: 48px auto;
+}
+
+.checkin-card-logo {
+  width: auto;
+  height: 48px;
+  object-fit: contain;
+  display: block;
 }
 
 .checkin-card p {

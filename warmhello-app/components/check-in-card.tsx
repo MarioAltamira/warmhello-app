@@ -72,6 +72,7 @@ export function CheckInCard({
           width={220}
           height={55}
           priority
+          className="checkin-card-logo"
         />
       </div>
       <p className="eyebrow">Secure Daily Check-In</p>

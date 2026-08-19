@@ -834,7 +834,7 @@ export function OnboardingForm({
           {testMessage ? <p className="result-panel-note">{testMessage}</p> : null}
           {testCheckInToken ? (
             <div className="result-panel-actions">
-              <Link href={`/checkin/${testCheckInToken}`} className="button secondary">
+              <Link href={`/checkin/${testCheckInToken}?preview=1`} className="button secondary">
                 Open Test Check-In Link
               </Link>
             </div>
