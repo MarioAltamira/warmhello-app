@@ -641,7 +641,7 @@ export function OnboardingForm({
               <Link href="/dashboard" className="button primary">
                 View Family Dashboard
               </Link>
-              <Link href={`/checkin/${firstCheckIn.token}`} className="button secondary">
+              <Link href={`/checkin/${firstCheckIn.token}?preview=1`} className="button secondary">
                 Preview First Check-In
               </Link>
               <button

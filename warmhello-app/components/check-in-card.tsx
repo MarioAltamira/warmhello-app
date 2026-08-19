@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 
 type CheckInCardProps = {
@@ -8,7 +9,10 @@ type CheckInCardProps = {
   scheduledLabel: string;
   status: "pending" | "confirmed" | "expired";
   confirmedLabel?: string;
+  isPreview?: boolean;
 };
+
+const RETURN_TO_MESSAGES_HREF = "sms:+16892258343";
 
 export function CheckInCard({
   token,
@@ -16,6 +20,7 @@ export function CheckInCard({
   scheduledLabel,
   status,
   confirmedLabel,
+  isPreview = false,
 }: CheckInCardProps) {
   const [message, setMessage] = useState(
     status === "confirmed"
@@ -56,9 +61,21 @@ export function CheckInCard({
   const disabledCall = status !== "pending" || anySubmitting;
   const errorMessage = message.includes("could not") || message.includes("expired");
   const callRequested = confirmed && message.toLowerCase().includes("call");
+  const isSmsFlow = !isPreview;
 
   return (
     <section className="card checkin-card">
+      {isSmsFlow ? (
+        <div style={{ marginBottom: 8 }}>
+          <Image
+            src="/warmhello-logo-b.png"
+            alt="Warm-Hello"
+            width={220}
+            height={55}
+            priority
+          />
+        </div>
+      ) : null}
       <p className="eyebrow">Secure Daily Check-In</p>
       <h1>Hi {seniorName}</h1>
       <p>
@@ -91,6 +108,15 @@ export function CheckInCard({
       >
         {message}
       </p>
+      {isSmsFlow ? (
+        <a
+          className="button secondary"
+          href={RETURN_TO_MESSAGES_HREF}
+          style={{ marginTop: 24 }}
+        >
+          Return to Messages
+        </a>
+      ) : null}
     </section>
   );
 }

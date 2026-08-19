@@ -35,7 +35,7 @@ export default async function OnboardPage({ searchParams }: OnboardPageProps) {
           <Link href="/dashboard" className="button secondary">
             Back to Dashboard
           </Link>
-          <Link href="/checkin/demo-token" className="button secondary">
+          <Link href="/checkin/demo-token?preview=1" className="button secondary">
             Preview Check-In
           </Link>
         </div>

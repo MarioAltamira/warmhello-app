@@ -455,7 +455,7 @@ export default async function AlternativesLandingPage() {
             <Link href={trialCtaHref} className="button primary">
               Start Their Free 7-Day Trial
             </Link>
-            <Link href="/checkin/demo-token" className="button secondary">
+            <Link href="/checkin/demo-token?preview=1" className="button secondary">
               See The Check-In Experience
             </Link>
           </div>

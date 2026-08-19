@@ -92,7 +92,7 @@ export default async function DashboardPage() {
           ) : null}
           {snapshot.latestCheckInToken ? (
             <div className="actions" style={{ marginTop: 16 }}>
-              <Link href={`/checkin/${snapshot.latestCheckInToken}`} className="button secondary">
+              <Link href={`/checkin/${snapshot.latestCheckInToken}?preview=1`} className="button secondary">
                 Open Check-In Link
               </Link>
             </div>
@@ -126,7 +126,7 @@ export default async function DashboardPage() {
           <Link href="/dashboard/settings" className="button secondary">
             Settings
           </Link>
-          <Link href="/checkin/demo-token" className="button secondary">
+          <Link href="/checkin/demo-token?preview=1" className="button secondary">
             Preview Demo Check-In
           </Link>
         </div>
