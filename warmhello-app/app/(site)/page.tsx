@@ -115,6 +115,8 @@ function buildJsonLd(args: {
       name: "No returns — free 7-day trial evaluation period",
       returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
       merchantReturnDays: 7,
+      returnMethod: "https://schema.org/ReturnByMail",
+      returnFees: "https://schema.org/FreeReturn",
       applicableCountry: plan.currency === "USD"
         ? "US"
         : "CA",
@@ -156,12 +158,14 @@ function buildJsonLd(args: {
         },
         handlingTime: {
           "@type": "QuantitativeValue" as const,
-          value: 0,
+          minValue: 0,
+          maxValue: 0,
           unitCode: "DAY",
         },
         transitTime: {
           "@type": "QuantitativeValue" as const,
-          value: 0,
+          minValue: 0,
+          maxValue: 0,
           unitCode: "DAY",
         },
       },

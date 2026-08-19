@@ -65,17 +65,15 @@ export function CheckInCard({
 
   return (
     <section className="card checkin-card">
-      {isSmsFlow ? (
-        <div style={{ marginBottom: 8 }}>
-          <Image
-            src="/warmhello-logo-b.png"
-            alt="Warm-Hello"
-            width={220}
-            height={55}
-            priority
-          />
-        </div>
-      ) : null}
+      <div style={{ marginBottom: 8 }}>
+        <Image
+          src="/warmhello-logo-b.png"
+          alt="Warm-Hello"
+          width={220}
+          height={55}
+          priority
+        />
+      </div>
       <p className="eyebrow">Secure Daily Check-In</p>
       <h1>Hi {seniorName}</h1>
       <p>
