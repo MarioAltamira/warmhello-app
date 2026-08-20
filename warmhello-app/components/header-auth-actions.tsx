@@ -51,15 +51,24 @@ export function HeaderAuthActions() {
         return () => {};
       }
 
+      const settled = () => callback();
       window.addEventListener("focus", callback);
       window.addEventListener("popstate", callback);
       window.addEventListener("pageshow", callback);
+      window.addEventListener("presenceCookieSettled", settled);
       document.addEventListener("visibilitychange", callback);
+      const t1 = window.setTimeout(callback, 100);
+      const t2 = window.setTimeout(callback, 500);
+      const t3 = window.setTimeout(callback, 1500);
       return () => {
         window.removeEventListener("focus", callback);
         window.removeEventListener("popstate", callback);
         window.removeEventListener("pageshow", callback);
+        window.removeEventListener("presenceCookieSettled", settled);
         document.removeEventListener("visibilitychange", callback);
+        window.clearTimeout(t1);
+        window.clearTimeout(t2);
+        window.clearTimeout(t3);
       };
     },
     () => hasSubscriberCookie(),

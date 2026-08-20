@@ -69,12 +69,18 @@ export function SessionExitLogout() {
         } else if (!serverLoggedIn && clientLoggedIn) {
           clearPresenceCookie();
         }
+
+        window.dispatchEvent(
+          new CustomEvent("presenceCookieSettled", {
+            detail: { authenticated: serverLoggedIn },
+          }),
+        );
       } finally {
         runningRef.current = false;
       }
     }
 
-    syncPresenceWithServer();
+    void syncPresenceWithServer();
 
     function handlePageHide() {
       clearPresenceCookie();
