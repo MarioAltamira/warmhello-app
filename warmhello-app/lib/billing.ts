@@ -339,12 +339,12 @@ export async function applyStripeEvent(event: Stripe.Event) {
             const invoiceIdForPoll = typeof invoice.id === "string" ? invoice.id : "";
             if (expectedStatus !== "paid" && invoiceIdForPoll) {
               console.log(
-                `[stripe-webhook:invoice.paid] POLL START: invoice ${invoiceIdForPoll} status='${expectedStatus}' !== 'paid' -> polling up to 5x x 2s before pulling final URLs.`,
+                `[stripe-webhook:invoice.paid] POLL START: invoice ${invoiceIdForPoll} status='${expectedStatus}' !== 'paid' -> polling up to 8x x 2s before pulling final URLs.`,
               );
               const { pollStripeInvoiceUntilPaid } = await import("@/lib/trial-emails");
               const res = await pollStripeInvoiceUntilPaid(invoiceIdForPoll);
               console.log(
-                `[stripe-webhook:invoice.paid] POLL DONE: invoice ${invoiceIdForPoll} final status='${res.status}' attempts=${res.attempts}/${5} gaveUp=${res.gaveUp}`,
+                `[stripe-webhook:invoice.paid] POLL DONE: invoice ${invoiceIdForPoll} final status='${res.status}' attempts=${res.attempts}/${8} gaveUp=${res.gaveUp}`,
               );
               if (res.status === "paid" || res.invoicePdf || res.hostedInvoiceUrl) {
                 polledPdf = res.invoicePdf ?? polledPdf;

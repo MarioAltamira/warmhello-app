@@ -293,7 +293,7 @@ export async function pollStripeInvoiceUntilPaid(
     sleepMs?: number;
   } = {},
 ): Promise<{ status: string; invoicePdf: string | null; hostedInvoiceUrl: string | null; gaveUp: boolean; attempts: number }> {
-  const maxAttempts = opts.maxAttempts ?? 5;
+  const maxAttempts = opts.maxAttempts ?? 8;
   const sleepMs = opts.sleepMs ?? 2000;
   let attempts = 0;
   let lastStatus: string = "unknown";
@@ -391,29 +391,34 @@ export async function sendSuccessfulSubscriptionEmail(
   let invoiceHtml: string;
   let invoiceText: string;
   if (opts.hostedInvoiceUrl || opts.invoicePdfUrl) {
+    const thankHtml = `<p style="margin:0 0 8px 0; font-weight:600; color:#2b2f44;">Thank you for your payment.</p>`;
     const browserLinkHtml = opts.hostedInvoiceUrl
-      ? `<a href="${opts.hostedInvoiceUrl}" target="_blank" rel="noopener">🧾 View invoice in browser (Stripe)</a>`
+      ? `<a href="${opts.hostedInvoiceUrl}" target="_blank" rel="noopener" style="margin-right:14px;">🧾 View receipt (Stripe, opens in browser)</a>`
       : "";
     const pdfLinkHtml = opts.invoicePdfUrl
-      ? `<a href="${opts.invoicePdfUrl}" download>⬇️ Download Invoice PDF</a>`
+      ? `<a href="${opts.invoicePdfUrl}" download>⬇️ Download invoice PDF</a>`
       : "";
     const spacerHtml = browserLinkHtml && pdfLinkHtml ? `<br />` : "";
-    const note = `Most email clients open the "View invoice in browser" link as a new Stripe-hosted receipt page inline (no download needed). The PDF link always saves to Downloads.`;
+    const note = `The "View receipt" link opens your Stripe-hosted receipt page inline in a browser tab (shows PAID status, amount paid, and HST breakdown). The PDF link saves to your Downloads folder.`;
 
     invoiceHtml =
+      thankHtml +
       `${browserLinkHtml}${spacerHtml}${pdfLinkHtml}` +
-      `<p style="font-size: 12px; opacity: 0.75; margin: 6px 0 0 0;">${note}</p>`;
+      `<p style="font-size: 12px; opacity: 0.75; margin: 8px 0 0 0;">${note}</p>`;
 
+    const thankTextLine = `Thank you for your payment.\n`;
     const browserTextLine = opts.hostedInvoiceUrl
-      ? `View invoice in browser: ${opts.hostedInvoiceUrl}\n`
+      ? `View receipt (opens in browser): ${opts.hostedInvoiceUrl}\n`
       : "";
     const pdfTextLine = opts.invoicePdfUrl
-      ? `Download Invoice PDF (right-click / long-press to save): ${opts.invoicePdfUrl}\n`
+      ? `Download invoice PDF (right-click / long-press to save): ${opts.invoicePdfUrl}\n`
       : "";
-    invoiceText = `${browserTextLine}${pdfTextLine}Note: "View invoice in browser" link opens the Stripe-hosted receipt page inline in your browser (no download needed for viewing). PDF link always saves to Downloads.`;
+    invoiceText =
+      `${thankTextLine}${browserTextLine}${pdfTextLine}` +
+      `Note: "View receipt" opens the Stripe-hosted receipt page in a browser tab, with PAID status and full HST breakdown. The PDF link always saves to your Downloads folder.`;
   } else {
-    invoiceHtml = `See your <a href="${settingsLink}">Dashboard Billing</a>`;
-    invoiceText = `${settingsLink} (Billing)`;
+    invoiceHtml = `Thank you for your payment. See your <a href="${settingsLink}">Dashboard Billing</a> for status.`;
+    invoiceText = `Thank you for your payment. Billing status at: ${settingsLink}`;
   }
 
   const planSummaryLine = `${plan.monthlyLabel} · ${plan.dailyLabel} · billed ${plan.yearlyLabel}`;
