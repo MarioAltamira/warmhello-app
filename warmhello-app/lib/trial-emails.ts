@@ -2,6 +2,9 @@ import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
 import { env } from "@/lib/env";
 import { createUnsubscribeToken } from "@/lib/unsubscribe";
+import { pricingPlanFor, type BillingCurrency } from "@/lib/pricing";
+
+const SALES_EMAIL = "sales@warm-hello.com";
 
 async function getTrialSubscriber(subscriberId: string) {
   if (!prisma) {
@@ -39,6 +42,25 @@ async function getSubscriberForEmail(subscriberId: string) {
   return subscriber;
 }
 
+async function getSubscriberWithHousehold(subscriberId: string) {
+  if (!prisma) {
+    return null;
+  }
+
+  const subscriber = await prisma.subscriber.findUnique({
+    where: { id: subscriberId },
+    include: {
+      seniors: { include: { contacts: true } },
+    },
+  });
+
+  if (!subscriber || subscriber.unsubscribedAt !== null) {
+    return null;
+  }
+
+  return subscriber;
+}
+
 function getDashboardLink() {
   return `${env.APP_URL}/dashboard`;
 }
@@ -47,9 +69,32 @@ function getBuyNowLink(subscriberId: string) {
   return `${env.APP_URL}/subscribe/${subscriberId}`;
 }
 
+function getSettingsLink() {
+  return `${env.APP_URL}/dashboard/settings`;
+}
+
 function getUnsubscribeLink(subscriberId: string) {
   const token = createUnsubscribeToken({ subscriberId });
   return `${env.APP_URL}/unsubscribe/${token}`;
+}
+
+function pad2(n: number) {
+  return n.toString().padStart(2, "0");
+}
+
+function formatDateYYYYMMDD(date: Date | null | undefined) {
+  if (!date) return "See Dashboard";
+  return `${date.getUTCFullYear()}-${pad2(date.getUTCMonth() + 1)}-${pad2(date.getUTCDate())}`;
+}
+
+function buildEmailFooter(options: {
+  unsubscribeCopy: string;
+  unsubscribeLink: string;
+}) {
+  return {
+    html: `<p>Questions or need help? Email <a href="mailto:${SALES_EMAIL}">${SALES_EMAIL}</a>.</p><p style="font-size: 12px; opacity: 0.8;">${options.unsubscribeCopy} <a href="${options.unsubscribeLink}">unsubscribe</a>.</p>`,
+    text: `\nQuestions or need help? Email ${SALES_EMAIL}.\n\n${options.unsubscribeCopy}: ${options.unsubscribeLink}`,
+  };
 }
 
 export async function sendTrialWelcomeEmail(subscriberId: string) {
@@ -65,10 +110,15 @@ export async function sendTrialWelcomeEmail(subscriberId: string) {
 
   const dashboardLink = getDashboardLink();
   const unsubscribeLink = getUnsubscribeLink(subscriber.id);
+  const footer = buildEmailFooter({
+    unsubscribeCopy: "To stop trial emails,",
+    unsubscribeLink,
+  });
 
   return sendEmail({
     to: subscriber.email,
     subject: "Welcome to Warm-Hello - Peace of mind starts today",
+    replyTo: SALES_EMAIL,
     text: `Hi there,
 
 Thank you for choosing Warm-Hello to help stay connected with your loved one. We know that balancing their independence with your need for peace of mind can be difficult, and we're here to make that rhythm effortless.
@@ -82,9 +132,7 @@ Remember, there's nothing for your loved one to download or learn. They'll recei
 We're here to help you get settled. If you have any questions, just hit reply to this email.
 
 Warmly,
-The Warm-Hello Team
-
-Unsubscribe: ${unsubscribeLink}`,
+The Warm-Hello Team${footer.text}`,
     html: `<p><img src="${env.APP_URL}/warmhello-logo-b.png" alt="Warm-Hello" width="140" /></p>
 <p>Hi there,</p>
 <p>Thank you for choosing Warm-Hello to help stay connected with your loved one. We know that balancing their independence with your need for peace of mind can be difficult, and we're here to make that rhythm effortless.</p>
@@ -92,7 +140,7 @@ Unsubscribe: ${unsubscribeLink}`,
 <p>Remember, there's nothing for your loved one to download or learn. They'll receive a gentle, friendly text each morning with a secure link. A single tap on the big "I'm OK" button is all it takes to keep you in the loop.</p>
 <p>We're here to help you get settled. If you have any questions, just hit reply to this email.</p>
 <p>Warmly,<br />The Warm-Hello Team</p>
-<p style="font-size: 12px; opacity: 0.8;">To stop trial emails, <a href="${unsubscribeLink}">unsubscribe</a>.</p>`,
+${footer.html}`,
   });
 }
 
@@ -109,10 +157,15 @@ export async function sendTrialNudgeEmail(subscriberId: string) {
 
   const buyNowLink = getBuyNowLink(subscriber.id);
   const unsubscribeLink = getUnsubscribeLink(subscriber.id);
+  const footer = buildEmailFooter({
+    unsubscribeCopy: "To stop trial emails,",
+    unsubscribeLink,
+  });
 
   return sendEmail({
     to: subscriber.email,
     subject: "How is your first week going?",
+    replyTo: SALES_EMAIL,
     text: `Hi there,
 
 We hope the first few days of using Warm-Hello have brought a little more calm to your mornings.
@@ -127,9 +180,7 @@ ${buyNowLink}
 We are always looking to improve. If you have any feedback on your experience so far, we'd love to hear it!
 
 Best,
-The Warm-Hello Team
-
-Unsubscribe: ${unsubscribeLink}`,
+The Warm-Hello Team${footer.text}`,
     html: `<p><img src="${env.APP_URL}/warmhello-logo-b.png" alt="Warm-Hello" width="140" /></p>
 <p>Hi there,</p>
 <p>We hope the first few days of using Warm-Hello have brought a little more calm to your mornings.</p>
@@ -138,7 +189,7 @@ Unsubscribe: ${unsubscribeLink}`,
 <p><a href="${buyNowLink}">Secure your account for $6/month</a></p>
 <p>We are always looking to improve. If you have any feedback on your experience so far, we'd love to hear it!</p>
 <p>Best,<br />The Warm-Hello Team</p>
-<p style="font-size: 12px; opacity: 0.8;">To stop trial emails, <a href="${unsubscribeLink}">unsubscribe</a>.</p>`,
+${footer.html}`,
   });
 }
 
@@ -155,10 +206,15 @@ export async function sendTrialFinalEmail(subscriberId: string) {
 
   const buyNowLink = getBuyNowLink(subscriber.id);
   const unsubscribeLink = getUnsubscribeLink(subscriber.id);
+  const footer = buildEmailFooter({
+    unsubscribeCopy: "To stop trial emails,",
+    unsubscribeLink,
+  });
 
   return sendEmail({
     to: subscriber.email,
     subject: "Your trial has ended - stay connected with Warm-Hello",
+    replyTo: SALES_EMAIL,
     text: `Hi there,
 
 Your 7-day free trial of Warm-Hello has concluded. We hope that over the past week, you've experienced how much easier it is to stay connected without having to be "the person who checks in" every single morning.
@@ -171,9 +227,7 @@ ${buyNowLink}
 Thank you for trusting us to help you bridge the gap between respect for their independence and your own peace of mind.
 
 Warmly,
-The Warm-Hello Team
-
-Unsubscribe: ${unsubscribeLink}`,
+The Warm-Hello Team${footer.text}`,
     html: `<p><img src="${env.APP_URL}/warmhello-logo-b.png" alt="Warm-Hello" width="140" /></p>
 <p>Hi there,</p>
 <p>Your 7-day free trial of Warm-Hello has concluded. We hope that over the past week, you've experienced how much easier it is to stay connected without having to be "the person who checks in" every single morning.</p>
@@ -181,7 +235,7 @@ Unsubscribe: ${unsubscribeLink}`,
 <p><a href="${buyNowLink}">Activate your Warm-Hello subscription here</a></p>
 <p>Thank you for trusting us to help you bridge the gap between respect for their independence and your own peace of mind.</p>
 <p>Warmly,<br />The Warm-Hello Team</p>
-<p style="font-size: 12px; opacity: 0.8;">To stop trial emails, <a href="${unsubscribeLink}">unsubscribe</a>.</p>`,
+${footer.html}`,
   });
 }
 
@@ -197,10 +251,15 @@ export async function sendThankYouForSubscriptionEmail(subscriberId: string) {
 
   const dashboardLink = getDashboardLink();
   const unsubscribeLink = getUnsubscribeLink(subscriber.id);
+  const footer = buildEmailFooter({
+    unsubscribeCopy: "To stop future emails,",
+    unsubscribeLink,
+  });
 
   return sendEmail({
     to: subscriber.email,
     subject: "Thank you for trying Warm-Hello",
+    replyTo: SALES_EMAIL,
     text: `Hi there,
 
 Thank you for giving Warm-Hello a try.
@@ -211,15 +270,164 @@ ${dashboardLink}
 If there's anything we could have done better or if you have any questions, simply reply to this email and we'll be happy to help.
 
 Warmly,
-The Warm-Hello Team
-
-Unsubscribe: ${unsubscribeLink}`,
+The Warm-Hello Team${footer.text}`,
     html: `<p><img src="${env.APP_URL}/warmhello-logo-b.png" alt="Warm-Hello" width="140" /></p>
 <p>Hi there,</p>
 <p>Thank you for giving Warm-Hello a try.</p>
 <p>We've canceled your auto-renewal and your subscription will stay active through the end of your current billing cycle. If you'd like to continue protecting your family's peace of mind with Warm-Hello, you can reactivate anytime from your <a href="${dashboardLink}">Dashboard</a>.</p>
 <p>If there's anything we could have done better or if you have any questions, simply reply to this email and we'll be happy to help.</p>
 <p>Warmly,<br />The Warm-Hello Team</p>
-<p style="font-size: 12px; opacity: 0.8;">To stop future emails, <a href="${unsubscribeLink}">unsubscribe</a>.</p>`,
+${footer.html}`,
+  });
+}
+
+export type SuccessfulSubscriptionEmailOptions = {
+  invoicePdfUrl?: string | null;
+};
+
+export async function sendSuccessfulSubscriptionEmail(
+  subscriberId: string,
+  opts: SuccessfulSubscriptionEmailOptions = {},
+) {
+  const subscriber = await getSubscriberWithHousehold(subscriberId);
+  if (!subscriber) {
+    return {
+      ok: false as const,
+      message:
+        "Subscription success email skipped: subscriber not found or already unsubscribed.",
+      id: null,
+    };
+  }
+
+  const dashboardLink = getDashboardLink();
+  const settingsLink = getSettingsLink();
+  const unsubscribeLink = getUnsubscribeLink(subscriber.id);
+  const footer = buildEmailFooter({
+    unsubscribeCopy: "To stop billing-related notices,",
+    unsubscribeLink,
+  });
+
+  const currency: BillingCurrency = subscriber.billingCurrency ?? "USD";
+  const plan = pricingPlanFor(currency);
+
+  const seniorNames = subscriber.seniors
+    .map((s) => `${s.firstName} ${s.lastName}`.trim())
+    .filter(Boolean);
+  const seniorsCoveredText = seniorNames.length
+    ? seniorNames.join(" · ")
+    : "See Dashboard";
+
+  const checkInLines = subscriber.seniors.map((s) => {
+    return `${pad2(s.checkInHour)}:${pad2(s.checkInMinute)} in ${s.timezone} for ${s.firstName} ${s.lastName}`;
+  });
+  const checkInTimesText = checkInLines.length
+    ? checkInLines.join(" / ")
+    : "See Dashboard";
+
+  const uniqueContacts = new Map<string, { fullName: string; relationship: string; phoneNumber: string }>();
+  for (const senior of subscriber.seniors) {
+    for (const contact of senior.contacts) {
+      const key = `${contact.fullName.toLowerCase()}|${contact.phoneNumber}`;
+      if (!uniqueContacts.has(key)) {
+        uniqueContacts.set(key, {
+          fullName: contact.fullName,
+          relationship: contact.relationship,
+          phoneNumber: contact.phoneNumber,
+        });
+      }
+    }
+  }
+  const contactRows = Array.from(uniqueContacts.values());
+  const contactsText = contactRows.length
+    ? contactRows
+        .map(
+          (c) =>
+            `${c.fullName} (${c.relationship}) · ${c.phoneNumber}`,
+        )
+        .join(" / ")
+    : "See Dashboard";
+
+  const nextBilling = formatDateYYYYMMDD(subscriber.currentPeriodEndsAt);
+  const invoiceHtml = opts.invoicePdfUrl
+    ? `<a href="${opts.invoicePdfUrl}">Open Invoice PDF</a>`
+    : `See your <a href="${settingsLink}">Dashboard Billing</a>`;
+  const invoiceText = opts.invoicePdfUrl
+    ? opts.invoicePdfUrl
+    : `${settingsLink} (Billing)`;
+
+  const planSummaryLine = `${plan.monthlyLabel} · ${plan.dailyLabel} · billed ${plan.yearlyLabel}`;
+
+  return sendEmail({
+    to: subscriber.email,
+    subject: "Your Warm-Hello subscription is active — check-ins are protected",
+    replyTo: SALES_EMAIL,
+    text: `Hi there,
+
+Your Warm-Hello subscription has been successfully activated. Thank you for keeping your family protected with us.
+
+Here is a quick summary of your plan:
+
+  • Seniors covered:     ${seniorsCoveredText}
+  • Billing frequency:   Annual (billed once per year)
+  • Plan:                ${planSummaryLine}
+  • Emergency contacts:  ${contactsText}
+  • Daily check-in time: ${checkInTimesText}
+  • Next billing date:   ${nextBilling}
+  • Receipt / Invoice:   ${invoiceText}
+
+A few important notes:
+
+  1. Check-ins will continue exactly as they were during your trial. No action needed from either you or the senior.
+  2. You can change the senior name, phone numbers, additional emergency contacts, check-in window time, or billing details at any time from your Dashboard:
+     ${dashboardLink}
+  3. You can cancel the auto-renewal at any time from ${settingsLink} — your coverage stays active through the end of the billing period you already paid for.
+
+If anything looks wrong on the summary above, just reply to this email and we'll fix it before the next billing cycle.
+
+Warmly,
+The Warm-Hello Team${footer.text}`,
+    html: `<p><img src="${env.APP_URL}/warmhello-logo-b.png" alt="Warm-Hello" width="140" /></p>
+<p>Hi there,</p>
+<p>Your Warm-Hello subscription has been <strong>successfully activated</strong>. Thank you for keeping your family protected with us.</p>
+<p><strong>Here's a quick summary of your plan:</strong></p>
+<table width="100%" cellpadding="8" cellspacing="0" border="0" style="border-collapse:collapse; border:1px solid #e5e7eb; border-radius:12px;">
+  <tr>
+    <td width="32%" valign="top" style="background:#f4f7ff; border-bottom:1px solid #e5e7eb; color:#59617a; font-weight:600;">Seniors covered</td>
+    <td valign="top" style="border-bottom:1px solid #e5e7eb;">${seniorsCoveredText}</td>
+  </tr>
+  <tr>
+    <td width="32%" valign="top" style="background:#f4f7ff; border-bottom:1px solid #e5e7eb; color:#59617a; font-weight:600;">Billing frequency</td>
+    <td valign="top" style="border-bottom:1px solid #e5e7eb;">Annual (billed once per year)</td>
+  </tr>
+  <tr>
+    <td width="32%" valign="top" style="background:#f4f7ff; border-bottom:1px solid #e5e7eb; color:#59617a; font-weight:600;">Plan</td>
+    <td valign="top" style="border-bottom:1px solid #e5e7eb;">${planSummaryLine}</td>
+  </tr>
+  <tr>
+    <td width="32%" valign="top" style="background:#f4f7ff; border-bottom:1px solid #e5e7eb; color:#59617a; font-weight:600;">Emergency contacts</td>
+    <td valign="top" style="border-bottom:1px solid #e5e7eb;">${contactsText}</td>
+  </tr>
+  <tr>
+    <td width="32%" valign="top" style="background:#f4f7ff; border-bottom:1px solid #e5e7eb; color:#59617a; font-weight:600;">Daily check-in time</td>
+    <td valign="top" style="border-bottom:1px solid #e5e7eb;">${checkInTimesText}</td>
+  </tr>
+  <tr>
+    <td width="32%" valign="top" style="background:#f4f7ff; border-bottom:1px solid #e5e7eb; color:#59617a; font-weight:600;">Next billing date</td>
+    <td valign="top" style="border-bottom:1px solid #e5e7eb;">${nextBilling}</td>
+  </tr>
+  <tr>
+    <td width="32%" valign="top" style="background:#f4f7ff; color:#59617a; font-weight:600;">Receipt / Invoice</td>
+    <td valign="top;">${invoiceHtml}</td>
+  </tr>
+</table>
+<p style="margin-top:24px;"><strong>A few important notes:</strong></p>
+<p>
+  1. Check-ins will continue exactly as they were during your trial. No action needed from either you or the senior.<br />
+  2. You can change the senior name, phone numbers, additional emergency contacts, check-in window time, or billing details at any time from your <a href="${dashboardLink}">Dashboard</a>.<br />
+  3. You can cancel the auto-renewal at any time from <a href="${settingsLink}">Dashboard → Settings</a>. Your coverage stays active through the end of the billing period you already paid for.
+</p>
+<p>If anything looks wrong on the summary above, just reply to this email and we'll fix it before the next billing cycle.</p>
+<p>Warmly,<br />The Warm-Hello Team</p>
+${footer.html}`,
   });
 }

@@ -1,6 +1,7 @@
 import type Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { BillingCurrency, isBillingCurrency } from "@/lib/pricing";
+import { sendSuccessfulSubscriptionEmail } from "@/lib/trial-emails";
 
 function mapStripeSubscriptionStatus(
   subscription: Pick<Stripe.Subscription, "status" | "cancel_at_period_end">,
@@ -105,6 +106,36 @@ export async function applyStripeEvent(event: Stripe.Event) {
           currentPeriodEndsAt,
         },
       });
+
+      if (subscriberId) {
+        void (async () => {
+          try {
+            let invoicePdfUrl: string | null = null;
+            if (subscriptionId) {
+              try {
+                const { getStripeClient } = await import("@/lib/stripe");
+                const stripe = getStripeClient();
+                if (stripe) {
+                  const latestInvoices = await stripe.invoices.list({
+                    subscription: subscriptionId,
+                    limit: 1,
+                  });
+                  const latest = latestInvoices.data[0];
+                  if (latest?.invoice_pdf) invoicePdfUrl = latest.invoice_pdf;
+                }
+              } catch {
+                invoicePdfUrl = null;
+              }
+            }
+            await sendSuccessfulSubscriptionEmail(subscriberId, {
+              invoicePdfUrl,
+            });
+          } catch {
+            // swallow: never let an email-send failure make Stripe think
+            // the webhook failed (they'd retry and double-update).
+          }
+        })();
+      }
 
       return { ok: true as const, message: "Checkout applied." };
     }
