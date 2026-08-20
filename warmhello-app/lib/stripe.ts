@@ -85,8 +85,8 @@ export async function createCheckoutSession(input: { subscriberId: string }) {
 
   const hasExistingStripeCustomer = Boolean(subscriber.stripeCustomerId);
 
-  const baseParams: Stripe.Checkout.SessionCreateParams = {
-    mode: "subscription",
+  const baseParams = {
+    mode: "subscription" as const,
     success_url: `${env.APP_URL}/dashboard?checkout=success`,
     cancel_url: `${env.APP_URL}/dashboard?checkout=canceled`,
     ...(hasExistingStripeCustomer
@@ -102,7 +102,7 @@ export async function createCheckoutSession(input: { subscriberId: string }) {
     ...(hasExistingStripeCustomer
       ? {
           customer_update: {
-            address: "auto",
+            address: "auto" as const,
           },
         }
       : {}),
@@ -113,10 +113,10 @@ export async function createCheckoutSession(input: { subscriberId: string }) {
       {
         key: "billing_currency",
         label: {
-          type: "custom",
+          type: "custom" as const,
           custom: "Billing currency",
         },
-        type: "dropdown",
+        type: "dropdown" as const,
         dropdown: {
           options: [
             {
@@ -126,16 +126,16 @@ export async function createCheckoutSession(input: { subscriberId: string }) {
           ],
           default_value: currency.toLowerCase(),
         },
-        optional: false,
+        optional: false as const,
       },
       {
         key: "plan_details",
         label: {
-          type: "custom",
+          type: "custom" as const,
           custom: "Plan details",
         },
-        type: "text",
-        optional: true,
+        type: "text" as const,
+        optional: true as const,
         text: {
           default_value: `${currencyLong} — $${monthlyAmount}/month, $${yearlyAmount}/year billed annually, about $${dailyAmount}/day`,
         },
@@ -150,6 +150,11 @@ export async function createCheckoutSession(input: { subscriberId: string }) {
       subscriberId: subscriber.id,
       billingCurrency: currency,
     },
+    invoice_settings: {
+      payment_settings: {
+        payment_method_types: [],
+      },
+    },
     line_items: [
       {
         price: priceId,
@@ -158,20 +163,26 @@ export async function createCheckoutSession(input: { subscriberId: string }) {
     ],
   };
 
+  const baseParamsAsStripe = baseParams as unknown as Stripe.Checkout.SessionCreateParams;
+
   let session: Stripe.Checkout.Session;
   try {
-    session = await stripe.checkout.sessions.create(baseParams);
+    session = await stripe.checkout.sessions.create(baseParamsAsStripe);
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
+    const baseParamsAny = baseParams as Record<string, unknown>;
     const {
       automatic_tax: _omitTax,
       tax_id_collection: _omitTaxId,
       customer_update: _omitCustomerUpdate,
-      ...fallbackParams
-    } = baseParams;
+      invoice_settings: _omitInvoiceSettings,
+      ...fallbackParamsAny
+    } = baseParamsAny;
     void _omitTax;
     void _omitTaxId;
     void _omitCustomerUpdate;
+    void _omitInvoiceSettings;
+    const fallbackParams = fallbackParamsAny as Stripe.Checkout.SessionCreateParams;
     fallbackParams.metadata = {
       ...(fallbackParams.metadata ?? {}),
       __taxFallBackSkipped: "1",

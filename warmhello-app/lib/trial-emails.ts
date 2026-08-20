@@ -390,32 +390,35 @@ export async function sendSuccessfulSubscriptionEmail(
 
   let invoiceHtml: string;
   let invoiceText: string;
-  if (opts.hostedInvoiceUrl || opts.invoicePdfUrl) {
+  if (opts.hostedInvoiceUrl) {
     const thankHtml = `<p style="margin:0 0 8px 0; font-weight:600; color:#2b2f44;">Thank you for your payment.</p>`;
-    const browserLinkHtml = opts.hostedInvoiceUrl
-      ? `<a href="${opts.hostedInvoiceUrl}" target="_blank" rel="noopener" style="margin-right:14px;">🧾 View receipt (Stripe, opens in browser)</a>`
-      : "";
-    const pdfLinkHtml = opts.invoicePdfUrl
-      ? `<a href="${opts.invoicePdfUrl}" download>⬇️ Download invoice PDF</a>`
-      : "";
-    const spacerHtml = browserLinkHtml && pdfLinkHtml ? `<br />` : "";
-    const note = `The "View receipt" link opens your Stripe-hosted receipt page inline in a browser tab (shows PAID status, amount paid, and HST breakdown). The PDF link saves to your Downloads folder.`;
+    const browserLinkHtml = `<a href="${opts.hostedInvoiceUrl}" target="_blank" rel="noopener" style="font-weight:600;">🧾 View receipt (Stripe, opens in browser)</a>`;
+    const note = `This Stripe-hosted receipt page shows your PAID status, full HST / tax breakdown, and a Download PDF button (if you need a file copy for your records).`;
 
     invoiceHtml =
       thankHtml +
-      `${browserLinkHtml}${spacerHtml}${pdfLinkHtml}` +
+      `${browserLinkHtml}` +
       `<p style="font-size: 12px; opacity: 0.75; margin: 8px 0 0 0;">${note}</p>`;
 
     const thankTextLine = `Thank you for your payment.\n`;
-    const browserTextLine = opts.hostedInvoiceUrl
-      ? `View receipt (opens in browser): ${opts.hostedInvoiceUrl}\n`
-      : "";
-    const pdfTextLine = opts.invoicePdfUrl
-      ? `Download invoice PDF (right-click / long-press to save): ${opts.invoicePdfUrl}\n`
-      : "";
+    const browserTextLine = `View receipt (opens in browser): ${opts.hostedInvoiceUrl}\n`;
     invoiceText =
-      `${thankTextLine}${browserTextLine}${pdfTextLine}` +
-      `Note: "View receipt" opens the Stripe-hosted receipt page in a browser tab, with PAID status and full HST breakdown. The PDF link always saves to your Downloads folder.`;
+      `${thankTextLine}${browserTextLine}` +
+      `Note: This Stripe-hosted receipt page shows your PAID status, full HST/tax breakdown, and a "Download PDF" button if you need a file copy for your records.`;
+  } else if (opts.invoicePdfUrl) {
+    const thankHtml = `<p style="margin:0 0 8px 0; font-weight:600; color:#2b2f44;">Thank you for your payment.</p>`;
+    const pdfLinkHtml = `<a href="${opts.invoicePdfUrl}" download>⬇️ Download invoice PDF</a>`;
+    const note = `The PDF link saves to your Downloads folder. For the most up-to-date PAID-status receipt (shows Amount paid instead of Amount due), view your Billing page in Dashboard.`;
+
+    invoiceHtml =
+      thankHtml +
+      `${pdfLinkHtml}` +
+      `<p style="font-size: 12px; opacity: 0.75; margin: 8px 0 0 0;">${note}</p>`;
+
+    invoiceText =
+      `Thank you for your payment.\n` +
+      `Download invoice PDF (right-click / long-press to save): ${opts.invoicePdfUrl}\n` +
+      `Note: For the most up-to-date PAID-status receipt, view your Billing page in Dashboard: ${settingsLink}`;
   } else {
     invoiceHtml = `Thank you for your payment. See your <a href="${settingsLink}">Dashboard Billing</a> for status.`;
     invoiceText = `Thank you for your payment. Billing status at: ${settingsLink}`;
