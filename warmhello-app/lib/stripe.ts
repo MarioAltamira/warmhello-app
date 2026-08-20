@@ -52,7 +52,7 @@ export async function createCheckoutSession(input: { subscriberId: string }) {
 
   const subscriber = await prisma.subscriber.findUnique({
     where: { id: input.subscriberId },
-    select: { id: true, email: true, billingCurrency: true },
+    select: { id: true, email: true, billingCurrency: true, stripeCustomerId: true },
   });
   if (!subscriber) {
     return {
@@ -83,11 +83,15 @@ export async function createCheckoutSession(input: { subscriberId: string }) {
       ? `US Dollar (USD) - $${monthlyAmount}/month, $${yearlyAmount}/year`
       : `Canadian Dollar (CAD) - $${monthlyAmount}/month, $${yearlyAmount}/year`;
 
+  const hasExistingStripeCustomer = Boolean(subscriber.stripeCustomerId);
+
   const baseParams: Stripe.Checkout.SessionCreateParams = {
     mode: "subscription",
     success_url: `${env.APP_URL}/dashboard?checkout=success`,
     cancel_url: `${env.APP_URL}/dashboard?checkout=canceled`,
-    customer_email: subscriber.email,
+    ...(hasExistingStripeCustomer
+      ? { customer: subscriber.stripeCustomerId! }
+      : { customer_email: subscriber.email }),
     client_reference_id: subscriber.id,
     adaptive_pricing: {
       enabled: false,
@@ -95,9 +99,13 @@ export async function createCheckoutSession(input: { subscriberId: string }) {
     automatic_tax: {
       enabled: true,
     },
-    customer_update: {
-      address: "auto",
-    },
+    ...(hasExistingStripeCustomer
+      ? {
+          customer_update: {
+            address: "auto",
+          },
+        }
+      : {}),
     tax_id_collection: {
       enabled: true,
     },
