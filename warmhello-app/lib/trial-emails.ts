@@ -283,7 +283,46 @@ ${footer.html}`,
 
 export type SuccessfulSubscriptionEmailOptions = {
   invoicePdfUrl?: string | null;
+  hostedInvoiceUrl?: string | null;
 };
+
+export async function pollStripeInvoiceUntilPaid(
+  invoiceId: string,
+  opts: {
+    maxAttempts?: number;
+    sleepMs?: number;
+  } = {},
+): Promise<{ status: string; invoicePdf: string | null; hostedInvoiceUrl: string | null; gaveUp: boolean; attempts: number }> {
+  const maxAttempts = opts.maxAttempts ?? 5;
+  const sleepMs = opts.sleepMs ?? 2000;
+  let attempts = 0;
+  let lastStatus: string = "unknown";
+  let lastPdf: string | null = null;
+  let lastHosted: string | null = null;
+
+  for (attempts = 1; attempts <= maxAttempts; attempts++) {
+    try {
+      const { getStripeClient } = await import("@/lib/stripe");
+      const stripe = getStripeClient();
+      if (!stripe) break;
+      const invoice = await stripe.invoices.retrieve(invoiceId);
+      lastStatus = invoice.status ?? "unknown";
+      lastPdf = invoice.invoice_pdf ?? null;
+      lastHosted = invoice.hosted_invoice_url ?? null;
+      if (lastStatus === "paid") {
+        return { status: lastStatus, invoicePdf: lastPdf, hostedInvoiceUrl: lastHosted, gaveUp: false, attempts };
+      }
+    } catch (err) {
+      console.warn(
+        `[pollStripeInvoiceUntilPaid] retrieve failed attempt=${attempts}/${maxAttempts} id=${invoiceId}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+    if (attempts < maxAttempts) {
+      await new Promise((r) => setTimeout(r, sleepMs));
+    }
+  }
+  return { status: lastStatus, invoicePdf: lastPdf, hostedInvoiceUrl: lastHosted, gaveUp: true, attempts };
+}
 
 export async function sendSuccessfulSubscriptionEmail(
   subscriberId: string,
@@ -351,16 +390,27 @@ export async function sendSuccessfulSubscriptionEmail(
 
   let invoiceHtml: string;
   let invoiceText: string;
-  if (opts.invoicePdfUrl) {
+  if (opts.hostedInvoiceUrl || opts.invoicePdfUrl) {
+    const browserLinkHtml = opts.hostedInvoiceUrl
+      ? `<a href="${opts.hostedInvoiceUrl}" target="_blank" rel="noopener">🧾 View invoice in browser (Stripe)</a>`
+      : "";
+    const pdfLinkHtml = opts.invoicePdfUrl
+      ? `<a href="${opts.invoicePdfUrl}" download>⬇️ Download Invoice PDF</a>`
+      : "";
+    const spacerHtml = browserLinkHtml && pdfLinkHtml ? `<br />` : "";
+    const note = `Most email clients open the "View invoice in browser" link as a new Stripe-hosted receipt page inline (no download needed). The PDF link always saves to Downloads.`;
+
     invoiceHtml =
-      `<a href="${opts.invoicePdfUrl}" target="_blank" rel="noopener">📄 Preview invoice in browser</a>` +
-      `<br />` +
-      `<a href="${opts.invoicePdfUrl}" download>⬇️ Download Invoice PDF</a>` +
-      `<p style="font-size: 12px; opacity: 0.75; margin: 6px 0 0 0;">Most email clients will save the PDF to Downloads first when clicking. You can then open it from there or preview via the browser link above.</p>`;
-    invoiceText =
-      `Preview invoice in browser: ${opts.invoicePdfUrl}\n` +
-      `Download Invoice PDF (same link, right-click or long-press): ${opts.invoicePdfUrl}\n` +
-      `Note: most email clients save PDFs to Downloads first. Open the file from there after it finishes.`;
+      `${browserLinkHtml}${spacerHtml}${pdfLinkHtml}` +
+      `<p style="font-size: 12px; opacity: 0.75; margin: 6px 0 0 0;">${note}</p>`;
+
+    const browserTextLine = opts.hostedInvoiceUrl
+      ? `View invoice in browser: ${opts.hostedInvoiceUrl}\n`
+      : "";
+    const pdfTextLine = opts.invoicePdfUrl
+      ? `Download Invoice PDF (right-click / long-press to save): ${opts.invoicePdfUrl}\n`
+      : "";
+    invoiceText = `${browserTextLine}${pdfTextLine}Note: "View invoice in browser" link opens the Stripe-hosted receipt page inline in your browser (no download needed for viewing). PDF link always saves to Downloads.`;
   } else {
     invoiceHtml = `See your <a href="${settingsLink}">Dashboard Billing</a>`;
     invoiceText = `${settingsLink} (Billing)`;

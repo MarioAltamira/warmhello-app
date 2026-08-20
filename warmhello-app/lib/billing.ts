@@ -179,29 +179,74 @@ export async function applyStripeEvent(event: Stripe.Event) {
             }
 
             let invoicePdfUrl: string | null = null;
+            let hostedInvoiceUrl: string | null = null;
             if (subscriptionId) {
               try {
                 const { getStripeClient } = await import("@/lib/stripe");
                 const stripe = getStripeClient();
                 if (stripe) {
-                  const invoices = await stripe.invoices.list({
-                    subscription: subscriptionId,
-                    limit: 1,
-                  });
-                  const inv = invoices.data[0];
-                  if (inv?.status === "paid" && inv.invoice_pdf) {
-                      invoicePdfUrl = inv.invoice_pdf;
+                  let invoiceIdToPoll: string | null = null;
+                  try {
+                    const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
+                      expand: ["latest_invoice"],
+                    });
+                    const maybeInvoice = subscription.latest_invoice as
+                      | string
+                      | Stripe.Invoice
+                      | null
+                      | undefined;
+                    if (typeof maybeInvoice === "string") {
+                      invoiceIdToPoll = maybeInvoice;
+                    } else if (maybeInvoice && typeof maybeInvoice === "object" && typeof (maybeInvoice as Stripe.Invoice).id === "string") {
+                      invoiceIdToPoll = (maybeInvoice as Stripe.Invoice).id ?? null;
+                      if ((maybeInvoice as Stripe.Invoice).status === "paid") {
+                        invoicePdfUrl = (maybeInvoice as Stripe.Invoice).invoice_pdf ?? null;
+                        hostedInvoiceUrl = (maybeInvoice as Stripe.Invoice).hosted_invoice_url ?? null;
+                      }
                     }
+                  } catch (subRetrieveErr) {
+                    console.warn(
+                      `[stripe-webhook:checkout.session.completed:fallback-email] subscriptions.retrieve expand=latest_invoice failed (fallback to list): ${subRetrieveErr instanceof Error ? subRetrieveErr.message : String(subRetrieveErr)}`,
+                    );
+                    const invoices = await stripe.invoices.list({
+                      subscription: subscriptionId,
+                      limit: 1,
+                    });
+                    const inv = invoices.data[0];
+                    if (inv) {
+                      invoiceIdToPoll = inv.id ?? null;
+                      if (inv.status === "paid") {
+                        invoicePdfUrl = inv.invoice_pdf ?? null;
+                        hostedInvoiceUrl = inv.hosted_invoice_url ?? null;
+                      }
+                    }
+                  }
+
+                  if (invoiceIdToPoll && !invoicePdfUrl && !hostedInvoiceUrl) {
+                    console.log(
+                      `[stripe-webhook:checkout.session.completed:fallback-email] POLL START: invoice ${invoiceIdToPoll} not yet paid. polling up to 5x x 2s.`,
+                    );
+                    const { pollStripeInvoiceUntilPaid } = await import("@/lib/trial-emails");
+                    const poll = await pollStripeInvoiceUntilPaid(invoiceIdToPoll);
+                    console.log(
+                      `[stripe-webhook:checkout.session.completed:fallback-email] POLL DONE: invoice ${invoiceIdToPoll} status='${poll.status}' attempts=${poll.attempts}/5 gaveUp=${poll.gaveUp}`,
+                    );
+                    if (poll.status === "paid" || poll.invoicePdf || poll.hostedInvoiceUrl) {
+                      invoicePdfUrl = poll.invoicePdf ?? invoicePdfUrl;
+                      hostedInvoiceUrl = poll.hostedInvoiceUrl ?? hostedInvoiceUrl;
+                    }
+                  }
                 }
               } catch (error) {
                 console.warn(
-                  `[stripe-webhook:checkout.session.completed:fallback-email] invoice list fetch failed (ok, will send without PDF): ${error instanceof Error ? error.message : String(error)}`,
+                  `[stripe-webhook:checkout.session.completed:fallback-email] invoice fetch / poll failed (ok, will send without invoice URLs): ${error instanceof Error ? error.message : String(error)}`,
                 );
               }
             }
 
             await sendSuccessfulSubscriptionEmail(finalSubscriberIdForEmail, {
               invoicePdfUrl,
+              hostedInvoiceUrl,
             });
             markSuccessEmailSent(finalSubscriberIdForEmail, "checkout.session.completed.fallback");
 
@@ -284,12 +329,36 @@ export async function applyStripeEvent(event: Stripe.Event) {
               );
               return;
             }
+
+            let polledPdf: string | null = invoice.invoice_pdf ?? null;
+            let polledHosted: string | null =
+              typeof (invoice as unknown as { hosted_invoice_url?: string | null }).hosted_invoice_url === "string"
+                ? (invoice as unknown as { hosted_invoice_url: string | null }).hosted_invoice_url
+                : null;
+            const expectedStatus = invoice.status ?? "unknown";
+            const invoiceIdForPoll = typeof invoice.id === "string" ? invoice.id : "";
+            if (expectedStatus !== "paid" && invoiceIdForPoll) {
+              console.log(
+                `[stripe-webhook:invoice.paid] POLL START: invoice ${invoiceIdForPoll} status='${expectedStatus}' !== 'paid' -> polling up to 5x x 2s before pulling final URLs.`,
+              );
+              const { pollStripeInvoiceUntilPaid } = await import("@/lib/trial-emails");
+              const res = await pollStripeInvoiceUntilPaid(invoiceIdForPoll);
+              console.log(
+                `[stripe-webhook:invoice.paid] POLL DONE: invoice ${invoiceIdForPoll} final status='${res.status}' attempts=${res.attempts}/${5} gaveUp=${res.gaveUp}`,
+              );
+              if (res.status === "paid" || res.invoicePdf || res.hostedInvoiceUrl) {
+                polledPdf = res.invoicePdf ?? polledPdf;
+                polledHosted = res.hostedInvoiceUrl ?? polledHosted;
+              }
+            }
+
             await sendSuccessfulSubscriptionEmail(matchedSubscriber.id, {
-              invoicePdfUrl: invoice.invoice_pdf ?? null,
+              invoicePdfUrl: polledPdf ?? invoice.invoice_pdf ?? null,
+              hostedInvoiceUrl: polledHosted,
             });
             markSuccessEmailSent(matchedSubscriber.id, "invoice.paid");
             console.log(
-              `[stripe-webhook:invoice.paid] SUCCESS_EMAIL_SENT subscriber=${matchedSubscriber.id} invoice_pdf=${invoice.invoice_pdf ? "set" : "null"}`,
+              `[stripe-webhook:invoice.paid] SUCCESS_EMAIL_SENT subscriber=${matchedSubscriber.id} invoice_pdf=${invoice.invoice_pdf ? "set" : "null"} hosted_invoice_url=${polledHosted ? "set" : "null"}`,
             );
           } catch (error) {
             console.warn(
