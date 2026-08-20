@@ -60,7 +60,7 @@ export function BuyNowButton({
     if (intent === "POPUP_ALREADY_SUBSCRIBED") {
       setPopupTitle("You are already subscribed");
       setPopupBody(
-        "Your Warm-Hello subscription is active. If you need help, reach out any time at support@warm-hello.com.",
+        "Your Warm-Hello subscription is active. If you need help, reach out any time at sales@warm-hello.com.",
       );
       setShowPopup(true);
       return;

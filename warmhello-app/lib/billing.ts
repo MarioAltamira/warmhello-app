@@ -107,37 +107,47 @@ export async function applyStripeEvent(event: Stripe.Event) {
         },
       });
 
-      if (subscriberId) {
-        void (async () => {
-          try {
-            let invoicePdfUrl: string | null = null;
-            if (subscriptionId) {
+      return { ok: true as const, message: "Checkout applied." };
+    }
+
+    case "invoice.paid": {
+      const invoice = event.data.object as Stripe.Invoice & {
+        subscription?: string | Stripe.Subscription | null;
+        billing_reason?: string | null;
+        invoice_pdf?: string | null;
+      };
+      const subscriptionId =
+        typeof invoice.subscription === "string" ? invoice.subscription : null;
+      const customerId = typeof invoice.customer === "string" ? invoice.customer : null;
+
+      if (invoice.billing_reason === "subscription_create" && prisma) {
+        try {
+          const matchedSubscriber = await prisma.subscriber.findFirst({
+            where: {
+              OR: [
+                ...(subscriptionId ? [{ stripeSubscriptionId: subscriptionId }] : []),
+                ...(customerId ? [{ stripeCustomerId: customerId }] : []),
+              ],
+            },
+            orderBy: { updatedAt: "desc" },
+          });
+          if (matchedSubscriber) {
+            void (async () => {
               try {
-                const { getStripeClient } = await import("@/lib/stripe");
-                const stripe = getStripeClient();
-                if (stripe) {
-                  const latestInvoices = await stripe.invoices.list({
-                    subscription: subscriptionId,
-                    limit: 1,
-                  });
-                  const latest = latestInvoices.data[0];
-                  if (latest?.invoice_pdf) invoicePdfUrl = latest.invoice_pdf;
-                }
+                await sendSuccessfulSubscriptionEmail(matchedSubscriber.id, {
+                  invoicePdfUrl: invoice.invoice_pdf ?? null,
+                });
               } catch {
-                invoicePdfUrl = null;
+                // swallow: never let email-send turn webhook success into failure
               }
-            }
-            await sendSuccessfulSubscriptionEmail(subscriberId, {
-              invoicePdfUrl,
-            });
-          } catch {
-            // swallow: never let an email-send failure make Stripe think
-            // the webhook failed (they'd retry and double-update).
+            })();
           }
-        })();
+        } catch {
+          // swallow: same reason
+        }
       }
 
-      return { ok: true as const, message: "Checkout applied." };
+      return { ok: true as const, message: "Invoice paid processed." };
     }
 
     case "customer.subscription.created":

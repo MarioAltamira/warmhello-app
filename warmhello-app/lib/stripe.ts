@@ -65,7 +65,7 @@ export async function createCheckoutSession(input: { subscriberId: string }) {
     return {
       ok: false as const,
       message:
-        "Stripe is not configured for the selected currency. Please contact support@warm-hello.com.",
+        "Stripe is not configured for the selected currency. Please contact sales@warm-hello.com.",
     };
   }
 
@@ -79,7 +79,7 @@ export async function createCheckoutSession(input: { subscriberId: string }) {
       ? `US Dollar (USD) - $${monthlyAmount}/month, $${yearlyAmount}/year`
       : `Canadian Dollar (CAD) - $${monthlyAmount}/month, $${yearlyAmount}/year`;
 
-  const session = await stripe.checkout.sessions.create({
+  const baseParams: Stripe.Checkout.SessionCreateParams = {
     mode: "subscription",
     success_url: `${env.APP_URL}/dashboard?checkout=success`,
     cancel_url: `${env.APP_URL}/dashboard?checkout=canceled`,
@@ -87,6 +87,15 @@ export async function createCheckoutSession(input: { subscriberId: string }) {
     client_reference_id: subscriber.id,
     adaptive_pricing: {
       enabled: false,
+    },
+    automatic_tax: {
+      enabled: true,
+    },
+    customer_update: {
+      address: "auto",
+    },
+    tax_id_collection: {
+      enabled: true,
     },
     custom_fields: [
       {
@@ -135,7 +144,33 @@ export async function createCheckoutSession(input: { subscriberId: string }) {
         quantity: 1,
       },
     ],
-  });
+  };
+
+  let session: Stripe.Checkout.Session;
+  try {
+    session = await stripe.checkout.sessions.create(baseParams);
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    const stripeTaxDisabled =
+      /stripe tax/i.test(msg) ||
+      /automatic_tax/i.test(msg) ||
+      /tax_id_collection/i.test(msg) ||
+      /tax.{0,20}not.{0,20}enabled/i.test(msg);
+    if (stripeTaxDisabled) {
+      const {
+        automatic_tax: _omitTax,
+        tax_id_collection: _omitTaxId,
+        customer_update: _omitCustomerUpdate,
+        ...fallbackParams
+      } = baseParams;
+      void _omitTax;
+      void _omitTaxId;
+      void _omitCustomerUpdate;
+      session = await stripe.checkout.sessions.create(fallbackParams);
+    } else {
+      throw error;
+    }
+  }
 
   return { ok: true as const, url: session.url };
 }
