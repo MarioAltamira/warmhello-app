@@ -3,6 +3,36 @@ import { prisma } from "@/lib/prisma";
 import { BillingCurrency, isBillingCurrency } from "@/lib/pricing";
 import { sendSuccessfulSubscriptionEmail } from "@/lib/trial-emails";
 
+type ConsoleWithWarn = Console & {
+  warn?: (...args: unknown[]) => void;
+};
+
+interface DedupEntry {
+  createdAtMs: number;
+  source: string;
+}
+const SUCCESS_EMAIL_DEDUP_WINDOW_MS = 1000 * 60 * 15;
+const successEmailDedupCache = new Map<string, DedupEntry>();
+
+function markSuccessEmailSent(subscriberId: string, source: string) {
+  successEmailDedupCache.set(subscriberId, { createdAtMs: Date.now(), source });
+  const cutoff = Date.now() - SUCCESS_EMAIL_DEDUP_WINDOW_MS;
+  for (const [id, entry] of successEmailDedupCache.entries()) {
+    if (entry.createdAtMs < cutoff) {
+      successEmailDedupCache.delete(id);
+    }
+  }
+}
+function hasSuccessEmailBeenSentRecently(subscriberId: string): boolean {
+  const entry = successEmailDedupCache.get(subscriberId);
+  if (!entry) return false;
+  if (Date.now() - entry.createdAtMs > SUCCESS_EMAIL_DEDUP_WINDOW_MS) {
+    successEmailDedupCache.delete(subscriberId);
+    return false;
+  }
+  return true;
+}
+
 function mapStripeSubscriptionStatus(
   subscription: Pick<Stripe.Subscription, "status" | "cancel_at_period_end">,
 ) {
@@ -55,6 +85,10 @@ export async function applyStripeEvent(event: Stripe.Event) {
     return { ok: false as const, message: "Database is not configured yet." };
   }
 
+  console.log(
+    `[stripe-webhook] event.type=${event.type} event.id=${event.id}`,
+  );
+
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
@@ -63,7 +97,14 @@ export async function applyStripeEvent(event: Stripe.Event) {
       const subscriptionId =
         typeof session.subscription === "string" ? session.subscription : null;
 
+      console.log(
+        `[stripe-webhook:checkout.session.completed] id=${event.id} subscriberId=${subscriberId ?? "null"} customerId=${customerId ?? "null"} subscriptionId=${subscriptionId ?? "null"}`,
+      );
+
       if (!subscriberId && !session.customer_email) {
+        console.warn(
+          `[stripe-webhook:checkout.session.completed] missing subscriber reference, returning 400`,
+        );
         return { ok: false as const, message: "Missing subscriber reference." };
       }
 
@@ -83,8 +124,11 @@ export async function applyStripeEvent(event: Stripe.Event) {
               metadataCurrency: (session.metadata as { billingCurrency?: unknown } | null)?.billingCurrency,
             });
           }
-        } catch {
-          // ignore
+        } catch (error) {
+          console.warn(
+            `[stripe-webhook:checkout.session.completed] failed to retrieve subscription ${subscriptionId}:`,
+            error instanceof Error ? error.message : String(error),
+          );
         }
       }
 
@@ -94,7 +138,7 @@ export async function applyStripeEvent(event: Stripe.Event) {
           metadataCurrency: (session.metadata as { billingCurrency?: unknown } | null)?.billingCurrency,
         });
 
-      await prisma.subscriber.updateMany({
+      const updateResult = await prisma.subscriber.updateMany({
         where: subscriberId
           ? { id: subscriberId }
           : { email: session.customer_email ?? undefined },
@@ -106,6 +150,80 @@ export async function applyStripeEvent(event: Stripe.Event) {
           currentPeriodEndsAt,
         },
       });
+
+      console.log(
+        `[stripe-webhook:checkout.session.completed] applied. rows_updated=${updateResult.count} customerId=${customerId ?? "null"} subscriptionId=${subscriptionId ?? "null"} currency=${sessionCurrency}`,
+      );
+
+      const finalSubscriberIdForEmail =
+        subscriberId ??
+        (session.customer_email
+          ? (
+              await prisma.subscriber.findFirst({
+                where: { email: session.customer_email },
+                orderBy: { updatedAt: "desc" },
+                select: { id: true },
+              })
+            )?.id
+          : undefined);
+
+      if (finalSubscriberIdForEmail) {
+        void (async () => {
+          try {
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+            if (hasSuccessEmailBeenSentRecently(finalSubscriberIdForEmail)) {
+              console.log(
+                `[stripe-webhook:checkout.session.completed:fallback-email] SKIP — dedup cache shows email already sent within 15 min (invoice.paid beat us to it). subscriber=${finalSubscriberIdForEmail}`,
+              );
+              return;
+            }
+
+            let invoicePdfUrl: string | null = null;
+            if (subscriptionId) {
+              try {
+                const { getStripeClient } = await import("@/lib/stripe");
+                const stripe = getStripeClient();
+                if (stripe) {
+                  const invoices = await stripe.invoices.list({
+                    subscription: subscriptionId,
+                    limit: 1,
+                  });
+                  const inv = invoices.data[0];
+                  if (inv?.status === "paid" && inv.invoice_pdf) {
+                      invoicePdfUrl = inv.invoice_pdf;
+                    }
+                }
+              } catch (error) {
+                console.warn(
+                  `[stripe-webhook:checkout.session.completed:fallback-email] invoice list fetch failed (ok, will send without PDF): ${error instanceof Error ? error.message : String(error)}`,
+                );
+              }
+            }
+
+            await sendSuccessfulSubscriptionEmail(finalSubscriberIdForEmail, {
+              invoicePdfUrl,
+            });
+            markSuccessEmailSent(finalSubscriberIdForEmail, "checkout.session.completed.fallback");
+
+            console.log(
+              `[stripe-webhook:checkout.session.completed:fallback-email] SUCCESS_EMAIL_SENT subscriber=${finalSubscriberIdForEmail} source=fallback (invoice.paid missed or webhook order race)`,
+            );
+          } catch (error) {
+            console.warn(
+              `[stripe-webhook:checkout.session.completed:fallback-email] SUCCESS_EMAIL_FAILED subscriber=${finalSubscriberIdForEmail} message=${error instanceof Error ? error.message : String(error)}`,
+            );
+            if (error instanceof Error && typeof error.stack === "string") {
+              console.warn(
+                `[stripe-webhook:checkout.session.completed:fallback-email] stack=${error.stack.slice(0, 700)}`,
+              );
+            }
+          }
+        })();
+      } else {
+        console.warn(
+          `[stripe-webhook:checkout.session.completed:fallback-email] no finalSubscriberIdForEmail resolved — cannot queue fallback success email`,
+        );
+      }
 
       return { ok: true as const, message: "Checkout applied." };
     }
@@ -120,31 +238,72 @@ export async function applyStripeEvent(event: Stripe.Event) {
         typeof invoice.subscription === "string" ? invoice.subscription : null;
       const customerId = typeof invoice.customer === "string" ? invoice.customer : null;
 
-      if (invoice.billing_reason === "subscription_create" && prisma) {
-        try {
-          const matchedSubscriber = await prisma.subscriber.findFirst({
-            where: {
-              OR: [
-                ...(subscriptionId ? [{ stripeSubscriptionId: subscriptionId }] : []),
-                ...(customerId ? [{ stripeCustomerId: customerId }] : []),
-              ],
-            },
-            orderBy: { updatedAt: "desc" },
-          });
-          if (matchedSubscriber) {
-            void (async () => {
-              try {
-                await sendSuccessfulSubscriptionEmail(matchedSubscriber.id, {
-                  invoicePdfUrl: invoice.invoice_pdf ?? null,
-                });
-              } catch {
-                // swallow: never let email-send turn webhook success into failure
-              }
-            })();
-          }
-        } catch {
-          // swallow: same reason
+      console.log(
+        `[stripe-webhook:invoice.paid] event.id=${event.id} billing_reason=${invoice.billing_reason ?? "null"} customerId=${customerId ?? "null"} subscriptionId=${subscriptionId ?? "null"} invoiceId=${invoice.id}`,
+      );
+
+      if (invoice.billing_reason !== "subscription_create") {
+        console.log(
+          `[stripe-webhook:invoice.paid] SKIP success-email: billing_reason="${invoice.billing_reason ?? "null"}" !== "subscription_create" (this is a renewal or adjustment)`,
+        );
+        return { ok: true as const, message: "Invoice paid processed." };
+      }
+
+      if (!prisma) {
+        console.warn(`[stripe-webhook:invoice.paid] SKIP success-email: prisma not configured`);
+        return { ok: true as const, message: "Invoice paid processed." };
+      }
+
+      try {
+        const matchedSubscriber = await prisma.subscriber.findFirst({
+          where: {
+            OR: [
+              ...(subscriptionId ? [{ stripeSubscriptionId: subscriptionId }] : []),
+              ...(customerId ? [{ stripeCustomerId: customerId }] : []),
+            ],
+          },
+          orderBy: { updatedAt: "desc" },
+        });
+
+        if (!matchedSubscriber) {
+          console.warn(
+            `[stripe-webhook:invoice.paid] SUCCESS EMAIL NOT SENT: could not match subscriber by subscriptionId=${subscriptionId ?? "null"} OR customerId=${customerId ?? "null"}. If checkout.session.completed hasn't run yet, it will set these columns shortly but email is already skipped. Consider sending from checkout.session.completed as a fallback, OR re-send this webhook after the subscriber row is populated.`,
+          );
+          return { ok: true as const, message: "Invoice paid processed." };
         }
+
+        console.log(
+          `[stripe-webhook:invoice.paid] matched subscriber id=${matchedSubscriber.id} email=${matchedSubscriber.email}. Queuing success email fire-and-forget.`,
+        );
+
+        void (async () => {
+          try {
+            if (hasSuccessEmailBeenSentRecently(matchedSubscriber.id)) {
+              console.log(
+                `[stripe-webhook:invoice.paid] SKIP success email: dedup cache shows already sent within 15 min (fallback or previous run). subscriber=${matchedSubscriber.id}`,
+              );
+              return;
+            }
+            await sendSuccessfulSubscriptionEmail(matchedSubscriber.id, {
+              invoicePdfUrl: invoice.invoice_pdf ?? null,
+            });
+            markSuccessEmailSent(matchedSubscriber.id, "invoice.paid");
+            console.log(
+              `[stripe-webhook:invoice.paid] SUCCESS_EMAIL_SENT subscriber=${matchedSubscriber.id} invoice_pdf=${invoice.invoice_pdf ? "set" : "null"}`,
+            );
+          } catch (error) {
+            console.warn(
+              `[stripe-webhook:invoice.paid] SUCCESS_EMAIL_FAILED subscriber=${matchedSubscriber.id} message=${error instanceof Error ? error.message : String(error)}`,
+            );
+            if (error instanceof Error && typeof error.stack === "string") {
+              console.warn(`[stripe-webhook:invoice.paid] stack=${error.stack}`);
+            }
+          }
+        })();
+      } catch (error) {
+        console.warn(
+          `[stripe-webhook:invoice.paid] outer findFirst/send try/catch swallow: message=${error instanceof Error ? error.message : String(error)}`,
+        );
       }
 
       return { ok: true as const, message: "Invoice paid processed." };

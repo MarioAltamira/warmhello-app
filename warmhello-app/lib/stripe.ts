@@ -228,10 +228,27 @@ export async function getPriceInfo(priceId?: string) {
 export function verifyStripeWebhookSignature(payload: string, signature: string | null) {
   const stripe = getStripeClient();
   if (!stripe || !env.STRIPE_WEBHOOK_SECRET || !signature) {
+    console.warn(
+      `[stripe-webhook:verify-signature] ABORT: stripeClient? ${Boolean(stripe)} ENV_STRIPE_WEBHOOK_SECRET_LEN=${env.STRIPE_WEBHOOK_SECRET?.length ?? 0} signature_header=${signature ? `present(len=${signature.length})` : "MISSING"}. Returning null -> 400 to Stripe.`,
+    );
     return null;
   }
 
-  return stripe.webhooks.constructEvent(payload, signature, env.STRIPE_WEBHOOK_SECRET);
+  try {
+    return stripe.webhooks.constructEvent(payload, signature, env.STRIPE_WEBHOOK_SECRET);
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.warn(
+      `[stripe-webhook:verify-signature] constructEvent FAILED. message=${msg}. signature_header_len=${signature.length}. ENV_STRIPE_WEBHOOK_SECRET_first10=${env.STRIPE_WEBHOOK_SECRET.slice(0, 10)}…`.slice(
+        0,
+        420,
+      ),
+    );
+    if (error instanceof Error && typeof error.stack === "string") {
+      console.warn(`[stripe-webhook:verify-signature] stack=${error.stack.slice(0, 700)}`);
+    }
+    return null;
+  }
 }
 
 export async function cancelSubscriptionAtPeriodEnd(input: { subscriberId: string }) {
