@@ -4,6 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { BillingCurrency, isBillingCurrency } from "@/lib/pricing";
 import { getStripePriceIdFor } from "@/lib/visitor-currency";
 
+type ConsoleWithWarn = Console & {
+  warn?: (...args: unknown[]) => void;
+};
+
 let stripeClient: Stripe | null = null;
 
 export function getStripeClient() {
@@ -151,25 +155,27 @@ export async function createCheckoutSession(input: { subscriberId: string }) {
     session = await stripe.checkout.sessions.create(baseParams);
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    const stripeTaxDisabled =
-      /stripe tax/i.test(msg) ||
-      /automatic_tax/i.test(msg) ||
-      /tax_id_collection/i.test(msg) ||
-      /tax.{0,20}not.{0,20}enabled/i.test(msg);
-    if (stripeTaxDisabled) {
-      const {
-        automatic_tax: _omitTax,
-        tax_id_collection: _omitTaxId,
-        customer_update: _omitCustomerUpdate,
-        ...fallbackParams
-      } = baseParams;
-      void _omitTax;
-      void _omitTaxId;
-      void _omitCustomerUpdate;
-      session = await stripe.checkout.sessions.create(fallbackParams);
-    } else {
-      throw error;
+    const {
+      automatic_tax: _omitTax,
+      tax_id_collection: _omitTaxId,
+      customer_update: _omitCustomerUpdate,
+      ...fallbackParams
+    } = baseParams;
+    void _omitTax;
+    void _omitTaxId;
+    void _omitCustomerUpdate;
+    fallbackParams.metadata = {
+      ...(fallbackParams.metadata ?? {}),
+      __taxFallBackSkipped: "1",
+      __fallbackOriginalError: msg.slice(0, 480),
+    };
+    if (typeof (console as ConsoleWithWarn).warn === "function") {
+      (console as ConsoleWithWarn).warn(
+        "[createCheckoutSession] first attempt failed; retrying without automatic_tax / tax_id_collection / customer_update. original error:",
+        msg,
+      );
     }
+    session = await stripe.checkout.sessions.create(fallbackParams);
   }
 
   return { ok: true as const, url: session.url };
