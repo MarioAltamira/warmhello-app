@@ -348,12 +348,23 @@ export async function sendSuccessfulSubscriptionEmail(
     : "See Dashboard";
 
   const nextBilling = formatDateYYYYMMDD(subscriber.currentPeriodEndsAt);
-  const invoiceHtml = opts.invoicePdfUrl
-    ? `<a href="${opts.invoicePdfUrl}">Open Invoice PDF</a>`
-    : `See your <a href="${settingsLink}">Dashboard Billing</a>`;
-  const invoiceText = opts.invoicePdfUrl
-    ? opts.invoicePdfUrl
-    : `${settingsLink} (Billing)`;
+
+  let invoiceHtml: string;
+  let invoiceText: string;
+  if (opts.invoicePdfUrl) {
+    invoiceHtml =
+      `<a href="${opts.invoicePdfUrl}" target="_blank" rel="noopener">📄 Preview invoice in browser</a>` +
+      `<br />` +
+      `<a href="${opts.invoicePdfUrl}" download>⬇️ Download Invoice PDF</a>` +
+      `<p style="font-size: 12px; opacity: 0.75; margin: 6px 0 0 0;">Most email clients will save the PDF to Downloads first when clicking. You can then open it from there or preview via the browser link above.</p>`;
+    invoiceText =
+      `Preview invoice in browser: ${opts.invoicePdfUrl}\n` +
+      `Download Invoice PDF (same link, right-click or long-press): ${opts.invoicePdfUrl}\n` +
+      `Note: most email clients save PDFs to Downloads first. Open the file from there after it finishes.`;
+  } else {
+    invoiceHtml = `See your <a href="${settingsLink}">Dashboard Billing</a>`;
+    invoiceText = `${settingsLink} (Billing)`;
+  }
 
   const planSummaryLine = `${plan.monthlyLabel} · ${plan.dailyLabel} · billed ${plan.yearlyLabel}`;
 
