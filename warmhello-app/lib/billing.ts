@@ -238,20 +238,18 @@ export async function applyStripeEvent(event: Stripe.Event) {
                   fallbackStatusPaid = !!invoicePdfUrl || !!hostedInvoiceUrl || !!fallbackReceiptUrl;
                   if (invoiceIdToPoll) {
                     try {
-                      const invUpdateResp = await stripe.invoices.update(invoiceIdToPoll, {
+                      await stripe.invoices.update(invoiceIdToPoll, {
                         payment_settings: {
                           payment_method_types: [],
                         },
                       });
-                      const invSettings = (invUpdateResp as unknown as { payment_settings?: Record<string, unknown> | null }).payment_settings ?? null;
-                      const invPmt = invSettings && typeof invSettings === "object" && "payment_method_types" in invSettings ? JSON.stringify(invSettings.payment_method_types) : "null";
                       console.log(
-                        `[stripe-webhook:checkout.session.completed:fallback-email] PER-INVOICE applied update on invoice ${invoiceIdToPoll} (fallback path). RESPONSE payment_settings.payment_method_types=${invPmt}. NOTE: if invoice is finalized/paid, Stripe may silently ignore edit -> use Option1 Dashboard toggle for guaranteed PDF-removal.`,
+                        `[stripe-webhook:checkout.session.completed:fallback-email] per-invoice payment_settings hidden (inv=${invoiceIdToPoll})`,
                       );
                     } catch (fallbackInvoiceUpdateErr) {
                       // best-effort only — if it fails, continue polling / emailing
                       console.warn(
-                        `[stripe-webhook:checkout.session.completed:fallback-email] best-effort per-invoice payment_settings empty array apply FAILED (non-fatal). message=${fallbackInvoiceUpdateErr instanceof Error ? fallbackInvoiceUpdateErr.message : String(fallbackInvoiceUpdateErr)}`,
+                        `[stripe-webhook:checkout.session.completed:fallback-email] per-invoice write failed (non-fatal): ${fallbackInvoiceUpdateErr instanceof Error ? fallbackInvoiceUpdateErr.message : String(fallbackInvoiceUpdateErr)}`,
                       );
                     }
                   }
@@ -387,21 +385,19 @@ export async function applyStripeEvent(event: Stripe.Event) {
               try {
                 const stripe = getStripeClient();
                 if (stripe) {
-                  const invUpdateResp = await stripe.invoices.update(invoiceIdForUpdate, {
+                  await stripe.invoices.update(invoiceIdForUpdate, {
                     payment_settings: {
                       payment_method_types: [],
                     },
                   });
-                  const invSettings = (invUpdateResp as unknown as { payment_settings?: Record<string, unknown> | null }).payment_settings ?? null;
-                  const invPmt = invSettings && typeof invSettings === "object" && "payment_method_types" in invSettings ? JSON.stringify(invSettings.payment_method_types) : "null";
                   console.log(
-                    `[stripe-webhook:invoice.paid] PER-INVOICE applied update on invoice ${invoiceIdForUpdate}. RESPONSE payment_settings.payment_method_types=${invPmt}. NOTE: if invoice is finalized/paid, Stripe may silently ignore edit -> use Option1 Dashboard toggle for guaranteed PDF-removal.`,
+                    `[stripe-webhook:invoice.paid] per-invoice payment_settings hidden (inv=${invoiceIdForUpdate})`,
                   );
                 }
               } catch (invoiceUpdateErr) {
                 // best-effort only
                 console.warn(
-                  `[stripe-webhook:invoice.paid] best-effort per-invoice payment_settings empty array apply FAILED (non-fatal). message=${invoiceUpdateErr instanceof Error ? invoiceUpdateErr.message : String(invoiceUpdateErr)}`,
+                  `[stripe-webhook:invoice.paid] per-invoice write failed (non-fatal): ${invoiceUpdateErr instanceof Error ? invoiceUpdateErr.message : String(invoiceUpdateErr)}`,
                 );
               }
             }

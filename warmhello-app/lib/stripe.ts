@@ -213,18 +213,8 @@ export async function createCheckoutSession(input: { subscriberId: string }) {
           payment_method_types: [],
         } as unknown as Record<string, unknown>,
       } as unknown as Record<string, unknown>;
-      const updatedCustomer = await stripe.customers.update(
-        customerId,
-        customerUpdateParams,
-      );
-      const updatedInvoiceSettings = (updatedCustomer as unknown as { invoice_settings?: Record<string, unknown> | null }).invoice_settings ?? {};
-      const updatedCustomerRootPaymentSettings = (updatedCustomer as unknown as { payment_settings?: Record<string, unknown> | null }).payment_settings ?? null;
-      const updatedNested = (updatedInvoiceSettings as Record<string, unknown>).payment_settings ?? null;
-      const nestedPmt = updatedNested && typeof updatedNested === "object" && "payment_method_types" in (updatedNested as Record<string, unknown>) ? JSON.stringify((updatedNested as Record<string, unknown>).payment_method_types) : "null";
-      const rootPmt = updatedCustomerRootPaymentSettings && typeof updatedCustomerRootPaymentSettings === "object" && "payment_method_types" in updatedCustomerRootPaymentSettings ? JSON.stringify(updatedCustomerRootPaymentSettings.payment_method_types) : "null";
-      console.log(
-        `[createCheckoutSession] PER-CUSTOMER applied update on cus=${customerId}. RESPONSE invoice_settings.payment_settings.payment_method_types=${nestedPmt} | ROOT payment_settings.payment_method_types=${rootPmt}. (Empty array means Stripe accepted and hid Pay online for this customer's future invoices.)`,
-      );
+      await stripe.customers.update(customerId, customerUpdateParams);
+      console.log(`[createCheckoutSession] customer payment_settings hidden (future invoices, cus=${customerId})`);
     }
     const subscriptionId =
       typeof session.subscription === "string"
@@ -236,19 +226,13 @@ export async function createCheckoutSession(input: { subscriberId: string }) {
           payment_method_types: [],
         },
       } as unknown as Record<string, unknown>;
-      const updatedSub = await stripe.subscriptions.update(subscriptionId, subUpdateParams);
-      const subSettings = (updatedSub as unknown as { payment_settings?: Record<string, unknown> | null }).payment_settings ?? null;
-      const subPmt = subSettings && typeof subSettings === "object" && "payment_method_types" in subSettings ? JSON.stringify(subSettings.payment_method_types) : "null";
-      console.log(
-        `[createCheckoutSession] PER-SUBSCRIPTION applied update on sub=${subscriptionId}. RESPONSE payment_settings.payment_method_types=${subPmt}. (Empty array hides Pay online from this subscription's auto-renewal invoices.)`,
-      );
+      await stripe.subscriptions.update(subscriptionId, subUpdateParams);
+      console.log(`[createCheckoutSession] subscription payment_settings hidden (renewals, sub=${subscriptionId})`);
     }
   } catch (postErr) {
-    // Never let these secondary post-apply calls prevent the user from opening the checkout URL.
-    // They are best-effort cosmetic fixes only. If they fail, checkout still works fine.
     if (typeof (console as ConsoleWithWarn).warn === "function") {
       (console as ConsoleWithWarn).warn(
-        "[createCheckoutSession] best-effort post-checkout-apply (customer.invoice_settings / subscription.payment_settings empty payment_method_types) failed. Checkout URL is still valid. Original error:",
+        "[createCheckoutSession] best-effort post-checkout customer/subscription payment_settings write failed (non-fatal, checkout URL still valid). error:",
         postErr instanceof Error ? postErr.message : String(postErr),
       );
     }
