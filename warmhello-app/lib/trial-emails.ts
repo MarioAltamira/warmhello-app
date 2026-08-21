@@ -412,72 +412,40 @@ export async function sendSuccessfulSubscriptionEmail(
   if (opts.receiptUrl && statusPaid) {
     const thankHtml = `<p style="margin:0 0 8px 0; font-weight:600; color:#2b2f44;">Thank you for your payment.</p>`;
     const receiptLinkHtml = `<a href="${opts.receiptUrl}" target="_blank" rel="noopener" style="font-weight:600;">✅ View payment receipt (Stripe, opens in browser)</a>`;
-    let secondaryHtml = "";
-    let secondaryText = "";
-    if (opts.hostedInvoiceUrl) {
-      secondaryHtml = `<p style="margin-top:6px;"><a href="${opts.hostedInvoiceUrl}" target="_blank" rel="noopener">🧾 View invoice details (line items, tax breakdown)</a></p>`;
-      secondaryText = `View invoice details (line items, tax breakdown): ${opts.hostedInvoiceUrl}\n`;
-    }
-    if (statusPaid && !!opts.invoicePdfUrl) {
-      secondaryHtml += `<p style="margin-top:6px;"><a href="${opts.invoicePdfUrl!}" download>⬇️ Download invoice PDF (PAID copy)</a></p>`;
-      secondaryText += `Download invoice PDF (PAID copy): ${opts.invoicePdfUrl}\n`;
-    }
     const note = `This is your official payment receipt from Stripe. It is ALWAYS shown as PAID and never includes a "Pay online" link. It displays your full HST / tax breakdown and Amount paid.`;
 
     invoiceHtml =
       thankHtml +
-      `${receiptLinkHtml}${secondaryHtml}` +
+      `${receiptLinkHtml}` +
       `<p style="font-size: 12px; opacity: 0.75; margin: 8px 0 0 0;">${note}</p>`;
 
     invoiceText =
       `Thank you for your payment.\n` +
       `View payment receipt (always PAID — no Pay online link): ${opts.receiptUrl}\n` +
-      `${secondaryText}` +
       `Note: This is your official payment receipt from Stripe. Displays full HST/tax breakdown and Amount paid.\n`;
   } else if (opts.hostedInvoiceUrl) {
     const thankHtml = `<p style="margin:0 0 8px 0; font-weight:600; color:#2b2f44;">Thank you for your payment.</p>`;
     const browserLinkHtml = `<a href="${opts.hostedInvoiceUrl}" target="_blank" rel="noopener" style="font-weight:600;">🧾 View receipt (Stripe, opens in browser)</a>`;
-    const showPdf = statusPaid && !!opts.invoicePdfUrl;
-    const pdfHtml = showPdf
-      ? `<p style="margin-top:6px;"><a href="${opts.invoicePdfUrl!}" download>⬇️ Download invoice PDF (PAID copy)</a></p>`
-      : "";
     const note = statusPaid
-      ? `This Stripe-hosted receipt page shows your PAID status, full HST / tax breakdown, and a Download PDF button (if you need a file copy for your records).`
+      ? `This Stripe-hosted receipt page shows your PAID status, full HST / tax breakdown.`
       : `We are still confirming your payment with Stripe. This receipt page updates LIVE — in a few seconds it will refresh with the PAID watermark and full amount paid. No need to refresh manually.`;
 
     invoiceHtml =
       thankHtml +
-      `${browserLinkHtml}${pdfHtml}` +
+      `${browserLinkHtml}` +
       `<p style="font-size: 12px; opacity: 0.75; margin: 8px 0 0 0;">${note}</p>`;
 
     const thankTextLine = `Thank you for your payment.\n`;
     const browserTextLine = `View receipt (opens in browser): ${opts.hostedInvoiceUrl}\n`;
-    const pdfTextLine = showPdf
-      ? `Download invoice PDF (PAID copy, right-click / long-press to save): ${opts.invoicePdfUrl}\n`
-      : "";
     const noteText = statusPaid
-      ? `Note: This Stripe-hosted receipt page shows your PAID status, full HST/tax breakdown, and a "Download PDF" button if you need a file copy for your records.`
+      ? `Note: This Stripe-hosted receipt page shows your PAID status, full HST/tax breakdown.`
       : `Note: We are still confirming your payment with Stripe. The receipt link above updates LIVE — in a few seconds it will refresh with the PAID watermark and full amount paid. No need to refresh manually.`;
-    invoiceText = `${thankTextLine}${browserTextLine}${pdfTextLine}${noteText}`;
-  } else if (opts.invoicePdfUrl && statusPaid) {
-    const thankHtml = `<p style="margin:0 0 8px 0; font-weight:600; color:#2b2f44;">Thank you for your payment.</p>`;
-    const pdfLinkHtml = `<a href="${opts.invoicePdfUrl}" download>⬇️ Download invoice PDF</a>`;
-    const note = `The PDF link saves to your Downloads folder. For the most up-to-date PAID-status receipt (shows Amount paid instead of Amount due), view your Billing page in Dashboard.`;
-
-    invoiceHtml =
-      thankHtml +
-      `${pdfLinkHtml}` +
-      `<p style="font-size: 12px; opacity: 0.75; margin: 8px 0 0 0;">${note}</p>`;
-
-    invoiceText =
-      `Thank you for your payment.\n` +
-      `Download invoice PDF (right-click / long-press to save): ${opts.invoicePdfUrl}\n` +
-      `Note: For the most up-to-date PAID-status receipt, view your Billing page in Dashboard: ${settingsLink}`;
+    invoiceText = `${thankTextLine}${browserTextLine}${noteText}`;
   } else {
     const thankHtml = `<p style="margin:0 0 8px 0; font-weight:600; color:#2b2f44;">Thank you for your payment.</p>`;
     const browserLinkHtml = `<a href="${fallbackDashboardReceiptLink}" target="_blank" rel="noopener" style="font-weight:600;">🧾 View receipt & manage subscription in Dashboard</a>`;
     const note =
-      `Your payment has been processed successfully. If you need a formal invoice PDF or want to manage your subscription (upgrade, cancel, change card), visit your Billing settings in WarmHello Dashboard.` +
+      `Your payment has been processed successfully. To manage your subscription (upgrade, cancel, change card), visit your Billing settings in WarmHello Dashboard.` +
       (statusPaid ? `` : ` PAID status will update shortly; the Dashboard page always reflects the latest billing state.`);
 
     invoiceHtml =
@@ -488,7 +456,7 @@ export async function sendSuccessfulSubscriptionEmail(
     invoiceText =
       `Thank you for your payment.\n` +
       `View receipt & manage subscription in Dashboard: ${fallbackDashboardReceiptLink}\n` +
-      `Note: Your payment has been processed successfully. If you need a formal invoice PDF or want to upgrade / cancel / change your card, visit the Billing settings page above.`;
+      `Note: Your payment has been processed successfully. To upgrade / cancel / change your card, visit the Billing settings page above.`;
   }
 
   const planSummaryLine = `${plan.monthlyLabel} · ${plan.dailyLabel} · billed ${plan.yearlyLabel}`;
@@ -509,7 +477,7 @@ Here is a quick summary of your plan:
   • Emergency contacts:  ${contactsText}
   • Daily check-in time: ${checkInTimesText}
   • Next billing date:   ${nextBilling}
-  • Receipt / Invoice:   ${invoiceText}
+  • Receipt:              ${invoiceText}
 
 A few important notes:
 
@@ -552,7 +520,7 @@ The Warm-Hello Team${footer.text}`,
     <td valign="top" style="border-bottom:1px solid #e5e7eb;">${nextBilling}</td>
   </tr>
   <tr>
-    <td width="32%" valign="top" style="background:#f4f7ff; color:#59617a; font-weight:600;">Receipt / Invoice</td>
+    <td width="32%" valign="top" style="background:#f4f7ff; color:#59617a; font-weight:600;">Receipt</td>
     <td valign="top;">${invoiceHtml}</td>
   </tr>
 </table>
