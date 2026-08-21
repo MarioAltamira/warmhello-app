@@ -145,6 +145,9 @@ export async function createCheckoutSession(input: { subscriberId: string }) {
       metadata: {
         subscriberId: subscriber.id,
       },
+      payment_settings: {
+        payment_method_types: [],
+      },
     },
     metadata: {
       subscriberId: subscriber.id,
