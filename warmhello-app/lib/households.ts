@@ -57,6 +57,7 @@ export type CreateHouseholdInput = {
   };
   primaryContact: ContactInput;
   additionalContacts?: ContactInput[];
+  caregiverAck?: boolean;
 };
 
 export async function getHouseholdForSubscriber(subscriberId: string) {
@@ -164,6 +165,7 @@ export async function createHousehold(input: CreateHouseholdInput) {
       const billingCurrency: BillingCurrency = isBillingCurrency(normalized.subscriber.billingCurrency)
         ? normalized.subscriber.billingCurrency
         : "USD";
+      const caregiverAck = Boolean(normalized.caregiverAck);
 
       const subscriber = await tx.subscriber.create({
         data: {
@@ -175,6 +177,7 @@ export async function createHousehold(input: CreateHouseholdInput) {
           currentPeriodEndsAt: trialEndsAt,
           created: now,
           unsubscribedAt: null,
+          caregiverSeniorConsentAckAt: caregiverAck ? now : undefined,
         },
       });
 
@@ -189,6 +192,7 @@ export async function createHousehold(input: CreateHouseholdInput) {
           checkInMinute: normalized.senior.checkInMinute,
           secondAttemptHours: normalized.senior.secondAttemptHours,
           active: normalized.senior.active,
+          caregiverConsentAckAt: caregiverAck ? now : undefined,
         },
       });
 
@@ -339,9 +343,11 @@ export async function updateHousehold(subscriberId: string, input: CreateHouseho
     }
 
     const result = await prisma.$transaction(async (tx) => {
+      const now = new Date();
       const billingCurrency: BillingCurrency = isBillingCurrency(normalized.subscriber.billingCurrency)
         ? normalized.subscriber.billingCurrency
         : existingSubscriber.billingCurrency;
+      const caregiverAck = Boolean(normalized.caregiverAck);
 
       const subscriber = await tx.subscriber.update({
         where: { id: subscriberId },
@@ -350,6 +356,7 @@ export async function updateHousehold(subscriberId: string, input: CreateHouseho
           fullName: normalized.subscriber.fullName,
           phoneNumber: normalized.subscriber.phoneNumber,
           billingCurrency,
+          ...(caregiverAck ? { caregiverSeniorConsentAckAt: now } : {}),
         },
       });
 
@@ -365,6 +372,7 @@ export async function updateHousehold(subscriberId: string, input: CreateHouseho
               checkInMinute: normalized.senior.checkInMinute,
               secondAttemptHours: normalized.senior.secondAttemptHours,
               active: normalized.senior.active,
+              ...(caregiverAck ? { caregiverConsentAckAt: now } : {}),
             },
           })
         : await tx.senior.create({
@@ -378,6 +386,7 @@ export async function updateHousehold(subscriberId: string, input: CreateHouseho
               checkInMinute: normalized.senior.checkInMinute,
               secondAttemptHours: normalized.senior.secondAttemptHours,
               active: normalized.senior.active,
+              ...(caregiverAck ? { caregiverConsentAckAt: now } : {}),
             },
           });
 

@@ -139,6 +139,11 @@ export async function applyStripeEvent(event: Stripe.Event) {
           metadataCurrency: (session.metadata as { billingCurrency?: unknown } | null)?.billingCurrency,
         });
 
+      const now = new Date();
+      const sessionMetadata = (session.metadata ?? {}) as Record<string, string | undefined>;
+      const tosVersion = sessionMetadata.tos_version ?? "v2026-08-21";
+      const caregiverAck = sessionMetadata.caregiver_ack === "1";
+
       const updateResult = await prisma.subscriber.updateMany({
         where: subscriberId
           ? { id: subscriberId }
@@ -149,6 +154,9 @@ export async function applyStripeEvent(event: Stripe.Event) {
           subscriptionStatus: "ACTIVE",
           billingCurrency: sessionCurrency,
           currentPeriodEndsAt,
+          tosAcceptedAt: now,
+          tosVersion,
+          caregiverSeniorConsentAckAt: caregiverAck ? now : undefined,
         },
       });
 

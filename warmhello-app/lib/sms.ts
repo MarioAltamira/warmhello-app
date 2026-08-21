@@ -1,10 +1,57 @@
 import { env } from "@/lib/env";
+import { LEGAL_ENTITY_PLACEHOLDERS as E } from "@/lib/legal-placeholders";
 import { normalizePhone } from "@/lib/phone";
 import { prisma } from "@/lib/prisma";
 
 type SmsResult =
   | { ok: true; sid: string | null }
   | { ok: false; message: string };
+
+const STOP_HELP =
+  "Reply STOP to opt out. Reply HELP for help or contact support. Msg & data rates may apply.";
+
+function buildIdentitySms(): string {
+  const entity = E.LEGAL_ENTITY_NAME;
+  const address = E.CA_MAILING_ADDRESS;
+  const support = E.SUPPORT_EMAIL;
+  const lines: string[] = [entity];
+  if (address && !address.includes("[REPLACE")) lines.push(address);
+  lines.push(STOP_HELP);
+  lines.push(`Contact: ${support} | warm-hello.com`);
+  return lines.join("\n");
+}
+
+export async function sendSeniorOnboardingSmsSequence(params: {
+  to: string;
+  seniorName: string;
+  checkInUrl: string;
+  meta?: {
+    subscriberId?: string | null;
+    seniorId?: string | null;
+    checkInId?: string | null;
+  };
+}): Promise<{ ok: boolean; identity: SmsResult; checkIn: SmsResult | null }> {
+  const identity = await sendSms(params.to, buildIdentitySms(), {
+    ...params.meta,
+    kind: "onboarding_identity",
+  });
+
+  await new Promise((r) => setTimeout(r, 30000));
+
+  let checkIn: SmsResult | null = null;
+  if (identity.ok) {
+    checkIn = await sendSms(
+      params.to,
+      `Hi ${params.seniorName} - it's time for your Warm-Hello check-in.\nTap I'm OK: ${params.checkInUrl}`,
+      {
+        ...params.meta,
+        kind: "onboarding_checkin",
+      },
+    );
+  }
+
+  return { ok: identity.ok && (checkIn?.ok ?? true), identity, checkIn };
+}
 
 export async function sendSms(
   to: string,

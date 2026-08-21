@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { BuyNowButton } from "@/components/buy-now-button";
+import { DashboardDisclaimerBanner } from "@/components/dashboard-disclaimer-banner";
 import { getDashboardSnapshot } from "@/lib/checkins";
+import { prisma } from "@/lib/prisma";
 import { getSubscriberSession } from "@/lib/subscriber-session";
 
 export default async function DashboardPage() {
@@ -17,8 +19,18 @@ export default async function DashboardPage() {
 
   const snapshot = await getDashboardSnapshot(subscriberId);
 
+  const row = await prisma?.subscriber.findUnique({
+    where: { id: subscriberId },
+    select: { dashboardDisclaimerDismissedAt: true },
+  });
+  const initiallyDismissed = Boolean(row?.dashboardDisclaimerDismissedAt);
+
   return (
     <main className="shell">
+      <DashboardDisclaimerBanner
+        subscriberId={subscriberId}
+        initiallyDismissed={initiallyDismissed}
+      />
       <div className="card">
         <p className="eyebrow">Subscriber Dashboard</p>
         <h1>{snapshot.subscriberName}</h1>

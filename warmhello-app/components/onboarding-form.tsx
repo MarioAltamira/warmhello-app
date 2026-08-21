@@ -5,6 +5,10 @@ import { useMemo, useRef, useState } from "react";
 import { BuyNowButton } from "@/components/buy-now-button";
 import { BillingCurrency } from "@/lib/pricing";
 import { normalizeTimeZone, timeZoneOptions } from "@/lib/timezones";
+import {
+  CLICKWRAP_SENIOR_ADD_LABEL,
+  LEGAL_DISCLAIMER_CONDENSED,
+} from "@/lib/constants";
 
 type HouseholdResponse = {
   ok: boolean;
@@ -237,6 +241,7 @@ export function OnboardingForm({
   const [testMessage, setTestMessage] = useState<string>();
   const [testCheckInToken, setTestCheckInToken] = useState<string>();
   const [testSubmitting, setTestSubmitting] = useState(false);
+  const [caregiverConsentChecked, setCaregiverConsentChecked] = useState(false);
   const firstCheckInScheduledLabel = formatScheduledFor(
     firstCheckIn?.scheduledFor,
     savedHousehold?.senior.timezone ?? form.timezone,
@@ -330,6 +335,14 @@ export function OnboardingForm({
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (!caregiverConsentChecked) {
+      setStatusMessage(
+        "Please confirm that you are authorized to provide the senior's contact details and acknowledge the non-emergency service disclaimer.",
+      );
+      return;
+    }
+
     setSubmitting(true);
     setSavedHousehold(undefined);
     setFirstCheckIn(undefined);
@@ -372,6 +385,7 @@ export function OnboardingForm({
           phoneNumber: form.contactPhone,
         },
         additionalContacts,
+        caregiverAck: true,
       };
 
       const response = await fetch("/api/subscribers", {
@@ -527,6 +541,19 @@ export function OnboardingForm({
               );
             })}
           </div>
+        </div>
+        <div
+          className="form-grid-wide"
+          style={{
+            border: "2px solid rgb(250, 204, 21)",
+            background: "rgba(250, 204, 21, 0.08)",
+            padding: 12,
+            borderRadius: 12,
+          }}
+        >
+          <p style={{ marginTop: 0, marginBottom: 0 }}>
+            <strong>{LEGAL_DISCLAIMER_CONDENSED}</strong>
+          </p>
         </div>
         <label>
           Senior first name
@@ -729,11 +756,42 @@ export function OnboardingForm({
             </p>
           </div>
         ) : null}
+        <label
+          className="form-grid-wide checkbox-grid-row"
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 12,
+            padding: "16px",
+            border: "1px solid var(--border)",
+            borderRadius: 12,
+            background: "rgba(15, 23, 42, 0.3)",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={caregiverConsentChecked}
+            onChange={(event) => setCaregiverConsentChecked(event.target.checked)}
+            style={{ marginTop: 4 }}
+          />
+          <div style={{ fontSize: 14, lineHeight: 1.55 }}>
+            <div style={{ whiteSpace: "pre-line" }}>{CLICKWRAP_SENIOR_ADD_LABEL}</div>
+            <div style={{ marginTop: 6, fontSize: 13, color: "var(--muted)" }}>
+              <Link href="/terms" className="inline-link">
+                Terms of Service
+              </Link>{" "}
+              ·{" "}
+              <Link href="/privacy" className="inline-link">
+                Privacy Policy
+              </Link>
+            </div>
+          </div>
+        </label>
         <div className="form-actions">
           <button
             className="button primary"
             type="submit"
-            disabled={submitting}
+            disabled={submitting || !caregiverConsentChecked}
             onClick={() => {
               submitIntent.current = "save";
             }}
@@ -749,7 +807,7 @@ export function OnboardingForm({
           <button
             className="button secondary"
             type="submit"
-            disabled={submitting}
+            disabled={submitting || !caregiverConsentChecked}
             onClick={() => {
               submitIntent.current = "saveAndTest";
             }}

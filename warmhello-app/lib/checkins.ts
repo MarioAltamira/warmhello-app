@@ -11,6 +11,13 @@ import { shouldSendCheckInMessaging } from "@/lib/subscriber-lifecycle";
 import { normalizeTimeZone } from "@/lib/timezones";
 import { createCheckInToken } from "@/lib/tokens";
 
+const CHECKIN_SMS_PROMO_REGEX =
+  /% ?off|refer|share|discount|promo|free ?month|coupon/i;
+
+type AssertNoPromo<S extends string> = Lowercase<S> extends `${string}${"%25off" | "% off" | "refer" | "share" | "discount" | "promo" | "free month" | "coupon"}${string}`
+  ? never
+  : S;
+
 function formatEnumLabel(status: string) {
   return status
     .toLowerCase()
@@ -364,9 +371,27 @@ export async function markInitialSent(checkInId: string) {
     }
 
     const checkInUrl = await getShortLinkForCheckIn({ checkInId: checkIn.id, token: checkIn.token });
+
+    // COMPLIANCE GUARD (CASL/TCPA): Operational check-in SMS MUST remain
+    // transactional and NEVER contain promotional copy. Any of the following
+    // keywords (% off | refer | share | discount | promo | free month | coupon)
+    // will convert this message from transactional-exempt into CEM/CEM and
+    // expose the operator to statutory fines up to $1,500/SMS (TCPA) or
+    // $10M/company (CASL). CI grep regex: CHECKIN_SMS_PROMO_REGEX above.
+    // Do not edit this template without compliance review.
+    const checkInBodyTemplate = `Hi ${checkIn.senior.firstName} - it's time for your Warm-Hello check-in.\nTap I'm OK: ${checkInUrl}` as const;
+    const checkInBody = checkInBodyTemplate as AssertNoPromo<typeof checkInBodyTemplate>;
+    if (CHECKIN_SMS_PROMO_REGEX.test(checkInBody as unknown as string)) {
+      return {
+        ok: false as const,
+        message:
+          "Check-in SMS template contains promotional keywords. Transactional check-in SMS must never include referral/discount/promo language. Refusing to send (CASL/TCPA compliance guard).",
+      };
+    }
+
     const sms = await sendSms(
       checkIn.senior.phoneNumber,
-      `Hi ${checkIn.senior.firstName} - it's time for your Warm-Hello check-in.\nTap I'm OK: ${checkInUrl}`,
+      checkInBody,
       {
         subscriberId: checkIn.subscriberId,
         seniorId: checkIn.seniorId,

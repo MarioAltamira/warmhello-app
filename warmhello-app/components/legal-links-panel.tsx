@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { pricingPlanFor } from "@/lib/pricing";
+import { LEGAL_DISCLAIMER_UNIVERSAL } from "@/lib/constants";
 
 type SectionKey = "privacy" | "terms" | "about" | "contact" | "howto" | "faq";
 const contactEmail = "sales@warm-hello.com";
@@ -19,6 +21,7 @@ const sectionLabels: Record<SectionKey, string> = {
 type Props = { initialCurrency?: unknown };
 
 export function LegalLinksPanel(_props: Props) {
+  const router = useRouter();
   const [activeSection, setActiveSection] = useState<SectionKey | null>(null);
   const [contactForm, setContactForm] = useState({
     name: "",
@@ -104,17 +107,37 @@ export function LegalLinksPanel(_props: Props) {
         </p>
 
         <ul className="footer-quick-links">
-          {(Object.keys(sectionLabels) as SectionKey[]).map((section) => (
-            <li key={section}>
-              <button
-                type="button"
-                className="footer-link-button"
-                onClick={() => toggleSection(section)}
-              >
-                {sectionLabels[section]}
-              </button>
-            </li>
-          ))}
+          {(Object.keys(sectionLabels) as SectionKey[]).map((section) => {
+            if (section === "terms") {
+              return (
+                <li key={section}>
+                  <Link href="/terms" className="footer-link-button">
+                    {sectionLabels[section]}
+                  </Link>
+                </li>
+              );
+            }
+            if (section === "privacy") {
+              return (
+                <li key={section}>
+                  <Link href="/privacy" className="footer-link-button">
+                    {sectionLabels[section]}
+                  </Link>
+                </li>
+              );
+            }
+            return (
+              <li key={section}>
+                <button
+                  type="button"
+                  className="footer-link-button"
+                  onClick={() => toggleSection(section)}
+                >
+                  {sectionLabels[section]}
+                </button>
+              </li>
+            );
+          })}
         </ul>
 
         {activeSection ? (
@@ -318,12 +341,15 @@ export function LegalLinksPanel(_props: Props) {
         <hr className="footer-divider" />
 
         <p className="footer-disclaimer">
-          &copy; 2026 Warm-Hello. All rights reserved. | <strong>Disclaimer:</strong>{" "}
-          Warm-Hello is an automated text-message check-in notification tool designed to facilitate
-          routine monitoring between individuals and their trusted personal contacts. Warm-Hello is
-          NOT a medical alert system, emergency dispatch line, or a replacement for professional
-          healthcare or 911 services. Standard
-          cellular carrier SMS messaging rates may apply.
+          &copy; 2026 Warm-Hello. All rights reserved. | {LEGAL_DISCLAIMER_UNIVERSAL}{" "}
+          <Link href="/terms" className="inline-link">
+            Read full Terms
+          </Link>{" "}
+          ·{" "}
+          <Link href="/privacy" className="inline-link">
+            Privacy Policy
+          </Link>
+          .
         </p>
       </div>
     </section>

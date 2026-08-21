@@ -41,7 +41,10 @@ export async function resolveCheckoutCurrency(input: {
   return "USD";
 }
 
-export async function createCheckoutSession(input: { subscriberId: string }) {
+export async function createCheckoutSession(input: {
+  subscriberId: string;
+  metadata?: Record<string, string>;
+}) {
   const stripe = getStripeClient();
   if (!prisma) {
     return {
@@ -144,6 +147,7 @@ export async function createCheckoutSession(input: { subscriberId: string }) {
     subscription_data: {
       metadata: {
         subscriberId: subscriber.id,
+        ...(input.metadata ?? {}),
       },
       payment_settings: {
         payment_method_types: [],
@@ -152,6 +156,7 @@ export async function createCheckoutSession(input: { subscriberId: string }) {
     metadata: {
       subscriberId: subscriber.id,
       billingCurrency: currency,
+      ...(input.metadata ?? {}),
     },
     invoice_settings: {
       payment_settings: {

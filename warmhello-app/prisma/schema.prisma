@@ -46,42 +46,49 @@ enum SmsStatus {
 }
 
 model Subscriber {
-  id                   String             @id @default(cuid())
-  email                String             @unique
-  fullName             String
-  phoneNumber          String
-  stripeCustomerId     String?            @unique
-  stripeSubscriptionId String?            @unique
-  subscriptionStatus   SubscriptionStatus @default(TRIAL)
-  billingCurrency      BillingCurrency    @default(USD)
-  currentPeriodEndsAt  DateTime?
-  unsubscribedAt       DateTime?
-  created              DateTime           @default(now()) @map("Created")
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
-  seniors              Senior[]
-  contacts             Contact[]
-  checkIns             CheckIn[]
-  smsLogs              SmsLog[]
+  id                                String             @id @default(cuid())
+  email                             String             @unique
+  fullName                          String
+  phoneNumber                       String
+  stripeCustomerId                  String?            @unique
+  stripeSubscriptionId              String?            @unique
+  subscriptionStatus                SubscriptionStatus @default(TRIAL)
+  billingCurrency                   BillingCurrency    @default(USD)
+  currentPeriodEndsAt               DateTime?
+  unsubscribedAt                    DateTime?
+  tosAcceptedAt                     DateTime?
+  tosVersion                        String?            @default("v2026-08-21")
+  caregiverSeniorConsentAckAt       DateTime?
+  dashboardDisclaimerDismissedAt    DateTime?
+  created                           DateTime           @default(now()) @map("Created")
+  createdAt                         DateTime           @default(now())
+  updatedAt                         DateTime           @updatedAt
+  seniors                           Senior[]
+  contacts                          Contact[]
+  checkIns                          CheckIn[]
+  smsLogs                           SmsLog[]
 }
 
 model Senior {
-  id           String     @id @default(cuid())
-  subscriberId String
-  firstName    String
-  lastName     String
-  phoneNumber  String
-  timezone     String     @default("America/New_York")
-  checkInHour  Int        @default(9)
-  checkInMinute Int       @default(0)
-  secondAttemptHours Int  @default(1)
-  active       Boolean    @default(true)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  subscriber   Subscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
-  contacts     Contact[]
-  checkIns     CheckIn[]
-  smsLogs      SmsLog[]
+  id                         String     @id @default(cuid())
+  subscriberId               String
+  firstName                  String
+  lastName                   String
+  phoneNumber                String
+  timezone                   String     @default("America/New_York")
+  checkInHour                Int        @default(9)
+  checkInMinute              Int        @default(0)
+  secondAttemptHours         Int        @default(1)
+  active                     Boolean    @default(true)
+  caregiverConsentAckAt      DateTime?
+  smsOptedOut                Boolean    @default(false)
+  smsOptedOutAt              DateTime?
+  createdAt                  DateTime   @default(now())
+  updatedAt                  DateTime   @updatedAt
+  subscriber                 Subscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  contacts                   Contact[]
+  checkIns                   CheckIn[]
+  smsLogs                    SmsLog[]
 }
 
 model Contact {
@@ -161,6 +168,21 @@ model SmsLog {
   @@index([subscriberId, createdAt])
   @@index([seniorId, createdAt])
   @@index([checkInId, createdAt])
+}
+
+model SmsConsentTombstone {
+  id            String   @id @default(cuid())
+  phoneE164     String   @unique
+  optInAt       DateTime?
+  optOutAt      DateTime?
+  reOptInAt     DateTime[]
+  reason        String?
+  retainedUntil DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([phoneE164])
+  @@index([retainedUntil])
 }
 
 model ShortLink {

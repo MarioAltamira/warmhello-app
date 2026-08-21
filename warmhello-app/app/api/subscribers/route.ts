@@ -39,6 +39,7 @@ const bodySchema = z
     }),
     primaryContact: contactSchema,
     additionalContacts: z.array(contactSchema).max(Math.max(0, MAX_CONTACTS - 1)).optional(),
+    caregiverAck: z.boolean().optional(),
   })
   .refine(
     (data) =>
