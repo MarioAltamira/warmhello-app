@@ -4,10 +4,10 @@ export const LEGAL_ENTITY_PLACEHOLDERS = {
   JURISDICTION_OF_INCORPORATION:
     "the federal laws of Canada (CBCA)",
   CA_MAILING_ADDRESS:
-    "[REPLACE WITH OFFICIAL CANADIAN MAILING ADDRESS FOR CASL — Example: 53 Lancewood Cres, Brampton ON L6S 5Y5, Canada]",
+    "53 Lancewood Cres, Brampton, Ontario, Canada, L6S 5Y5",
   SUPPORT_EMAIL: "sales@warm-hello.com",
   GST_HST_REGISTRATION_NUMBER:
-    "[REPLACE WITH YOUR 9-DIGIT BN + RT0001 GST/HST NUMBER — Example: 123456789 RT0001]",
+    "831746540RT0001",
   DATA_RESIDENCY_DISCLOSURE_REQUIRED: true as const,
   DATA_PROCESSING_COUNTRIES: [
     "United States of America (Supabase — database at rest in AWS us-east-2 Ohio; Stripe payment processing)",
