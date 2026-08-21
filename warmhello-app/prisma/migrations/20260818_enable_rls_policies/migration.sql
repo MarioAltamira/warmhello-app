@@ -14,10 +14,16 @@
 -- any policy. Combined with the ENABLE ROW LEVEL SECURITY from the previous
 -- migration, this keeps the deny-by-default posture for the REST API — i.e.
 -- zero rows returned / written for any anonymous caller.
+--
+-- Idempotency (critical for re-runs / Supabase pre-existing objects):
+-- Always drop the policy first if it exists before (re)creating.
+-- Otherwise CREATE POLICY raises SQLSTATE 42710 "policy already exists"
+-- and Prisma aborts the migrate-deploy sequence with P3018.
 
 DO $$
 DECLARE
   t text;
+  policy_name text;
 BEGIN
   FOR t IN VALUES
     ('"AlertJob"'),
@@ -29,12 +35,20 @@ BEGIN
     ('"ShortLink"'),
     ('"_prisma_migrations"')
   LOOP
+    policy_name := t || '_admin_all';
+
+    EXECUTE format(
+      'DROP POLICY IF EXISTS %I ON public.%s',
+      policy_name,
+      t
+    );
+
     EXECUTE format(
       'CREATE POLICY %I ON public.%s ' ||
       'FOR ALL ' ||
       'TO postgres, supabase_admin, pgbouncer, authenticator ' ||
       'USING (true) WITH CHECK (true)',
-      t || '_admin_all',
+      policy_name,
       t
     );
   END LOOP;
