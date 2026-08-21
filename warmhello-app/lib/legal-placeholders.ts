@@ -1,8 +1,8 @@
 export const LEGAL_ENTITY_PLACEHOLDERS = {
   LEGAL_ENTITY_NAME:
-    "Warm-Hello Inc. [REPLACE WITH EXACT CORPORATE NAME — e.g., 'Warm-Hello Inc., a corporation incorporated under the laws of the Province of Ontario']",
+    '10894796 Canada Inc., a corporation incorporated under the federal laws of Canada, doing business as "Warm-Hello"',
   JURISDICTION_OF_INCORPORATION:
-    "the Province of Ontario, Canada [REPLACE if federally incorporated (CBCA) or another province]",
+    "the federal laws of Canada (CBCA)",
   CA_MAILING_ADDRESS:
     "[REPLACE WITH OFFICIAL CANADIAN MAILING ADDRESS FOR CASL — Example: 53 Lancewood Cres, Brampton ON L6S 5Y5, Canada]",
   SUPPORT_EMAIL: "sales@warm-hello.com",
