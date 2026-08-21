@@ -182,6 +182,14 @@ export async function applyStripeEvent(event: Stripe.Event) {
             let invoicePdfUrl: string | null = null;
             let hostedInvoiceUrl: string | null = null;
             let fallbackStatusPaid = false;
+            let fallbackReceiptUrl: string | null = null;
+            const extractReceiptFromInvoiceFallback = (inv: Stripe.Invoice): string | null => {
+              const charge = (inv as unknown as { charge?: Stripe.Charge | string | null }).charge;
+              if (charge && typeof charge === "object" && typeof (charge as Stripe.Charge).receipt_url === "string") {
+                return (charge as Stripe.Charge).receipt_url;
+              }
+              return null;
+            };
             if (subscriptionId) {
               try {
                 const { getStripeClient } = await import("@/lib/stripe");
@@ -190,7 +198,7 @@ export async function applyStripeEvent(event: Stripe.Event) {
                   let invoiceIdToPoll: string | null = null;
                   try {
                     const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
-                      expand: ["latest_invoice"],
+                      expand: ["latest_invoice", "latest_invoice.charge"],
                     });
                     const maybeInvoice = subscription.latest_invoice as
                       | string
@@ -204,6 +212,7 @@ export async function applyStripeEvent(event: Stripe.Event) {
                       if ((maybeInvoice as Stripe.Invoice).status === "paid") {
                         invoicePdfUrl = (maybeInvoice as Stripe.Invoice).invoice_pdf ?? null;
                         hostedInvoiceUrl = (maybeInvoice as Stripe.Invoice).hosted_invoice_url ?? null;
+                        fallbackReceiptUrl = extractReceiptFromInvoiceFallback(maybeInvoice as Stripe.Invoice);
                       }
                     }
                   } catch (subRetrieveErr) {
@@ -213,6 +222,7 @@ export async function applyStripeEvent(event: Stripe.Event) {
                     const invoices = await stripe.invoices.list({
                       subscription: subscriptionId,
                       limit: 1,
+                      expand: ["data.charge"],
                     });
                     const inv = invoices.data[0];
                     if (inv) {
@@ -220,11 +230,12 @@ export async function applyStripeEvent(event: Stripe.Event) {
                       if (inv.status === "paid") {
                         invoicePdfUrl = inv.invoice_pdf ?? null;
                         hostedInvoiceUrl = inv.hosted_invoice_url ?? null;
+                        fallbackReceiptUrl = extractReceiptFromInvoiceFallback(inv);
                       }
                     }
                   }
 
-                  fallbackStatusPaid = !!invoicePdfUrl || !!hostedInvoiceUrl;
+                  fallbackStatusPaid = !!invoicePdfUrl || !!hostedInvoiceUrl || !!fallbackReceiptUrl;
                   if (invoiceIdToPoll) {
                     try {
                       const invUpdateResp = await stripe.invoices.update(invoiceIdToPoll, {
@@ -245,18 +256,33 @@ export async function applyStripeEvent(event: Stripe.Event) {
                     }
                   }
 
-                  if (invoiceIdToPoll && !invoicePdfUrl && !hostedInvoiceUrl) {
+                  if (invoiceIdToPoll && !fallbackReceiptUrl) {
+                    try {
+                      const invWithCharge = await stripe.invoices.retrieve(invoiceIdToPoll, {
+                        expand: ["charge"],
+                      });
+                      fallbackReceiptUrl = extractReceiptFromInvoiceFallback(invWithCharge);
+                      if (!invoicePdfUrl) invoicePdfUrl = invWithCharge.invoice_pdf ?? null;
+                      if (!hostedInvoiceUrl) hostedInvoiceUrl = invWithCharge.hosted_invoice_url ?? null;
+                      if (invWithCharge.status === "paid") fallbackStatusPaid = true;
+                    } catch (_chargeRetrieveErr) {
+                      // non-fatal, poll loop will also attempt
+                    }
+                  }
+
+                  if (invoiceIdToPoll && (!invoicePdfUrl && !hostedInvoiceUrl && !fallbackReceiptUrl)) {
                     console.log(
                       `[stripe-webhook:checkout.session.completed:fallback-email] POLL START: invoice ${invoiceIdToPoll} not yet paid. polling up to 8x x 2s.`,
                     );
                     const { pollStripeInvoiceUntilPaid } = await import("@/lib/trial-emails");
                     const poll = await pollStripeInvoiceUntilPaid(invoiceIdToPoll);
                     console.log(
-                      `[stripe-webhook:checkout.session.completed:fallback-email] POLL DONE: invoice ${invoiceIdToPoll} status='${poll.status}' attempts=${poll.attempts}/8 gaveUp=${poll.gaveUp}`,
+                      `[stripe-webhook:checkout.session.completed:fallback-email] POLL DONE: invoice ${invoiceIdToPoll} status='${poll.status}' attempts=${poll.attempts}/8 gaveUp=${poll.gaveUp} receiptUrl=${poll.receiptUrl ? "FOUND" : "null"}`,
                     );
-                    if (poll.status === "paid" || poll.invoicePdf || poll.hostedInvoiceUrl) {
+                    if (poll.status === "paid" || poll.invoicePdf || poll.hostedInvoiceUrl || poll.receiptUrl) {
                       invoicePdfUrl = poll.invoicePdf ?? invoicePdfUrl;
                       hostedInvoiceUrl = poll.hostedInvoiceUrl ?? hostedInvoiceUrl;
+                      fallbackReceiptUrl = poll.receiptUrl ?? fallbackReceiptUrl;
                     }
                     if (poll.status === "paid") fallbackStatusPaid = true;
                   }
@@ -271,6 +297,7 @@ export async function applyStripeEvent(event: Stripe.Event) {
             await sendSuccessfulSubscriptionEmail(finalSubscriberIdForEmail, {
               invoicePdfUrl,
               hostedInvoiceUrl,
+              receiptUrl: fallbackReceiptUrl,
               statusPaid: fallbackStatusPaid,
             });
             markSuccessEmailSent(finalSubscriberIdForEmail, "checkout.session.completed.fallback");
@@ -384,9 +411,40 @@ export async function applyStripeEvent(event: Stripe.Event) {
               typeof (invoice as unknown as { hosted_invoice_url?: string | null }).hosted_invoice_url === "string"
                 ? (invoice as unknown as { hosted_invoice_url: string | null }).hosted_invoice_url
                 : null;
+            let polledReceiptUrl: string | null = null;
             let finalStatusPaid = (invoice.status ?? "unknown") === "paid";
             const expectedStatus = invoice.status ?? "unknown";
             const invoiceIdForPoll = typeof invoice.id === "string" ? invoice.id : "";
+            const extractReceiptFromInvoice = (inv: Stripe.Invoice): string | null => {
+              const charge = (inv as unknown as { charge?: Stripe.Charge | string | null }).charge;
+              if (charge && typeof charge === "object" && typeof (charge as Stripe.Charge).receipt_url === "string") {
+                return (charge as Stripe.Charge).receipt_url;
+              }
+              return null;
+            };
+
+            if (finalStatusPaid && invoiceIdForPoll) {
+              try {
+                const { getStripeClient } = await import("@/lib/stripe");
+                const stripe = getStripeClient();
+                if (stripe) {
+                  const invWithCharge = await stripe.invoices.retrieve(invoiceIdForPoll, {
+                    expand: ["charge"],
+                  });
+                  polledReceiptUrl = extractReceiptFromInvoice(invWithCharge);
+                  polledPdf = invWithCharge.invoice_pdf ?? polledPdf;
+                  polledHosted = invWithCharge.hosted_invoice_url ?? polledHosted;
+                  console.log(
+                    `[stripe-webhook:invoice.paid] pre-poll retrieve-with-charge: invoiceId=${invoiceIdForPoll} receiptUrl=${polledReceiptUrl ? "FOUND" : "null"} invStatus=${invWithCharge.status ?? "unknown"}`,
+                  );
+                }
+              } catch (prePollRetrieveErr) {
+                console.warn(
+                  `[stripe-webhook:invoice.paid] pre-poll retrieve with expand=charge failed (non-fatal, poll also expands): ${prePollRetrieveErr instanceof Error ? prePollRetrieveErr.message : String(prePollRetrieveErr)}`,
+                );
+              }
+            }
+
             if (expectedStatus !== "paid" && invoiceIdForPoll) {
               console.log(
                 `[stripe-webhook:invoice.paid] POLL START: invoice ${invoiceIdForPoll} status='${expectedStatus}' !== 'paid' -> polling up to 8x x 2s before pulling final URLs.`,
@@ -394,11 +452,12 @@ export async function applyStripeEvent(event: Stripe.Event) {
               const { pollStripeInvoiceUntilPaid } = await import("@/lib/trial-emails");
               const res = await pollStripeInvoiceUntilPaid(invoiceIdForPoll);
               console.log(
-                `[stripe-webhook:invoice.paid] POLL DONE: invoice ${invoiceIdForPoll} final status='${res.status}' attempts=${res.attempts}/${8} gaveUp=${res.gaveUp}`,
+                `[stripe-webhook:invoice.paid] POLL DONE: invoice ${invoiceIdForPoll} final status='${res.status}' attempts=${res.attempts}/${8} gaveUp=${res.gaveUp} receiptUrl=${res.receiptUrl ? "FOUND" : "null"}`,
               );
-              if (res.status === "paid" || res.invoicePdf || res.hostedInvoiceUrl) {
+              if (res.status === "paid" || res.invoicePdf || res.hostedInvoiceUrl || res.receiptUrl) {
                 polledPdf = res.invoicePdf ?? polledPdf;
                 polledHosted = res.hostedInvoiceUrl ?? polledHosted;
+                polledReceiptUrl = res.receiptUrl ?? polledReceiptUrl;
               }
               if (res.status === "paid") finalStatusPaid = true;
             }
@@ -406,11 +465,12 @@ export async function applyStripeEvent(event: Stripe.Event) {
             await sendSuccessfulSubscriptionEmail(matchedSubscriber.id, {
               invoicePdfUrl: polledPdf ?? invoice.invoice_pdf ?? null,
               hostedInvoiceUrl: polledHosted,
+              receiptUrl: polledReceiptUrl,
               statusPaid: finalStatusPaid,
             });
             markSuccessEmailSent(matchedSubscriber.id, "invoice.paid");
             console.log(
-              `[stripe-webhook:invoice.paid] SUCCESS_EMAIL_SENT subscriber=${matchedSubscriber.id} invoice_pdf=${invoice.invoice_pdf ? "set" : "null"} hosted_invoice_url=${polledHosted ? "set" : "null"}`,
+              `[stripe-webhook:invoice.paid] SUCCESS_EMAIL_SENT subscriber=${matchedSubscriber.id} invoice_pdf=${invoice.invoice_pdf ? "set" : "null"} hosted_invoice_url=${polledHosted ? "set" : "null"} receiptUrl=${polledReceiptUrl ? "SET (no Pay online link guaranteed)" : "null"}`,
             );
           } catch (error) {
             console.warn(

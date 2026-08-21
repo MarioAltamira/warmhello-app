@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type Stripe from "stripe";
 import { sendEmail } from "@/lib/email";
 import { env } from "@/lib/env";
 import { createUnsubscribeToken } from "@/lib/unsubscribe";
@@ -284,6 +285,7 @@ ${footer.html}`,
 export type SuccessfulSubscriptionEmailOptions = {
   invoicePdfUrl?: string | null;
   hostedInvoiceUrl?: string | null;
+  receiptUrl?: string | null;
   statusPaid?: boolean;
 };
 
@@ -293,25 +295,37 @@ export async function pollStripeInvoiceUntilPaid(
     maxAttempts?: number;
     sleepMs?: number;
   } = {},
-): Promise<{ status: string; invoicePdf: string | null; hostedInvoiceUrl: string | null; gaveUp: boolean; attempts: number }> {
+): Promise<{ status: string; invoicePdf: string | null; hostedInvoiceUrl: string | null; receiptUrl: string | null; gaveUp: boolean; attempts: number }> {
   const maxAttempts = opts.maxAttempts ?? 8;
   const sleepMs = opts.sleepMs ?? 2000;
   let attempts = 0;
   let lastStatus: string = "unknown";
   let lastPdf: string | null = null;
   let lastHosted: string | null = null;
+  let lastReceipt: string | null = null;
+
+  const extractReceiptUrlFromInvoice = (inv: Stripe.Invoice): string | null => {
+    const charge = (inv as unknown as { charge?: Stripe.Charge | string | null }).charge;
+    if (charge && typeof charge === "object" && typeof (charge as Stripe.Charge).receipt_url === "string") {
+      return (charge as Stripe.Charge).receipt_url;
+    }
+    return null;
+  };
 
   for (attempts = 1; attempts <= maxAttempts; attempts++) {
     try {
       const { getStripeClient } = await import("@/lib/stripe");
       const stripe = getStripeClient();
       if (!stripe) break;
-      const invoice = await stripe.invoices.retrieve(invoiceId);
+      const invoice = await stripe.invoices.retrieve(invoiceId, {
+        expand: ["charge"],
+      });
       lastStatus = invoice.status ?? "unknown";
       lastPdf = invoice.invoice_pdf ?? null;
       lastHosted = invoice.hosted_invoice_url ?? null;
+      lastReceipt = extractReceiptUrlFromInvoice(invoice);
       if (lastStatus === "paid") {
-        return { status: lastStatus, invoicePdf: lastPdf, hostedInvoiceUrl: lastHosted, gaveUp: false, attempts };
+        return { status: lastStatus, invoicePdf: lastPdf, hostedInvoiceUrl: lastHosted, receiptUrl: lastReceipt, gaveUp: false, attempts };
       }
     } catch (err) {
       console.warn(
@@ -322,7 +336,7 @@ export async function pollStripeInvoiceUntilPaid(
       await new Promise((r) => setTimeout(r, sleepMs));
     }
   }
-  return { status: lastStatus, invoicePdf: lastPdf, hostedInvoiceUrl: lastHosted, gaveUp: true, attempts };
+  return { status: lastStatus, invoicePdf: lastPdf, hostedInvoiceUrl: lastHosted, receiptUrl: lastReceipt, gaveUp: true, attempts };
 }
 
 export async function sendSuccessfulSubscriptionEmail(
@@ -395,7 +409,32 @@ export async function sendSuccessfulSubscriptionEmail(
 
   let invoiceHtml: string;
   let invoiceText: string;
-  if (opts.hostedInvoiceUrl) {
+  if (opts.receiptUrl && statusPaid) {
+    const thankHtml = `<p style="margin:0 0 8px 0; font-weight:600; color:#2b2f44;">Thank you for your payment.</p>`;
+    const receiptLinkHtml = `<a href="${opts.receiptUrl}" target="_blank" rel="noopener" style="font-weight:600;">✅ View payment receipt (Stripe, opens in browser)</a>`;
+    let secondaryHtml = "";
+    let secondaryText = "";
+    if (opts.hostedInvoiceUrl) {
+      secondaryHtml = `<p style="margin-top:6px;"><a href="${opts.hostedInvoiceUrl}" target="_blank" rel="noopener">🧾 View invoice details (line items, tax breakdown)</a></p>`;
+      secondaryText = `View invoice details (line items, tax breakdown): ${opts.hostedInvoiceUrl}\n`;
+    }
+    if (statusPaid && !!opts.invoicePdfUrl) {
+      secondaryHtml += `<p style="margin-top:6px;"><a href="${opts.invoicePdfUrl!}" download>⬇️ Download invoice PDF (PAID copy)</a></p>`;
+      secondaryText += `Download invoice PDF (PAID copy): ${opts.invoicePdfUrl}\n`;
+    }
+    const note = `This is your official payment receipt from Stripe. It is ALWAYS shown as PAID and never includes a "Pay online" link. It displays your full HST / tax breakdown and Amount paid.`;
+
+    invoiceHtml =
+      thankHtml +
+      `${receiptLinkHtml}${secondaryHtml}` +
+      `<p style="font-size: 12px; opacity: 0.75; margin: 8px 0 0 0;">${note}</p>`;
+
+    invoiceText =
+      `Thank you for your payment.\n` +
+      `View payment receipt (always PAID — no Pay online link): ${opts.receiptUrl}\n` +
+      `${secondaryText}` +
+      `Note: This is your official payment receipt from Stripe. Displays full HST/tax breakdown and Amount paid.\n`;
+  } else if (opts.hostedInvoiceUrl) {
     const thankHtml = `<p style="margin:0 0 8px 0; font-weight:600; color:#2b2f44;">Thank you for your payment.</p>`;
     const browserLinkHtml = `<a href="${opts.hostedInvoiceUrl}" target="_blank" rel="noopener" style="font-weight:600;">🧾 View receipt (Stripe, opens in browser)</a>`;
     const showPdf = statusPaid && !!opts.invoicePdfUrl;
