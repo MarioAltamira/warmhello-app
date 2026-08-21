@@ -2,6 +2,7 @@ import type Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { BillingCurrency, isBillingCurrency } from "@/lib/pricing";
 import { sendSuccessfulSubscriptionEmail } from "@/lib/trial-emails";
+import { getStripeClient } from "@/lib/stripe";
 
 type ConsoleWithWarn = Console & {
   warn?: (...args: unknown[]) => void;
@@ -180,6 +181,7 @@ export async function applyStripeEvent(event: Stripe.Event) {
 
             let invoicePdfUrl: string | null = null;
             let hostedInvoiceUrl: string | null = null;
+            let fallbackStatusPaid = false;
             if (subscriptionId) {
               try {
                 const { getStripeClient } = await import("@/lib/stripe");
@@ -222,19 +224,39 @@ export async function applyStripeEvent(event: Stripe.Event) {
                     }
                   }
 
+                  fallbackStatusPaid = !!invoicePdfUrl || !!hostedInvoiceUrl;
+                  if (invoiceIdToPoll) {
+                    try {
+                      await stripe.invoices.update(invoiceIdToPoll, {
+                        payment_settings: {
+                          payment_method_types: [],
+                        },
+                      });
+                      console.log(
+                        `[stripe-webhook:checkout.session.completed:fallback-email] PER-INVOICE applied payment_settings.payment_method_types=[] on invoice ${invoiceIdToPoll} (fallback path) to hide Pay online link.`,
+                      );
+                    } catch (fallbackInvoiceUpdateErr) {
+                      // best-effort only — if it fails, continue polling / emailing
+                      console.warn(
+                        `[stripe-webhook:checkout.session.completed:fallback-email] best-effort per-invoice payment_settings empty array apply FAILED (non-fatal). message=${fallbackInvoiceUpdateErr instanceof Error ? fallbackInvoiceUpdateErr.message : String(fallbackInvoiceUpdateErr)}`,
+                      );
+                    }
+                  }
+
                   if (invoiceIdToPoll && !invoicePdfUrl && !hostedInvoiceUrl) {
                     console.log(
-                      `[stripe-webhook:checkout.session.completed:fallback-email] POLL START: invoice ${invoiceIdToPoll} not yet paid. polling up to 5x x 2s.`,
+                      `[stripe-webhook:checkout.session.completed:fallback-email] POLL START: invoice ${invoiceIdToPoll} not yet paid. polling up to 8x x 2s.`,
                     );
                     const { pollStripeInvoiceUntilPaid } = await import("@/lib/trial-emails");
                     const poll = await pollStripeInvoiceUntilPaid(invoiceIdToPoll);
                     console.log(
-                      `[stripe-webhook:checkout.session.completed:fallback-email] POLL DONE: invoice ${invoiceIdToPoll} status='${poll.status}' attempts=${poll.attempts}/5 gaveUp=${poll.gaveUp}`,
+                      `[stripe-webhook:checkout.session.completed:fallback-email] POLL DONE: invoice ${invoiceIdToPoll} status='${poll.status}' attempts=${poll.attempts}/8 gaveUp=${poll.gaveUp}`,
                     );
                     if (poll.status === "paid" || poll.invoicePdf || poll.hostedInvoiceUrl) {
                       invoicePdfUrl = poll.invoicePdf ?? invoicePdfUrl;
                       hostedInvoiceUrl = poll.hostedInvoiceUrl ?? hostedInvoiceUrl;
                     }
+                    if (poll.status === "paid") fallbackStatusPaid = true;
                   }
                 }
               } catch (error) {
@@ -247,6 +269,7 @@ export async function applyStripeEvent(event: Stripe.Event) {
             await sendSuccessfulSubscriptionEmail(finalSubscriberIdForEmail, {
               invoicePdfUrl,
               hostedInvoiceUrl,
+              statusPaid: fallbackStatusPaid,
             });
             markSuccessEmailSent(finalSubscriberIdForEmail, "checkout.session.completed.fallback");
 
@@ -330,11 +353,34 @@ export async function applyStripeEvent(event: Stripe.Event) {
               return;
             }
 
+            const invoiceIdForUpdate = typeof invoice.id === "string" ? invoice.id : "";
+            if (invoiceIdForUpdate) {
+              try {
+                const stripe = getStripeClient();
+                if (stripe) {
+                  await stripe.invoices.update(invoiceIdForUpdate, {
+                    payment_settings: {
+                      payment_method_types: [],
+                    },
+                  });
+                  console.log(
+                    `[stripe-webhook:invoice.paid] PER-INVOICE applied payment_settings.payment_method_types=[] on invoice ${invoiceIdForUpdate} to hide Pay online link.`,
+                  );
+                }
+              } catch (invoiceUpdateErr) {
+                // best-effort only
+                console.warn(
+                  `[stripe-webhook:invoice.paid] best-effort per-invoice payment_settings empty array apply FAILED (non-fatal). message=${invoiceUpdateErr instanceof Error ? invoiceUpdateErr.message : String(invoiceUpdateErr)}`,
+                );
+              }
+            }
+
             let polledPdf: string | null = invoice.invoice_pdf ?? null;
             let polledHosted: string | null =
               typeof (invoice as unknown as { hosted_invoice_url?: string | null }).hosted_invoice_url === "string"
                 ? (invoice as unknown as { hosted_invoice_url: string | null }).hosted_invoice_url
                 : null;
+            let finalStatusPaid = (invoice.status ?? "unknown") === "paid";
             const expectedStatus = invoice.status ?? "unknown";
             const invoiceIdForPoll = typeof invoice.id === "string" ? invoice.id : "";
             if (expectedStatus !== "paid" && invoiceIdForPoll) {
@@ -350,11 +396,13 @@ export async function applyStripeEvent(event: Stripe.Event) {
                 polledPdf = res.invoicePdf ?? polledPdf;
                 polledHosted = res.hostedInvoiceUrl ?? polledHosted;
               }
+              if (res.status === "paid") finalStatusPaid = true;
             }
 
             await sendSuccessfulSubscriptionEmail(matchedSubscriber.id, {
               invoicePdfUrl: polledPdf ?? invoice.invoice_pdf ?? null,
               hostedInvoiceUrl: polledHosted,
+              statusPaid: finalStatusPaid,
             });
             markSuccessEmailSent(matchedSubscriber.id, "invoice.paid");
             console.log(

@@ -197,6 +197,39 @@ export async function createCheckoutSession(input: { subscriberId: string }) {
     session = await stripe.checkout.sessions.create(fallbackParams);
   }
 
+  try {
+    const customerId = typeof session.customer === "string" ? session.customer : (session.customer as unknown as { id?: string } | null)?.id;
+    if (customerId) {
+      await stripe.customers.update(customerId, {
+        invoice_settings: {
+          payment_settings: {
+            payment_method_types: [],
+          },
+        },
+      } as unknown as Record<string, unknown>);
+    }
+    const subscriptionId =
+      typeof session.subscription === "string"
+        ? session.subscription
+        : (session.subscription as unknown as { id?: string } | null)?.id;
+    if (subscriptionId) {
+      await stripe.subscriptions.update(subscriptionId, {
+        payment_settings: {
+          payment_method_types: [],
+        },
+      } as unknown as Record<string, unknown>);
+    }
+  } catch (postErr) {
+    // Never let these secondary post-apply calls prevent the user from opening the checkout URL.
+    // They are best-effort cosmetic fixes only. If they fail, checkout still works fine.
+    if (typeof (console as ConsoleWithWarn).warn === "function") {
+      (console as ConsoleWithWarn).warn(
+        "[createCheckoutSession] best-effort post-checkout-apply (customer.invoice_settings / subscription.payment_settings empty payment_method_types) failed. Checkout URL is still valid. Original error:",
+        postErr instanceof Error ? postErr.message : String(postErr),
+      );
+    }
+  }
+
   return { ok: true as const, url: session.url };
 }
 
