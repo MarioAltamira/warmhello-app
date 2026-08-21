@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import type Stripe from "stripe";
 import { sendEmail } from "@/lib/email";
 import { env } from "@/lib/env";
+import { LEGAL_ENTITY_PLACEHOLDERS } from "@/lib/legal-placeholders";
 import { createUnsubscribeToken } from "@/lib/unsubscribe";
 import { pricingPlanFor, type BillingCurrency } from "@/lib/pricing";
 
@@ -92,9 +93,24 @@ function buildEmailFooter(options: {
   unsubscribeCopy: string;
   unsubscribeLink: string;
 }) {
+  const entity = LEGAL_ENTITY_PLACEHOLDERS.LEGAL_ENTITY_NAME;
+  const mailing = LEGAL_ENTITY_PLACEHOLDERS.CA_MAILING_ADDRESS;
+  const support = SALES_EMAIL;
+  const identityHtml =
+    `<p style="margin: 0 0 8px 0; font-size: 12px; line-height: 1.55; color: #3a3f54;">` +
+    `${entity} · ${mailing}. Questions? Email <a href="mailto:${support}" style="color: #59617a; text-decoration: underline;">${support}</a>.` +
+    `</p>`;
+  const identityText = `\n\n${entity}\n${mailing}\nQuestions? Email ${support}.`;
+
   return {
-    html: `<p>Questions or need help? Email <a href="mailto:${SALES_EMAIL}">${SALES_EMAIL}</a>.</p><p style="font-size: 12px; opacity: 0.8;">${options.unsubscribeCopy} <a href="${options.unsubscribeLink}">unsubscribe</a>.</p>`,
-    text: `\nQuestions or need help? Email ${SALES_EMAIL}.\n\n${options.unsubscribeCopy}: ${options.unsubscribeLink}`,
+    html:
+      identityHtml +
+      `<p style="margin: 0; font-size: 12px; line-height: 1.55; color: #59617a;">` +
+      `${options.unsubscribeCopy} <a href="${options.unsubscribeLink}" style="color: #59617a; text-decoration: underline;">unsubscribe</a>.` +
+      `</p>`,
+    text:
+      identityText +
+      `\n\n${options.unsubscribeCopy}: ${options.unsubscribeLink}`,
   };
 }
 
@@ -531,6 +547,79 @@ The Warm-Hello Team${footer.text}`,
   3. You can cancel the auto-renewal at any time from <a href="${settingsLink}">Dashboard → Settings</a>. Your coverage stays active through the end of the billing period you already paid for.
 </p>
 <p>If anything looks wrong on the summary above, just reply to this email and we'll fix it before the next billing cycle.</p>
+<p>Warmly,<br />The Warm-Hello Team</p>
+${footer.html}`,
+  });
+}
+
+export async function sendAnnualRenewalReminderEmail(subscriberId: string) {
+  const subscriber = await getSubscriberForEmail(subscriberId);
+  if (!subscriber) {
+    return {
+      ok: false as const,
+      message:
+        "Annual renewal reminder skipped: subscriber not found or has unsubscribed from trial/non-essential emails.",
+      id: null,
+    };
+  }
+
+  if (
+    subscriber.subscriptionStatus !== "ACTIVE" &&
+    subscriber.subscriptionStatus !== "CANCELED" &&
+    subscriber.subscriptionStatus !== "PAST_DUE"
+  ) {
+    return {
+      ok: false as const,
+      message: `Annual renewal reminder skipped. Subscriber status=${subscriber.subscriptionStatus}.`,
+      id: null,
+    };
+  }
+
+  if (!subscriber.currentPeriodEndsAt) {
+    return {
+      ok: false as const,
+      message: "Annual renewal reminder skipped: no currentPeriodEndsAt set on subscriber.",
+      id: null,
+    };
+  }
+
+  const renewalDate = subscriber.currentPeriodEndsAt;
+  const currency = subscriber.billingCurrency as BillingCurrency;
+  const plan = pricingPlanFor(currency);
+  const settingsLink = getSettingsLink();
+  const unsubscribeLink = getUnsubscribeLink(subscriber.id);
+  const footer = buildEmailFooter({
+    unsubscribeCopy: "To stop receiving these billing reminders,",
+    unsubscribeLink,
+  });
+  const renewalLabel = formatDateYYYYMMDD(renewalDate);
+
+  return sendEmail({
+    to: subscriber.email,
+    replyTo: SALES_EMAIL,
+    subject: `Your Warm-Hello annual subscription renews ${renewalLabel}`,
+    text: `Hi there,
+
+This is a friendly reminder that your Warm-Hello annual subscription will renew on ${renewalLabel}. You are receiving this email because auto-renewal is currently enabled on your account.
+
+On the renewal date you will be charged ${plan.yearlyLabel} (taxes may apply), and your check-ins will continue uninterrupted for another 12 months.
+
+If you'd like to review or cancel:
+${settingsLink}
+
+Cancelling is a single click from Dashboard → Settings → Subscription. No phone calls, no emails, no cancellation fees — and your coverage continues until the end of the term you've already paid for.
+
+If you have any questions about your renewal, reply to this email or write to ${SALES_EMAIL}.
+
+Warmly,
+The Warm-Hello Team${footer.text}`,
+    html: `<p><img src="${env.APP_URL}/warmhello-logo-b.png" alt="Warm-Hello" width="140" /></p>
+<p>Hi there,</p>
+<p>This is a friendly reminder that your Warm-Hello annual subscription will renew on <strong>${renewalLabel}</strong>. You are receiving this email because auto-renewal is currently enabled on your account.</p>
+<p>On the renewal date you will be charged <strong>${plan.yearlyLabel}</strong> (taxes may apply), and your check-ins will continue uninterrupted for another 12 months.</p>
+<p>If you&rsquo;d like to review or cancel, visit <a href="${settingsLink}">Dashboard &rarr; Settings</a>.</p>
+<p>Cancelling is a single click from Dashboard &rarr; Settings &rarr; Subscription. No phone calls, no emails, no cancellation fees &mdash; and your coverage continues until the end of the term you&rsquo;ve already paid for.</p>
+<p>If you have any questions about your renewal, reply to this email or write to <a href="mailto:${SALES_EMAIL}">${SALES_EMAIL}</a>.</p>
 <p>Warmly,<br />The Warm-Hello Team</p>
 ${footer.html}`,
   });

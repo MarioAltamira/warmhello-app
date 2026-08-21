@@ -372,6 +372,14 @@ export async function markInitialSent(checkInId: string) {
 
     const checkInUrl = await getShortLinkForCheckIn({ checkInId: checkIn.id, token: checkIn.token });
 
+    if (checkIn.senior.smsOptedOut) {
+      return {
+        ok: false as const,
+        message:
+          "Senior has opted out of SMS via STOP keyword. Check-in will remain pending but no SMS will be sent.",
+      };
+    }
+
     // COMPLIANCE GUARD (CASL/TCPA): Operational check-in SMS MUST remain
     // transactional and NEVER contain promotional copy. Any of the following
     // keywords (% off | refer | share | discount | promo | free month | coupon)
@@ -631,6 +639,12 @@ export async function markReminderSent(checkInId: string) {
     }
 
     const checkInUrl = await getShortLinkForCheckIn({ checkInId: checkIn.id, token: checkIn.token });
+    if (checkIn.senior.smsOptedOut) {
+      return {
+        ok: false as const,
+        message: "Senior has opted out of SMS via STOP keyword. Skipping reminder SMS.",
+      };
+    }
     const sms = await sendSms(
       checkIn.senior.phoneNumber,
       `Warm-Hello reminder for ${checkIn.senior.firstName}.\nTap I’m OK: ${checkInUrl}`,
@@ -709,6 +723,13 @@ export async function markEscalationSent(checkInId: string) {
       where: { seniorId: checkIn.seniorId },
       orderBy: { priority: "asc" },
     });
+
+    if (checkIn.senior.smsOptedOut) {
+      return {
+        ok: false as const,
+        message: "Senior has opted out of SMS via STOP keyword. Skipping escalation (contacts will not be notified).",
+      };
+    }
 
     const results = await Promise.all(
       contacts.map((contact) =>

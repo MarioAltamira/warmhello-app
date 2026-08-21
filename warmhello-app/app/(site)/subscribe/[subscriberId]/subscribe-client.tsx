@@ -68,7 +68,6 @@ export default function SubscribeClient({ subscriberId }: { subscriberId: string
           type="checkbox"
           checked={consentChecked}
           onChange={(event) => setConsentChecked(event.target.checked)}
-          style={{ marginTop: 4 }}
         />
         <div style={{ fontSize: 14, lineHeight: 1.55 }}>
           <div style={{ whiteSpace: "pre-line" }}>{CLICKWRAP_CHECKOUT_LABEL}</div>

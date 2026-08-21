@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { AccountPrivacyCard } from "@/components/account-privacy-card";
 import { EmailPreferencesCard } from "@/components/email-preferences-card";
 import { SubscriptionManagementCard } from "@/components/subscription-management-card";
 import { getDashboardSnapshot } from "@/lib/checkins";
@@ -18,16 +19,18 @@ export default async function DashboardSettingsPage() {
   }
 
   const snapshot = await getDashboardSnapshot(subscriberId);
-  const emailOptedOut = prisma
-    ? Boolean(
-        (
-          await prisma.subscriber.findUnique({
-            where: { id: subscriberId },
-            select: { unsubscribedAt: true },
-          })
-        )?.unsubscribedAt,
-      )
-    : false;
+  const subscriberRow = await (prisma
+    ? prisma.subscriber
+        .findUnique({
+          where: { id: subscriberId },
+          select: { unsubscribedAt: true, email: true },
+        })
+        .catch(() => null)
+    : Promise.resolve(null));
+  const emailOptedOut = {
+    opted: Boolean(subscriberRow?.unsubscribedAt),
+    email: subscriberRow?.email ?? snapshot.subscriberEmail ?? "",
+  };
 
   return (
     <main className="shell">
@@ -55,8 +58,11 @@ export default async function DashboardSettingsPage() {
         customerEmail={snapshot.subscriberEmail ?? ""}
       />
 
-      <EmailPreferencesCard initialEmailOptedOut={emailOptedOut} />
+      <EmailPreferencesCard initialEmailOptedOut={emailOptedOut.opted} />
+
+      <AccountPrivacyCard subscriberEmail={emailOptedOut.email} />
     </main>
   );
 }
+
 

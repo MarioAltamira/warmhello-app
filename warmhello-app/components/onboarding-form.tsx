@@ -772,7 +772,6 @@ export function OnboardingForm({
             type="checkbox"
             checked={caregiverConsentChecked}
             onChange={(event) => setCaregiverConsentChecked(event.target.checked)}
-            style={{ marginTop: 4 }}
           />
           <div style={{ fontSize: 14, lineHeight: 1.55 }}>
             <div style={{ whiteSpace: "pre-line" }}>{CLICKWRAP_SENIOR_ADD_LABEL}</div>
