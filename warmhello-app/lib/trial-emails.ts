@@ -391,6 +391,8 @@ export async function sendSuccessfulSubscriptionEmail(
 
   const statusPaid = opts.statusPaid ?? true;
 
+  const fallbackDashboardReceiptLink = settingsLink;
+
   let invoiceHtml: string;
   let invoiceText: string;
   if (opts.hostedInvoiceUrl) {
@@ -433,8 +435,21 @@ export async function sendSuccessfulSubscriptionEmail(
       `Download invoice PDF (right-click / long-press to save): ${opts.invoicePdfUrl}\n` +
       `Note: For the most up-to-date PAID-status receipt, view your Billing page in Dashboard: ${settingsLink}`;
   } else {
-    invoiceHtml = `Thank you for your payment. See your <a href="${settingsLink}">Dashboard Billing</a> for status.`;
-    invoiceText = `Thank you for your payment. Billing status at: ${settingsLink}`;
+    const thankHtml = `<p style="margin:0 0 8px 0; font-weight:600; color:#2b2f44;">Thank you for your payment.</p>`;
+    const browserLinkHtml = `<a href="${fallbackDashboardReceiptLink}" target="_blank" rel="noopener" style="font-weight:600;">🧾 View receipt & manage subscription in Dashboard</a>`;
+    const note =
+      `Your payment has been processed successfully. If you need a formal invoice PDF or want to manage your subscription (upgrade, cancel, change card), visit your Billing settings in WarmHello Dashboard.` +
+      (statusPaid ? `` : ` PAID status will update shortly; the Dashboard page always reflects the latest billing state.`);
+
+    invoiceHtml =
+      thankHtml +
+      `${browserLinkHtml}` +
+      `<p style="font-size: 12px; opacity: 0.75; margin: 8px 0 0 0;">${note}</p>`;
+
+    invoiceText =
+      `Thank you for your payment.\n` +
+      `View receipt & manage subscription in Dashboard: ${fallbackDashboardReceiptLink}\n` +
+      `Note: Your payment has been processed successfully. If you need a formal invoice PDF or want to upgrade / cancel / change your card, visit the Billing settings page above.`;
   }
 
   const planSummaryLine = `${plan.monthlyLabel} · ${plan.dailyLabel} · billed ${plan.yearlyLabel}`;

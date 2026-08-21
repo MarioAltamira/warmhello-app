@@ -227,13 +227,15 @@ export async function applyStripeEvent(event: Stripe.Event) {
                   fallbackStatusPaid = !!invoicePdfUrl || !!hostedInvoiceUrl;
                   if (invoiceIdToPoll) {
                     try {
-                      await stripe.invoices.update(invoiceIdToPoll, {
+                      const invUpdateResp = await stripe.invoices.update(invoiceIdToPoll, {
                         payment_settings: {
                           payment_method_types: [],
                         },
                       });
+                      const invSettings = (invUpdateResp as unknown as { payment_settings?: Record<string, unknown> | null }).payment_settings ?? null;
+                      const invPmt = invSettings && typeof invSettings === "object" && "payment_method_types" in invSettings ? JSON.stringify(invSettings.payment_method_types) : "null";
                       console.log(
-                        `[stripe-webhook:checkout.session.completed:fallback-email] PER-INVOICE applied payment_settings.payment_method_types=[] on invoice ${invoiceIdToPoll} (fallback path) to hide Pay online link.`,
+                        `[stripe-webhook:checkout.session.completed:fallback-email] PER-INVOICE applied update on invoice ${invoiceIdToPoll} (fallback path). RESPONSE payment_settings.payment_method_types=${invPmt}. NOTE: if invoice is finalized/paid, Stripe may silently ignore edit -> use Option1 Dashboard toggle for guaranteed PDF-removal.`,
                       );
                     } catch (fallbackInvoiceUpdateErr) {
                       // best-effort only — if it fails, continue polling / emailing
@@ -358,13 +360,15 @@ export async function applyStripeEvent(event: Stripe.Event) {
               try {
                 const stripe = getStripeClient();
                 if (stripe) {
-                  await stripe.invoices.update(invoiceIdForUpdate, {
+                  const invUpdateResp = await stripe.invoices.update(invoiceIdForUpdate, {
                     payment_settings: {
                       payment_method_types: [],
                     },
                   });
+                  const invSettings = (invUpdateResp as unknown as { payment_settings?: Record<string, unknown> | null }).payment_settings ?? null;
+                  const invPmt = invSettings && typeof invSettings === "object" && "payment_method_types" in invSettings ? JSON.stringify(invSettings.payment_method_types) : "null";
                   console.log(
-                    `[stripe-webhook:invoice.paid] PER-INVOICE applied payment_settings.payment_method_types=[] on invoice ${invoiceIdForUpdate} to hide Pay online link.`,
+                    `[stripe-webhook:invoice.paid] PER-INVOICE applied update on invoice ${invoiceIdForUpdate}. RESPONSE payment_settings.payment_method_types=${invPmt}. NOTE: if invoice is finalized/paid, Stripe may silently ignore edit -> use Option1 Dashboard toggle for guaranteed PDF-removal.`,
                   );
                 }
               } catch (invoiceUpdateErr) {

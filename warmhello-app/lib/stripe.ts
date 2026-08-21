@@ -200,24 +200,45 @@ export async function createCheckoutSession(input: { subscriberId: string }) {
   try {
     const customerId = typeof session.customer === "string" ? session.customer : (session.customer as unknown as { id?: string } | null)?.id;
     if (customerId) {
-      await stripe.customers.update(customerId, {
+      const customerUpdateParams = {
         invoice_settings: {
           payment_settings: {
             payment_method_types: [],
           },
-        },
-      } as unknown as Record<string, unknown>);
+        } as unknown as Record<string, unknown>,
+        payment_settings: {
+          payment_method_types: [],
+        } as unknown as Record<string, unknown>,
+      } as unknown as Record<string, unknown>;
+      const updatedCustomer = await stripe.customers.update(
+        customerId,
+        customerUpdateParams,
+      );
+      const updatedInvoiceSettings = (updatedCustomer as unknown as { invoice_settings?: Record<string, unknown> | null }).invoice_settings ?? {};
+      const updatedCustomerRootPaymentSettings = (updatedCustomer as unknown as { payment_settings?: Record<string, unknown> | null }).payment_settings ?? null;
+      const updatedNested = (updatedInvoiceSettings as Record<string, unknown>).payment_settings ?? null;
+      const nestedPmt = updatedNested && typeof updatedNested === "object" && "payment_method_types" in (updatedNested as Record<string, unknown>) ? JSON.stringify((updatedNested as Record<string, unknown>).payment_method_types) : "null";
+      const rootPmt = updatedCustomerRootPaymentSettings && typeof updatedCustomerRootPaymentSettings === "object" && "payment_method_types" in updatedCustomerRootPaymentSettings ? JSON.stringify(updatedCustomerRootPaymentSettings.payment_method_types) : "null";
+      console.log(
+        `[createCheckoutSession] PER-CUSTOMER applied update on cus=${customerId}. RESPONSE invoice_settings.payment_settings.payment_method_types=${nestedPmt} | ROOT payment_settings.payment_method_types=${rootPmt}. (Empty array means Stripe accepted and hid Pay online for this customer's future invoices.)`,
+      );
     }
     const subscriptionId =
       typeof session.subscription === "string"
         ? session.subscription
         : (session.subscription as unknown as { id?: string } | null)?.id;
     if (subscriptionId) {
-      await stripe.subscriptions.update(subscriptionId, {
+      const subUpdateParams = {
         payment_settings: {
           payment_method_types: [],
         },
-      } as unknown as Record<string, unknown>);
+      } as unknown as Record<string, unknown>;
+      const updatedSub = await stripe.subscriptions.update(subscriptionId, subUpdateParams);
+      const subSettings = (updatedSub as unknown as { payment_settings?: Record<string, unknown> | null }).payment_settings ?? null;
+      const subPmt = subSettings && typeof subSettings === "object" && "payment_method_types" in subSettings ? JSON.stringify(subSettings.payment_method_types) : "null";
+      console.log(
+        `[createCheckoutSession] PER-SUBSCRIPTION applied update on sub=${subscriptionId}. RESPONSE payment_settings.payment_method_types=${subPmt}. (Empty array hides Pay online from this subscription's auto-renewal invoices.)`,
+      );
     }
   } catch (postErr) {
     // Never let these secondary post-apply calls prevent the user from opening the checkout URL.
