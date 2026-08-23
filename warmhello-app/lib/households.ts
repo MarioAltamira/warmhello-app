@@ -3,6 +3,8 @@ import { getNextOccurrenceAtHourInTimeZone } from "@/lib/dates";
 import { normalizePhone } from "@/lib/phone";
 import { prisma } from "@/lib/prisma";
 import { BillingCurrency, isBillingCurrency } from "@/lib/pricing";
+import { getShortLinkForCheckIn } from "@/lib/short-links";
+import { sendSeniorOnboardingSmsSequence } from "@/lib/sms";
 import { getSubscriberPlanSummary } from "@/lib/subscriber-plan";
 import { normalizeTimeZone } from "@/lib/timezones";
 import { sendTrialWelcomeEmail } from "@/lib/trial-emails";
@@ -238,16 +240,57 @@ export async function createHousehold(input: CreateHouseholdInput) {
       scheduledFor: firstScheduledFor,
     });
 
+    let seniorOnboardingSmsOutcome:
+      | { ok: boolean; identitySid?: string | null; checkInSid?: string | null; skipped?: string }
+      | null = null;
+    if (firstCheckIn.ok && !result.senior.smsOptedOut) {
+      try {
+        const checkInUrl = await getShortLinkForCheckIn({
+          checkInId: firstCheckIn.checkIn.id,
+          token: firstCheckIn.checkIn.token,
+        });
+        seniorOnboardingSmsOutcome = await sendSeniorOnboardingSmsSequence({
+          to: result.senior.phoneNumber,
+          seniorName: result.senior.firstName,
+          checkInUrl,
+          meta: {
+            subscriberId: result.subscriber.id,
+            seniorId: result.senior.id,
+            checkInId: firstCheckIn.checkIn.id,
+          },
+        }).then((r) => ({
+          ok: r.ok,
+          identitySid: r.identity.ok ? r.identity.sid : null,
+          checkInSid: r.checkIn?.ok ? r.checkIn.sid : null,
+        }));
+      } catch (smsError) {
+        seniorOnboardingSmsOutcome = {
+          ok: false,
+          skipped:
+            smsError instanceof Error ? smsError.message : "onboarding SMS send threw unexpectedly",
+        };
+      }
+    } else if (result.senior.smsOptedOut) {
+      seniorOnboardingSmsOutcome = { ok: false, skipped: "senior.smsOptedOut is true — STOP opt-out" };
+    } else if (!firstCheckIn.ok) {
+      seniorOnboardingSmsOutcome = {
+        ok: false,
+        skipped: `firstCheckIn not created: ${firstCheckIn.message}`,
+      };
+    }
+
     const { enqueueJsonJob } = await import("@/lib/qstash");
     const sideEffectLabel = (index: number) =>
       [
         "sendTrialWelcomeEmail",
+        "seniorOnboardingSms",
         "enqueue trial-nudge",
         "enqueue trial-final",
         "enqueue trial-expire",
       ][index] ?? `sideEffect[${index}]`;
     const sideEffects = await Promise.allSettled([
       sendTrialWelcomeEmail(result.subscriber.id),
+      Promise.resolve(seniorOnboardingSmsOutcome),
       enqueueJsonJob("/api/jobs/trial-nudge", { subscriberId: result.subscriber.id }, 72),
       enqueueJsonJob("/api/jobs/trial-final", { subscriberId: result.subscriber.id }, 167),
       enqueueJsonJob("/api/jobs/trial-expire", { subscriberId: result.subscriber.id }, 167),
