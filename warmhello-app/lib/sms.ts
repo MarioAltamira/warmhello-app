@@ -96,7 +96,10 @@ export async function sendSms(
           kind: meta?.kind ?? null,
           fromNumber: env.TELNYX_FROM_NUMBER,
           toNumber: normalizedTo,
-          body,
+          body:
+            body +
+            "\n\n[FAILED: Telnyx rejected send] " +
+            (text && text.length > 0 ? text.slice(0, 5000) : "(no error body from provider)"),
           subscriberId: meta?.subscriberId ?? null,
           seniorId: meta?.seniorId ?? null,
           checkInId: meta?.checkInId ?? null,

@@ -352,8 +352,15 @@ export async function markInitialSent(checkInId: string) {
       },
     });
 
-    if (!checkIn || checkIn.status === "CONFIRMED" || checkIn.status === "EXPIRED") {
+    if (!checkIn || checkIn.status === "EXPIRED") {
       return { ok: false as const, message: "No check-in needed." };
+    }
+
+    if (checkIn.firstSmsSentAt) {
+      return {
+        ok: false as const,
+        message: `Initial check-in SMS already sent at ${checkIn.firstSmsSentAt.toISOString()}.`,
+      };
     }
 
     if (
@@ -620,8 +627,20 @@ export async function markReminderSent(checkInId: string) {
       },
     });
 
-    if (!checkIn || checkIn.status === "CONFIRMED" || checkIn.confirmedAt != null) {
+    if (!checkIn || checkIn.status === "EXPIRED") {
       return { ok: false as const, message: "No reminder needed." };
+    }
+
+    if (checkIn.secondSmsSentAt) {
+      return {
+        ok: false as const,
+        message: `Reminder SMS already sent at ${checkIn.secondSmsSentAt.toISOString()}.`,
+      };
+    }
+
+    if (checkIn.confirmedAt != null && checkIn.secondSmsSentAt == null) {
+      // Senior already tapped "I'm OK" (before reminder even fires). Skip reminder.
+      return { ok: false as const, message: "Check-in already confirmed; reminder not needed." };
     }
 
     if (
@@ -701,8 +720,23 @@ export async function markEscalationSent(checkInId: string) {
       },
     });
 
-    if (!checkIn || checkIn.status === "CONFIRMED" || checkIn.confirmedAt != null) {
+    if (!checkIn || checkIn.status === "EXPIRED") {
       return { ok: false as const, message: "No escalation needed." };
+    }
+
+    if (checkIn.primaryContactSmsSentAt) {
+      return {
+        ok: false as const,
+        message: `Escalation already sent at ${checkIn.primaryContactSmsSentAt.toISOString()}.`,
+      };
+    }
+
+    if (checkIn.confirmedAt != null) {
+      // Senior already tapped "I'm OK" — skip escalation to contacts.
+      return {
+        ok: false as const,
+        message: "Check-in already confirmed; escalation skipped.",
+      };
     }
 
     if (
