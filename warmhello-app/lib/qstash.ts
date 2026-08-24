@@ -6,6 +6,14 @@ const JOB_SIGNING_SECRET: string = env.JOB_SIGNING_SECRET;
 
 const APP_URL = env.APP_URL.replace(/\/$/, "");
 
+function normalizeForDestCompare(url: string): string {
+  return String(url ?? "")
+    .replace(/^\uFEFF/, "")
+    .trim()
+    .replace(/^[`"' \t]+|[`"' \t]+$/g, "")
+    .replace(/\/$/, "");
+}
+
 const qstash = new Client({ token: env.QSTASH_TOKEN });
 
 export async function enqueueJsonJobAt(
@@ -111,27 +119,78 @@ export async function deleteScheduleById(scheduleId: string): Promise<{ ok: true
   }
 }
 
+function matchesPath(
+  s: { scheduleId: string; cron?: string; destination?: { url?: string } | string | undefined },
+  path: string,
+): boolean {
+  const destRaw = typeof s.destination === "string" ? s.destination : s.destination?.url ?? "";
+  const targetUrl = normalizeForDestCompare(`${APP_URL}${path}`);
+  const candidate = normalizeForDestCompare(destRaw);
+  if (candidate === targetUrl) return true;
+  const candidatePathname = (() => {
+    try {
+      return new URL(candidate).pathname.replace(/\/$/, "");
+    } catch {
+      return "";
+    }
+  })();
+  return candidatePathname === path.replace(/\/$/, "");
+}
+
+export async function deleteAllSchedulesForPath(path: string): Promise<{
+  ok: boolean;
+  deleted: string[];
+  remaining: number;
+  message: string;
+}> {
+  const listed = await listAllSchedules();
+  if (!listed.ok) {
+    return { ok: false, deleted: [], remaining: 0, message: listed.message };
+  }
+  const matches = listed.schedules.filter((s) => matchesPath(s, path));
+  if (matches.length === 0) {
+    return { ok: true, deleted: [], remaining: 0, message: `No schedules found for path ${path}` };
+  }
+  const deleted: string[] = [];
+  const errors: string[] = [];
+  for (const s of matches) {
+    const removed = await deleteScheduleById(s.scheduleId);
+    if (removed.ok) {
+      deleted.push(s.scheduleId);
+    } else {
+      errors.push(`${s.scheduleId}: ${removed.message}`);
+    }
+  }
+  const listedAfter = await listAllSchedules();
+  const remaining = listedAfter.ok ? listedAfter.schedules.filter((s) => matchesPath(s, path)).length : -1;
+  return {
+    ok: errors.length === 0,
+    deleted,
+    remaining: remaining < 0 ? Math.max(0, matches.length - deleted.length) : remaining,
+    message:
+      errors.length > 0
+        ? `Deleted ${deleted.length}/${matches.length} schedules for ${path}. Errors: ${errors.join("; ")}`
+        : `Deleted ${deleted.length} schedule(s) for ${path}.`,
+  };
+}
+
 export async function deleteDuplicateSchedulesForPath(path: string): Promise<{
   ok: boolean;
   deleted: string[];
   remaining: number;
   message: string;
 }> {
-  const targetUrl = `${APP_URL}${path}`;
   const listed = await listAllSchedules();
   if (!listed.ok) {
     return { ok: false, deleted: [], remaining: 0, message: listed.message };
   }
-  const matches = listed.schedules.filter((s) => {
-    const dest = typeof s.destination === "string" ? s.destination : s.destination?.url ?? "";
-    return dest === targetUrl;
-  });
+  const matches = listed.schedules.filter((s) => matchesPath(s, path));
   if (matches.length <= 1) {
     return {
       ok: true,
       deleted: [],
       remaining: matches.length,
-      message: matches.length === 0 ? `No schedules found for ${targetUrl}` : `Single schedule found (ok, not duplicate)`,
+      message: matches.length === 0 ? `No schedules found for path ${path}` : `Single schedule found (ok, not duplicate)`,
     };
   }
   const toDelete = matches.slice(0, -1);
@@ -153,7 +212,7 @@ export async function deleteDuplicateSchedulesForPath(path: string): Promise<{
     message:
       errors.length > 0
         ? `Deleted ${deleted.length}/${toDelete.length} duplicates, kept scheduleId=${keepSchedule.scheduleId}. Errors: ${errors.join("; ")}`
-        : `Deleted ${deleted.length} duplicate schedules for ${targetUrl}, kept scheduleId=${keepSchedule.scheduleId}.`,
+        : `Deleted ${deleted.length} duplicate schedules for ${path}, kept scheduleId=${keepSchedule.scheduleId}.`,
   };
 }
 

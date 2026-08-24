@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import {
-  deleteDuplicateSchedulesForPath,
+  deleteAllSchedulesForPath,
   publishCronJsonJob,
   verifyJobSecret,
 } from "@/lib/qstash";
@@ -46,10 +46,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const dedupe = await deleteDuplicateSchedulesForPath(JOB_PATH);
-  if (!dedupe.ok && dedupe.deleted.length > 0) {
+  const dedupe = await deleteAllSchedulesForPath(JOB_PATH);
+  if (!dedupe.ok) {
     return NextResponse.json(
-      { ok: false, message: `Failed to fully dedupe schedules. ${dedupe.message}`, dedupe },
+      { ok: false, message: `Failed to clear previous schedules before create. ${dedupe.message}`, dedupeBeforeCreate: dedupe },
       { status: 502 },
     );
   }
