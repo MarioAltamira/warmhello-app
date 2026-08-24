@@ -1,5 +1,5 @@
-import { createCheckInSession } from "@/lib/checkins";
 import { getNextOccurrenceAtHourInTimeZone } from "@/lib/dates";
+import { env } from "@/lib/env";
 import { normalizePhone } from "@/lib/phone";
 import { prisma } from "@/lib/prisma";
 import { BillingCurrency, isBillingCurrency } from "@/lib/pricing";
@@ -15,7 +15,7 @@ export type ContactInput = {
   phoneNumber: string;
 };
 
-export const MAX_CONTACTS = 4;
+export const MAX_CONTACTS = 2;
 
 function normalizePhoneInput(input: CreateHouseholdInput): CreateHouseholdInput {
   const additional = (input.additionalContacts ?? []).map((c) => ({
@@ -234,29 +234,19 @@ export async function createHousehold(input: CreateHouseholdInput) {
       minute: normalized.senior.checkInMinute,
     });
 
-    const firstCheckIn = await createCheckInSession({
-      subscriberId: result.subscriber.id,
-      seniorId: result.senior.id,
-      scheduledFor: firstScheduledFor,
-    });
-
     let seniorOnboardingSmsOutcome:
       | { ok: boolean; identitySid?: string | null; checkInSid?: string | null; skipped?: string }
       | null = null;
-    if (firstCheckIn.ok && !result.senior.smsOptedOut) {
+    if (!result.senior.smsOptedOut) {
       try {
-        const checkInUrl = await getShortLinkForCheckIn({
-          checkInId: firstCheckIn.checkIn.id,
-          token: firstCheckIn.checkIn.token,
-        });
         seniorOnboardingSmsOutcome = await sendSeniorOnboardingSmsSequence({
           to: result.senior.phoneNumber,
           seniorName: result.senior.firstName,
-          checkInUrl,
+          checkInUrl: `${env.APP_URL}/dashboard?first-checkin-tomorrow`,
           meta: {
             subscriberId: result.subscriber.id,
             seniorId: result.senior.id,
-            checkInId: firstCheckIn.checkIn.id,
+            checkInId: null,
           },
         }).then((r) => ({
           ok: r.ok,
@@ -272,11 +262,6 @@ export async function createHousehold(input: CreateHouseholdInput) {
       }
     } else if (result.senior.smsOptedOut) {
       seniorOnboardingSmsOutcome = { ok: false, skipped: "senior.smsOptedOut is true — STOP opt-out" };
-    } else if (!firstCheckIn.ok) {
-      seniorOnboardingSmsOutcome = {
-        ok: false,
-        skipped: `firstCheckIn not created: ${firstCheckIn.message}`,
-      };
     }
 
     const { enqueueJsonJob } = await import("@/lib/qstash");
@@ -326,15 +311,8 @@ export async function createHousehold(input: CreateHouseholdInput) {
     return {
       ok: true as const,
       household: result,
-      firstCheckIn: firstCheckIn.ok
-        ? {
-            token: firstCheckIn.checkIn.token,
-            scheduledFor: firstCheckIn.checkIn.scheduledFor,
-          }
-        : undefined,
-      firstCheckInMessage: firstCheckIn.ok
-        ? "Initial check-in scheduled."
-        : firstCheckIn.message,
+      firstCheckInScheduledFor: firstScheduledFor.toISOString(),
+      firstCheckInMessage: "First check-in scheduled tomorrow. Midnight cron will create the daily check-in row at 00:00 ET and enqueue SMS.",
     };
   } catch {
     return { ok: false as const, message: "Database is not reachable right now." };

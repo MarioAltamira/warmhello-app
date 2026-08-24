@@ -140,39 +140,30 @@ export async function POST(request: Request) {
         from,
       });
 
-      const localHour = parseInt(
-        new Intl.DateTimeFormat("en-CA", {
-          timeZone,
-          hour: "2-digit",
-          hour12: false,
-        }).format(scheduledFor),
-        10,
-      );
-      const localMinute = parseInt(
-        new Intl.DateTimeFormat("en-CA", {
-          timeZone,
-          minute: "2-digit",
-        }).format(scheduledFor),
-        10,
-      );
-      const localSecond = parseInt(
-        new Intl.DateTimeFormat("en-CA", {
-          timeZone,
-          second: "2-digit",
-        }).format(scheduledFor),
-        10,
-      );
-      const msSinceSeniorMidnight =
-        (localHour * 60 * 60 + localMinute * 60 + localSecond) * 1000;
-      const dayStart = new Date(scheduledFor.getTime() - msSinceSeniorMidnight);
-      const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
-      const existingSameDay = await prisma.checkIn.findFirst({
-        where: {
-          seniorId: senior.id,
-          scheduledFor: { gte: dayStart, lt: dayEnd },
-        },
-        select: { id: true, token: true, scheduledFor: true },
+      const ymdDateKey = new Intl.DateTimeFormat("en-CA", {
+        timeZone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(scheduledFor);
+
+      const allSeniorsCheckInsForDay = await prisma.checkIn.findMany({
+        where: { seniorId: senior.id },
+        select: { id: true, scheduledFor: true, token: true },
       });
+      let existingSameDay: { id: string; token: string; scheduledFor: Date } | null = null;
+      for (const row of allSeniorsCheckInsForDay) {
+        const rowKey = new Intl.DateTimeFormat("en-CA", {
+          timeZone,
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).format(row.scheduledFor);
+        if (rowKey === ymdDateKey) {
+          existingSameDay = row;
+          break;
+        }
+      }
       if (existingSameDay) {
         results.push({
           seniorId: senior.id,
@@ -191,6 +182,7 @@ export async function POST(request: Request) {
         subscriberId: senior.subscriberId,
         seniorId: senior.id,
         scheduledFor,
+        skipRemindersAndEscalation: false,
       });
 
       if (created.ok) {

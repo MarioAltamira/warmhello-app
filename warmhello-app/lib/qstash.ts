@@ -85,6 +85,78 @@ export async function publishCronJsonJob(
   }
 }
 
+export async function listAllSchedules(): Promise<
+  { ok: true; schedules: Array<{ scheduleId: string; cron?: string; destination?: { url?: string } }> } | { ok: false; message: string }
+> {
+  try {
+    const result = (await qstash.schedules.list()) as Array<{
+      scheduleId: string;
+      cron?: string;
+      destination?: { url?: string };
+    }>;
+    return { ok: true, schedules: result ?? [] };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { ok: false, message };
+  }
+}
+
+export async function deleteScheduleById(scheduleId: string): Promise<{ ok: true } | { ok: false; message: string }> {
+  try {
+    await qstash.schedules.delete(scheduleId);
+    return { ok: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { ok: false, message };
+  }
+}
+
+export async function deleteDuplicateSchedulesForPath(path: string): Promise<{
+  ok: boolean;
+  deleted: string[];
+  remaining: number;
+  message: string;
+}> {
+  const targetUrl = `${APP_URL}${path}`;
+  const listed = await listAllSchedules();
+  if (!listed.ok) {
+    return { ok: false, deleted: [], remaining: 0, message: listed.message };
+  }
+  const matches = listed.schedules.filter((s) => {
+    const dest = typeof s.destination === "string" ? s.destination : s.destination?.url ?? "";
+    return dest === targetUrl;
+  });
+  if (matches.length <= 1) {
+    return {
+      ok: true,
+      deleted: [],
+      remaining: matches.length,
+      message: matches.length === 0 ? `No schedules found for ${targetUrl}` : `Single schedule found (ok, not duplicate)`,
+    };
+  }
+  const toDelete = matches.slice(0, -1);
+  const keepSchedule = matches[matches.length - 1];
+  const deleted: string[] = [];
+  const errors: string[] = [];
+  for (const s of toDelete) {
+    const removed = await deleteScheduleById(s.scheduleId);
+    if (removed.ok) {
+      deleted.push(s.scheduleId);
+    } else {
+      errors.push(`${s.scheduleId}: ${removed.message}`);
+    }
+  }
+  return {
+    ok: errors.length === 0,
+    deleted,
+    remaining: 1,
+    message:
+      errors.length > 0
+        ? `Deleted ${deleted.length}/${toDelete.length} duplicates, kept scheduleId=${keepSchedule.scheduleId}. Errors: ${errors.join("; ")}`
+        : `Deleted ${deleted.length} duplicate schedules for ${targetUrl}, kept scheduleId=${keepSchedule.scheduleId}.`,
+  };
+}
+
 export function verifyJobSecret(request: Request): boolean {
   if (process.env.NODE_ENV !== "production") return true;
   const supplied = request.headers.get("X-Job-Secret");

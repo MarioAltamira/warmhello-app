@@ -27,6 +27,7 @@ export async function POST() {
     seniorId: senior.id,
     scheduledFor: new Date(),
     requireSmsSuccess: false,
+    skipRemindersAndEscalation: true,
   });
 
   if (!result.ok) {

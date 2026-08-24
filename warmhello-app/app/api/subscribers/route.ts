@@ -62,7 +62,7 @@ export async function POST(request: Request) {
   return NextResponse.json({
     ok: true,
     household: result.household,
-    firstCheckIn: result.firstCheckIn,
+    firstCheckInScheduledFor: result.firstCheckInScheduledFor,
     firstCheckInMessage: result.firstCheckInMessage,
   });
 }

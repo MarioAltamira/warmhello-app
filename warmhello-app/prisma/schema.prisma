@@ -74,7 +74,7 @@ model Senior {
   subscriberId               String
   firstName                  String
   lastName                   String
-  phoneNumber                String
+  phoneNumber                String     @unique
   timezone                   String     @default("America/New_York")
   checkInHour                Int        @default(9)
   checkInMinute              Int        @default(0)

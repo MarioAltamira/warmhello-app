@@ -17,6 +17,7 @@ type HouseholdResponse = {
     token: string;
     scheduledFor: string;
   };
+  firstCheckInScheduledFor?: string;
   firstCheckInMessage?: string;
   household?: {
     subscriber: {
@@ -94,7 +95,7 @@ type AdditionalContactState = {
   phone: string;
 };
 
-const MAX_ADDITIONAL_CONTACTS = 3;
+const MAX_ADDITIONAL_CONTACTS = 1;
 
 type OnboardingFormProps = {
   editMode?: boolean;
@@ -237,13 +238,14 @@ export function OnboardingForm({
   const [statusMessage, setStatusMessage] = useState("");
   const [savedHousehold, setSavedHousehold] = useState<HouseholdResponse["household"]>();
   const [firstCheckIn, setFirstCheckIn] = useState<HouseholdResponse["firstCheckIn"]>();
+  const [firstCheckInScheduledFor, setFirstCheckInScheduledFor] = useState<string>();
   const [firstCheckInMessage, setFirstCheckInMessage] = useState<string>();
   const [testMessage, setTestMessage] = useState<string>();
   const [testCheckInToken, setTestCheckInToken] = useState<string>();
   const [testSubmitting, setTestSubmitting] = useState(false);
   const [caregiverConsentChecked, setCaregiverConsentChecked] = useState(false);
   const firstCheckInScheduledLabel = formatScheduledFor(
-    firstCheckIn?.scheduledFor,
+    firstCheckInScheduledFor ?? firstCheckIn?.scheduledFor,
     savedHousehold?.senior.timezone ?? form.timezone,
   );
 
@@ -405,6 +407,7 @@ export function OnboardingForm({
 
       setSavedHousehold(data.household);
       setFirstCheckIn(data.firstCheckIn);
+      setFirstCheckInScheduledFor(data.firstCheckInScheduledFor);
       setFirstCheckInMessage(data.firstCheckInMessage);
       if (data.household?.subscriber.id) {
         await fetch("/api/session", {
@@ -459,6 +462,23 @@ export function OnboardingForm({
           {currentHousehold.plan.isTrialExpired
             ? " - Buy now to keep the household protected."
             : null}
+        </p>
+      ) : null}
+      {!editMode ? (
+        <p
+          style={{
+            marginTop: 12,
+            marginBottom: 4,
+            padding: "10px 14px",
+            borderRadius: 10,
+            background: "color-mix(in srgb, var(--primary) 8%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--primary) 22%, var(--border))",
+            color: "var(--muted)",
+            fontSize: 14,
+            lineHeight: 1.5,
+          }}
+        >
+          For best sign up experience use a laptop or a desktop computer.
         </p>
       ) : null}
       <form className="form-grid" onSubmit={handleSubmit}>
@@ -572,7 +592,7 @@ export function OnboardingForm({
           />
         </label>
         <label>
-          Senior phone
+          Senior cell phone
           <div className="phone-input-group">
             <span className="phone-input-prefix">+1</span>
             <input
@@ -656,7 +676,7 @@ export function OnboardingForm({
           />
         </label>
         <label>
-          Contact phone
+          Contact cell phone
           <div className="phone-input-group">
             <span className="phone-input-prefix">+1</span>
             <input
@@ -674,7 +694,13 @@ export function OnboardingForm({
           <div
             key={index}
             className="form-grid-wide"
-            style={{ borderTop: "1px solid rgb(51, 65, 85)", paddingTop: 16, marginTop: 4 }}
+            style={{
+              background: "color-mix(in srgb, var(--primary) 8%, transparent)",
+              border: "1px solid color-mix(in srgb, var(--primary) 24%, var(--border))",
+              borderRadius: 12,
+              padding: "14px 14px 4px",
+              marginTop: 8,
+            }}
           >
             <div
               style={{
@@ -697,7 +723,7 @@ export function OnboardingForm({
             </div>
             <div className="form-grid" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
               <label>
-                Name
+                Second contact name
                 <input
                   value={additional.fullName}
                   onChange={(event) =>
@@ -717,7 +743,7 @@ export function OnboardingForm({
                 />
               </label>
               <label>
-                Phone
+                Second contact cell phone
                 <div className="phone-input-group">
                   <span className="phone-input-prefix">+1</span>
                   <input
@@ -752,7 +778,7 @@ export function OnboardingForm({
                 fontSize: 13,
               }}
             >
-              Up to 4 total emergency contacts (1 primary + 3 additional) will all receive the check-in confirmation and escalation SMS messages.
+              Up to 2 total emergency contacts (1 primary + 1 additional) will all receive the check-in confirmation and escalation SMS messages.
             </p>
           </div>
         ) : null}

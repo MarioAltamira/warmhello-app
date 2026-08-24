@@ -48,6 +48,7 @@ export async function POST(request: Request) {
     seniorId: parsed.data.seniorId,
     scheduledFor: parsed.data.scheduledFor ? new Date(parsed.data.scheduledFor) : undefined,
     requireSmsSuccess: true,
+    skipRemindersAndEscalation: true,
   });
 
   if (!result.ok) {

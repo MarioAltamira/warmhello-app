@@ -460,6 +460,7 @@ export async function createCheckInSession(input: {
   seniorId: string;
   scheduledFor?: Date;
   requireSmsSuccess?: boolean;
+  skipRemindersAndEscalation?: boolean;
 }): Promise<
   | {
       ok: true;
@@ -524,6 +525,7 @@ export async function createCheckInSession(input: {
 
     const { enqueueJsonJobAt } = await import("@/lib/qstash");
     const shouldSendNow = scheduledFor.getTime() - now.getTime() <= 30_000;
+    const skipFollowups = Boolean(input.skipRemindersAndEscalation);
     let firstJobMessageId: string | null = null;
     let reminderJobMessageId: string | null = null;
     let escalationJobMessageId: string | null = null;
@@ -559,24 +561,26 @@ export async function createCheckInSession(input: {
       }
     }
 
-    const [reminderJob, escalationJob] = await Promise.all([
-      enqueueJsonJobAt("/api/jobs/reminder", { checkInId: checkIn.id }, reminderAt),
-      enqueueJsonJobAt("/api/jobs/escalation", { checkInId: checkIn.id }, escalationAt),
-    ]);
+    if (!skipFollowups) {
+      const [reminderJob, escalationJob] = await Promise.all([
+        enqueueJsonJobAt("/api/jobs/reminder", { checkInId: checkIn.id }, reminderAt),
+        enqueueJsonJobAt("/api/jobs/escalation", { checkInId: checkIn.id }, escalationAt),
+      ]);
 
-    if (reminderJob.ok) {
-      reminderJobMessageId = reminderJob.messageId ?? null;
-      enqueueOk += 1;
-    } else {
-      enqueueErrors.push(`reminder: ${reminderJob.message}`);
-      enqueueFailed += 1;
-    }
-    if (escalationJob.ok) {
-      escalationJobMessageId = escalationJob.messageId ?? null;
-      enqueueOk += 1;
-    } else {
-      enqueueErrors.push(`escalation: ${escalationJob.message}`);
-      enqueueFailed += 1;
+      if (reminderJob.ok) {
+        reminderJobMessageId = reminderJob.messageId ?? null;
+        enqueueOk += 1;
+      } else {
+        enqueueErrors.push(`reminder: ${reminderJob.message}`);
+        enqueueFailed += 1;
+      }
+      if (escalationJob.ok) {
+        escalationJobMessageId = escalationJob.messageId ?? null;
+        enqueueOk += 1;
+      } else {
+        enqueueErrors.push(`escalation: ${escalationJob.message}`);
+        enqueueFailed += 1;
+      }
     }
 
     if (firstJobMessageId || reminderJobMessageId || escalationJobMessageId) {

@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { publishCronJsonJob, verifyJobSecret } from "@/lib/qstash";
+import {
+  deleteDuplicateSchedulesForPath,
+  publishCronJsonJob,
+  verifyJobSecret,
+} from "@/lib/qstash";
 
 const DEFAULT_CRON = "CRON_TZ=America/Toronto 0 0 * * *";
 const DEFAULT_RETRIES = 1;
+const JOB_PATH = "/api/jobs/advance-day";
 
 const FIVE_FIELD_CRON =
   "(?:\\*|[0-9,-/]+)\\s+(?:\\*|[0-9,-/]+)\\s+(?:\\*|[0-9,-/]+)\\s+(?:\\*|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|[0-9,-/]+)\\s+(?:\\*|mon|tue|wed|thu|fri|sat|sun|[0-9,-/]+)";
@@ -22,10 +27,9 @@ const bodySchema = z.object({
     .string()
     .min(1)
     .max(256)
-    .regex(/^[A-Za-z0-9_.\-]+$/, {
-      message: "scheduleId must contain only A-Z a-z 0-9 _ . -",
-    })
+    .regex(/^[A-Za-z0-9_.\-]+$/)
     .optional(),
+  force: z.boolean().optional().default(false),
 });
 
 export async function POST(request: Request) {
@@ -42,8 +46,16 @@ export async function POST(request: Request) {
     );
   }
 
+  const dedupe = await deleteDuplicateSchedulesForPath(JOB_PATH);
+  if (!dedupe.ok && dedupe.deleted.length > 0) {
+    return NextResponse.json(
+      { ok: false, message: `Failed to fully dedupe schedules. ${dedupe.message}`, dedupe },
+      { status: 502 },
+    );
+  }
+
   const scheduled = await publishCronJsonJob(
-    "/api/jobs/advance-day",
+    JOB_PATH,
     {},
     parsed.data.cron,
     parsed.data.retries,
@@ -52,35 +64,19 @@ export async function POST(request: Request) {
 
   if (!scheduled.ok) {
     return NextResponse.json(
-      { ok: false, message: scheduled.message },
+      { ok: false, message: scheduled.message, dedupeBeforeCreate: dedupe },
       { status: 502 },
     );
   }
 
-  const dest = scheduled.destination;
-  const dest0 = dest.charCodeAt(0);
-  const destTail = dest.charCodeAt(dest.length - 1);
   return NextResponse.json({
     ok: true,
     cronExpression: parsed.data.cron,
     retries: parsed.data.retries,
     requestedScheduleId: parsed.data.scheduleId ?? null,
     scheduleId: scheduled.scheduleId,
-    jobPath: "/api/jobs/advance-day",
-    destination: {
-      value: dest,
-      length: dest.length,
-      firstChar: String.fromCharCode(dest0),
-      firstCharCode: dest0,
-      lastChar: String.fromCharCode(destTail),
-      lastCharCode: destTail,
-      startsWithHttps: dest.startsWith("https://"),
-      hasNoSpaceOrBacktick:
-        !dest.includes(" ") &&
-        !dest.includes("`") &&
-        !dest.includes("'") &&
-        !dest.includes('"') &&
-        !dest.includes(","),
-    },
+    jobPath: JOB_PATH,
+    destinationUrl: scheduled.destination,
+    dedupeBeforeCreate: dedupe,
   });
 }
