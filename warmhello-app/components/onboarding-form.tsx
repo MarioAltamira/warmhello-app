@@ -482,8 +482,43 @@ export function OnboardingForm({
         </p>
       ) : null}
       <form className="form-grid" onSubmit={handleSubmit}>
-        <label>
-          Caregiver name
+        <style>{`
+          .section-card-blue input,
+          .section-card-blue select,
+          .section-card-blue .phone-input-group,
+          .section-card-blue .region-pick-card {
+            background: color-mix(in srgb, var(--primary) 14%, transparent) !important;
+            border-color: color-mix(in srgb, var(--primary) 30%, var(--border)) !important;
+          }
+          .section-card-green input,
+          .section-card-green select,
+          .section-card-green .phone-input-group {
+            background: color-mix(in srgb, rgb(34, 197, 94) 14%, transparent) !important;
+            border-color: color-mix(in srgb, rgb(34, 197, 94) 30%, var(--border)) !important;
+          }
+          .section-card-yellow input,
+          .section-card-yellow select,
+          .section-card-yellow .phone-input-group {
+            background: color-mix(in srgb, rgb(250, 204, 21) 14%, transparent) !important;
+            border-color: color-mix(in srgb, rgb(250, 204, 21) 30%, var(--border)) !important;
+          }
+        `}</style>
+        <div
+          className="section-card-blue"
+          style={{
+            gridColumn: "1 / -1",
+            padding: "12px 14px 6px",
+            marginTop: 2,
+            marginBottom: 8,
+            borderRadius: 12,
+            border: "1px solid color-mix(in srgb, var(--primary) 24%, var(--border))",
+            background: "color-mix(in srgb, var(--primary) 8%, transparent)",
+          }}
+        >
+          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8 }}>Subscriber Details</div>
+          <div className="form-grid">
+            <label>
+              Caregiver name
           <input
             value={form.subscriberName}
             onChange={(event) => updateField("subscriberName", event.target.value)}
@@ -562,21 +597,37 @@ export function OnboardingForm({
             })}
           </div>
         </div>
+          <div
+            className="form-grid-wide"
+            style={{
+              border: "2px solid rgb(250, 204, 21)",
+              background: "rgba(250, 204, 21, 0.08)",
+              padding: 12,
+              borderRadius: 12,
+            }}
+          >
+            <p style={{ marginTop: 0, marginBottom: 0 }}>
+              <strong>{LEGAL_DISCLAIMER_CONDENSED}</strong>
+            </p>
+          </div>
+          </div>
+        </div>
         <div
-          className="form-grid-wide"
+          className="section-card-green"
           style={{
-            border: "2px solid rgb(250, 204, 21)",
-            background: "rgba(250, 204, 21, 0.08)",
-            padding: 12,
+            gridColumn: "1 / -1",
+            padding: "12px 14px 6px",
+            marginTop: 2,
+            marginBottom: 8,
             borderRadius: 12,
+            border: "1px solid color-mix(in srgb, rgb(34, 197, 94) 24%, var(--border))",
+            background: "color-mix(in srgb, rgb(34, 197, 94) 8%, transparent)",
           }}
         >
-          <p style={{ marginTop: 0, marginBottom: 0 }}>
-            <strong>{LEGAL_DISCLAIMER_CONDENSED}</strong>
-          </p>
-        </div>
-        <label>
-          Senior first name
+          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8 }}>Senior&apos;s Detail</div>
+          <div className="form-grid">
+            <label>
+              Senior first name
           <input
             value={form.seniorFirstName}
             onChange={(event) => updateField("seniorFirstName", event.target.value)}
@@ -643,24 +694,40 @@ export function OnboardingForm({
             <option value="3">3 hours</option>
           </select>
         </label>
-        <label className="form-grid-wide checkbox-grid-row">
-          <input
-            type="checkbox"
-            checked={form.seniorActive}
-            onChange={(event) => updateActiveField(event.target.checked)}
-          />
-          <div>
-            <div className="checkbox-title">
-              Schedule daily check-in calls for {form.seniorFirstName || "your loved one"}
-            </div>
-            <div className="checkbox-note">
-              We&apos;ll call at her preferred hour every morning. Un-check to pause while she&apos;s on vacation or staying with family.
-              Remember to turn it back on when she returns - we will not auto-resume.
-            </div>
+            <label className="form-grid-wide checkbox-grid-row">
+              <input
+                type="checkbox"
+                checked={form.seniorActive}
+                onChange={(event) => updateActiveField(event.target.checked)}
+              />
+              <div>
+                <div className="checkbox-title">
+                  Schedule daily check-in calls for {form.seniorFirstName || "your loved one"}
+                </div>
+                <div className="checkbox-note">
+                  We&apos;ll call at her preferred hour every morning. Un-check to pause while she&apos;s on vacation or staying with family.
+                  Remember to turn it back on when she returns - we will not auto-resume.
+                </div>
+              </div>
+            </label>
           </div>
-        </label>
-        <label>
-          Primary contact name
+        </div>
+        <div
+          className="section-card-yellow"
+          style={{
+            gridColumn: "1 / -1",
+            padding: "12px 14px 6px",
+            marginTop: 2,
+            marginBottom: 8,
+            borderRadius: 12,
+            border: "1px solid color-mix(in srgb, rgb(250, 204, 21) 24%, var(--border))",
+            background: "color-mix(in srgb, rgb(250, 204, 21) 8%, transparent)",
+          }}
+        >
+          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8 }}>Contacts Detail</div>
+          <div className="form-grid">
+            <label>
+              Primary contact name
           <input
             value={form.contactName}
             onChange={(event) => updateField("contactName", event.target.value)}
@@ -695,8 +762,8 @@ export function OnboardingForm({
             key={index}
             className="form-grid-wide"
             style={{
-              background: "color-mix(in srgb, var(--primary) 8%, transparent)",
-              border: "1px solid color-mix(in srgb, var(--primary) 24%, var(--border))",
+              background: "color-mix(in srgb, rgb(250, 204, 21) 8%, transparent)",
+              border: "1px solid color-mix(in srgb, rgb(250, 204, 21) 24%, var(--border))",
               borderRadius: 12,
               padding: "14px 14px 4px",
               marginTop: 8,
@@ -762,26 +829,28 @@ export function OnboardingForm({
             </div>
           </div>
         ))}
-        {(form.additionalContacts ?? []).length < MAX_ADDITIONAL_CONTACTS ? (
-          <div className="form-grid-wide" style={{ marginTop: 4 }}>
-            <button
-              type="button"
-              className="button secondary"
-              onClick={addAdditionalContact}
-            >
-              + Add another contact
-            </button>
-            <p
-              style={{
-                marginTop: 8,
-                color: "rgb(148, 163, 184)",
-                fontSize: 13,
-              }}
-            >
-              Up to 2 total emergency contacts (1 primary + 1 additional) will all receive the check-in confirmation and escalation SMS messages.
-            </p>
+            {(form.additionalContacts ?? []).length < MAX_ADDITIONAL_CONTACTS ? (
+              <div className="form-grid-wide" style={{ marginTop: 4 }}>
+                <button
+                  type="button"
+                  className="button secondary"
+                  onClick={addAdditionalContact}
+                >
+                  + Add another contact
+                </button>
+                <p
+                  style={{
+                    marginTop: 8,
+                    color: "rgb(148, 163, 184)",
+                    fontSize: 13,
+                  }}
+                >
+                  Up to 2 total emergency contacts (1 primary + 1 additional) will all receive the check-in confirmation and escalation SMS messages.
+                </p>
+              </div>
+            ) : null}
           </div>
-        ) : null}
+        </div>
         <label
           className="form-grid-wide checkbox-grid-row"
           style={{
