@@ -83,9 +83,30 @@ export function getStripePriceIdFor(
   currency: BillingCurrency,
   interval: BillingInterval = DEFAULT_INTERVAL,
 ): string | null {
+  const sanitize = (raw: unknown): string | null => {
+    if (typeof raw !== "string") return null;
+    let v = raw.replace(/^\uFEFF/, "").trim();
+    for (let i = 0; i < 4; i += 1) {
+      if (v.length >= 2) {
+        const first = v[0];
+        const last = v[v.length - 1];
+        if (
+          (first === "`" && last === "`") ||
+          (first === '"' && last === '"') ||
+          (first === "'" && last === "'")
+        ) {
+          v = v.slice(1, -1).trim();
+          continue;
+        }
+      }
+      break;
+    }
+    return v.length > 0 ? v : null;
+  };
+
   const variant = variantFor(currency, interval);
-  const value = process.env[variant.priceIdEnv];
-  if (value && value.trim().length > 0) return value.trim();
+  const value = sanitize(process.env[variant.priceIdEnv]);
+  if (value) return value;
 
   const fallbackEnv =
     interval === "annual"
@@ -95,12 +116,11 @@ export function getStripePriceIdFor(
       : currency === "USD"
         ? "STRIPE_PRICE_ID_USD_MONTHLY"
         : "STRIPE_PRICE_ID_CAD_MONTHLY";
-  const fallbackValue = process.env[fallbackEnv];
-  if (fallbackValue && fallbackValue.trim().length > 0) return fallbackValue.trim();
+  const fallbackValue = sanitize(process.env[fallbackEnv]);
+  if (fallbackValue) return fallbackValue;
 
-  if (process.env.STRIPE_PRICE_ID?.trim()) {
-    return process.env.STRIPE_PRICE_ID.trim();
-  }
+  const legacy = sanitize(process.env.STRIPE_PRICE_ID);
+  if (legacy) return legacy;
   return null;
 }
 
