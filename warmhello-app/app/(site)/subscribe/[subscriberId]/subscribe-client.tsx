@@ -187,17 +187,18 @@ export function SubscribeClient({
                 <div
                   className={`subscribe-plan-chip ${billingInterval === "monthly" ? "is-selected" : ""}`}
                   style={{
-                    padding: 14,
+                    padding: 10,
                     borderRadius: 12,
                     border:
                       billingInterval === "monthly"
-                        ? "2px solid var(--accent-muted)"
+                        ? "3px solid color-mix(in oklab, #10b981 88%, white 12%)"
                         : "2px solid var(--border)",
                     background:
                       billingInterval === "monthly"
-                        ? "color-mix(in oklab, var(--accent) 6%, var(--surface))"
+                        ? "color-mix(in oklab, #60a5fa 10%, var(--surface))"
                         : "var(--surface-elevated)",
                     cursor: "pointer",
+                    transition: "border-color 160ms ease, background-color 160ms ease, transform 160ms ease",
                   }}
                   onClick={() => setBillingInterval("monthly")}
                   role="button"
@@ -243,17 +244,18 @@ export function SubscribeClient({
                   className={`subscribe-plan-chip ${billingInterval === "annual" ? "is-selected" : ""}`}
                   style={{
                     position: "relative",
-                    padding: 14,
+                    padding: 10,
                     borderRadius: 12,
                     border:
                       billingInterval === "annual"
-                        ? "2px solid color-mix(in oklab, var(--accent) 60%, transparent)"
+                        ? "3px solid color-mix(in oklab, #10b981 88%, white 12%)"
                         : "2px solid var(--border)",
                     background:
                       billingInterval === "annual"
-                        ? "linear-gradient(180deg, color-mix(in oklab, var(--accent) 8%, var(--surface)) 0%, var(--surface) 100%)"
+                        ? "color-mix(in oklab, #60a5fa 10%, var(--surface))"
                         : "var(--surface-elevated)",
                     cursor: "pointer",
+                    transition: "border-color 160ms ease, background-color 160ms ease, transform 160ms ease",
                   }}
                   onClick={() => setBillingInterval("annual")}
                   role="button"
@@ -276,8 +278,8 @@ export function SubscribeClient({
                       fontWeight: 800,
                       letterSpacing: 0.3,
                       textTransform: "uppercase",
-                      background: "var(--accent)",
-                      color: "var(--accent-contrast)",
+                      background: billingInterval === "annual" ? "#059669" : "color-mix(in oklab, #10b981 18%, transparent)",
+                      color: billingInterval === "annual" ? "#ffffff" : "#10b981",
                     }}
                   >
                     Save ~20%

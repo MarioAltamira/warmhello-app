@@ -61,8 +61,13 @@ export function IntervalToggle({ value, onChange, compact, className }: Props) {
               fontSize: compact ? 13 : 14,
               lineHeight: 1,
               transition: "background 160ms ease, color 160ms ease",
-              background: active ? "var(--accent)" : "transparent",
-              color: active ? "var(--accent-contrast)" : "var(--text)",
+              background: active
+                ? "color-mix(in oklab, #10b981 88%, white 12%)"
+                : "transparent",
+              color: active ? "#ffffff" : "var(--text)",
+              boxShadow: active
+                ? "0 0 0 2px color-mix(in oklab, #10b981 40%, transparent) inset"
+                : "none",
             }}
           >
             {option.label}
@@ -77,9 +82,9 @@ export function IntervalToggle({ value, onChange, compact, className }: Props) {
                   fontSize: compact ? 10 : 11,
                   fontWeight: 700,
                   background: active
-                    ? "rgba(255,255,255,0.18)"
-                    : "color-mix(in oklab, var(--accent) 18%, transparent)",
-                  color: active ? "var(--accent-contrast)" : "var(--accent)",
+                    ? "rgba(255,255,255,0.22)"
+                    : "color-mix(in oklab, #10b981 18%, transparent)",
+                  color: active ? "#ffffff" : "#10b981",
                   letterSpacing: 0.2,
                   textTransform: "uppercase",
                 }}

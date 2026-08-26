@@ -74,17 +74,18 @@ export function LandingPricingSection({ initialCurrency }: Props) {
           style={{
             position: "relative",
             textAlign: "left",
-            padding: 28,
+            padding: 20,
             border: annualSelected
-              ? "2px solid color-mix(in oklab, var(--accent) 60%, transparent)"
+              ? "3px solid color-mix(in oklab, #10b981 88%, white 12%)"
               : "2px solid var(--border)",
             background: annualSelected
-              ? "linear-gradient(180deg, color-mix(in oklab, var(--accent) 6%, var(--surface)) 0%, var(--surface) 100%)"
+              ? "color-mix(in oklab, #60a5fa 10%, var(--surface))"
               : "var(--surface)",
             order: annualSelected ? -1 : 0,
             boxShadow: annualSelected
-              ? "0 20px 50px -20px color-mix(in oklab, var(--accent) 50%, transparent)"
+              ? "0 10px 30px -12px color-mix(in oklab, #10b981 55%, transparent)"
               : "none",
+            transition: "border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease",
           }}
         >
           <div
@@ -202,11 +203,17 @@ export function LandingPricingSection({ initialCurrency }: Props) {
           className={`card pricing-card pricing-card-monthly ${monthlySelected ? "is-selected" : ""}`}
           style={{
             textAlign: "left",
-            padding: 28,
+            padding: 20,
             border: monthlySelected
-              ? "2px solid var(--accent-muted)"
+              ? "3px solid color-mix(in oklab, #10b981 88%, white 12%)"
               : "2px solid var(--border)",
-            background: "var(--surface)",
+            background: monthlySelected
+              ? "color-mix(in oklab, #60a5fa 10%, var(--surface))"
+              : "var(--surface)",
+            boxShadow: monthlySelected
+              ? "0 10px 30px -12px color-mix(in oklab, #10b981 55%, transparent)"
+              : "none",
+            transition: "border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease",
           }}
         >
           <div>
