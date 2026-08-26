@@ -27,8 +27,7 @@ export function SubscribeClient({
   subscriberId,
   currency,
 }: SubscribeClientProps) {
-  const [tosConsent, setTosConsent] = useState(false);
-  const [caregiverConsent, setCaregiverConsent] = useState(false);
+  const [consentAll, setConsentAll] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [billingInterval, setBillingInterval] = useState<BillingInterval>(DEFAULT_INTERVAL);
@@ -39,8 +38,8 @@ export function SubscribeClient({
   const monthlyAmt = plan.monthly.amount;
 
   async function proceed() {
-    if (!tosConsent || !caregiverConsent) {
-      setError("Please accept both terms before continuing.");
+    if (!consentAll) {
+      setError("Please confirm both terms and caregiver authorization before continuing.");
       return;
     }
     setError(null);
@@ -54,19 +53,19 @@ export function SubscribeClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           tos_version: "2025-08-14",
-          caregiver_ack: "true",
+          caregiver_ack: consentAll ? "1" : "0",
           billing_interval: interval,
         }),
       });
       const body = await res.json().catch(() => ({}));
-      if (!res.ok || !body.ok || !body.checkoutUrl) {
+      if (!res.ok || !body.ok || !(body.checkoutUrl || body.url)) {
         const message =
           body.message ??
           "Something went wrong while preparing checkout. Please try again in a moment.";
         setError(message);
         return;
       }
-      window.location.href = body.checkoutUrl;
+      window.location.href = (body.checkoutUrl as string) ?? (body.url as string);
     } catch (err) {
       console.error(err);
       setError(
@@ -378,13 +377,47 @@ export function SubscribeClient({
               fit.
             </p>
 
-            <label className="consent-row">
+            <label
+              className="consent-row"
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 16,
+                padding: "16px 18px",
+                borderRadius: 12,
+                border: consentAll
+                  ? "2px solid color-mix(in oklab, var(--accent) 55%, transparent)"
+                  : "2px solid var(--border)",
+                background: consentAll
+                  ? "color-mix(in oklab, var(--accent) 6%, var(--surface))"
+                  : "var(--surface-elevated)",
+                cursor: "pointer",
+                userSelect: "none",
+              }}
+            >
               <input
                 type="checkbox"
-                checked={tosConsent}
-                onChange={(event) => setTosConsent(event.target.checked)}
+                checked={consentAll}
+                onChange={(event) => setConsentAll(event.target.checked)}
+                aria-label="I agree to the Terms of Service and Privacy Policy, and I confirm I am authorized to enroll this senior."
+                style={{
+                  width: 26,
+                  height: 26,
+                  minWidth: 26,
+                  minHeight: 26,
+                  marginTop: 2,
+                  accentColor: "var(--accent)",
+                  cursor: "pointer",
+                }}
               />
-              <span>
+              <span
+                style={{
+                  fontSize: 15,
+                  lineHeight: 1.5,
+                  color: "var(--text)",
+                  fontWeight: 500,
+                }}
+              >
                 I agree to the{" "}
                 <Link href={legalLinks.terms} target="_blank" rel="noreferrer">
                   Terms of Service
@@ -393,26 +426,15 @@ export function SubscribeClient({
                 <Link href={legalLinks.privacy} target="_blank" rel="noreferrer">
                   Privacy Policy
                 </Link>
-                .
-              </span>
-            </label>
-
-            <label className="consent-row">
-              <input
-                type="checkbox"
-                checked={caregiverConsent}
-                onChange={(event) => setCaregiverConsent(event.target.checked)}
-              />
-              <span>
-                I confirm I am a caregiver or trusted contact for this senior
-                and I have permission to enroll them in daily SMS check-ins.
+                , and I confirm I am a caregiver or trusted contact for this senior
+                with permission to enroll them in daily SMS check-ins.
               </span>
             </label>
 
             <button
               type="button"
               className="button primary subscribe-proceed-button"
-              disabled={loading || !tosConsent || !caregiverConsent}
+              disabled={loading || !consentAll}
               onClick={proceed}
             >
               {loading ? "Preparing checkout…" : "Proceed to Checkout"}
