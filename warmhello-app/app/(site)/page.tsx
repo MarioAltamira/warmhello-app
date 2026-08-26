@@ -5,6 +5,7 @@ import CurrencyToggle from "@/components/currency-toggle";
 import { LegalLinksPanel } from "@/components/legal-links-panel";
 import { SmartBuyNowButton } from "@/components/smart-buy-now-button";
 import { ComparisonTable } from "@/components/comparison-table";
+import { LandingPricingSection } from "@/components/landing-pricing-section";
 import { getIntegrationStatus } from "@/lib/env";
 import {
   PRICING_PLANS,
@@ -74,7 +75,7 @@ function buildFaq(currency: BillingCurrency): FaqEntry[] {
     },
     {
       question: `What does Warm-Hello cost after the free 7-day trial?`,
-      answer: `Billing is simple and predictable: ${plan.monthlyLabel}, which works out to ${plan.dailyLabel} - about the cost of a cup of coffee each month. Cancel or pause anytime from the dashboard with no fees, no contracts, and no hidden charges.`,
+      answer: `Billing is simple and predictable. Choose Monthly at ${plan.monthly.displayLabel} with the flexibility to cancel anytime, or lock in ~20% savings with Annual at ${plan.annual.displayLabel} — that's under $0.50 a day for complete peace of mind. No fees, no contracts, no hidden charges.`,
     },
   ];
 }
@@ -95,22 +96,41 @@ function buildJsonLd(args: {
     .slice(0, 10);
   const validFrom = "2025-08-14";
 
-  const offerFor = (plan: typeof active) => ({
-    "@type": "Offer" as const,
-    price: String(plan.monthlyAmount),
-    priceCurrency: plan.currency,
-    priceValidUntil,
-    validFrom,
-    billingIncrement: 1,
-    billingCycle: "monthly",
-    name: `${plan.currency} monthly plan`,
-    description: `${plan.monthlyLabel} - equivalent to ${plan.yearlyLabel} or ${plan.dailyLabel}.`,
-    url: "https://warm-hello.com/",
-    availability: "https://schema.org/InStock",
-    areaServed: plan.currency === "USD"
-      ? { "@type": "Place" as const, name: "United States" }
-      : { "@type": "Place" as const, name: "Canada" },
-  });
+  const offersForPlan = (plan: typeof active) => {
+    const annualOffer = {
+      "@type": "Offer" as const,
+      price: String(plan.annual.totalPerYear),
+      priceCurrency: plan.currency,
+      priceValidUntil,
+      validFrom,
+      billingIncrement: 1,
+      billingCycle: "yearly",
+      name: `${plan.currency} annual plan (Peace of Mind)`,
+      description: `${plan.annual.displayLabel}. ${plan.annualBadge}`,
+      url: "https://warm-hello.com/",
+      availability: "https://schema.org/InStock",
+      areaServed: plan.currency === "USD"
+        ? { "@type": "Place" as const, name: "United States" }
+        : { "@type": "Place" as const, name: "Canada" },
+    };
+    const monthlyOffer = {
+      "@type": "Offer" as const,
+      price: String(plan.monthly.amount),
+      priceCurrency: plan.currency,
+      priceValidUntil,
+      validFrom,
+      billingIncrement: 1,
+      billingCycle: "monthly",
+      name: `${plan.currency} monthly plan (Standard)`,
+      description: plan.monthly.displayLabel,
+      url: "https://warm-hello.com/",
+      availability: "https://schema.org/InStock",
+      areaServed: plan.currency === "USD"
+        ? { "@type": "Place" as const, name: "United States" }
+        : { "@type": "Place" as const, name: "Canada" },
+    };
+    return [annualOffer, monthlyOffer];
+  };
 
   const organization = {
     "@context": "https://schema.org",
@@ -136,8 +156,8 @@ function buildJsonLd(args: {
     ],
     description:
       "Warm-Hello is an automated SMS-based daily safety check-in service designed for elderly seniors living independently and the adult children who care for them. Seniors confirm they are safe with a single tap on a secure text link - no app installs, no logins, no wearable buttons required. If two consecutive check-ins are missed, Warm-Hello automatically alerts designated family contacts by text and email.",
-    sku: `WARMHELLO-${active.currency}-MONTHLY`,
-    mpn: `WARMHELLO-${active.currency}-MONTHLY`,
+    sku: `WARMHELLO-${active.currency}-ANNUAL`,
+    mpn: `WARMHELLO-${active.currency}-ANNUAL`,
     brand: {
       "@type": "Brand",
       name: "Warm-Hello",
@@ -172,7 +192,7 @@ function buildJsonLd(args: {
           "My mom (Margaret, 82) lives alone and we had one scare where she fell and couldn't reach the phone. We tried a pendant first but she refused to wear it. Warm-Hello fits right into her texting routine - by 9 a.m. I get a green check and I can start my workday without that little knot in my stomach. Canceled it once by mistake, the trial was more than enough time to know it was a keeper.",
       },
     ],
-    offers: [offerFor(active), offerFor(other)],
+    offers: [...offersForPlan(active), ...offersForPlan(other)],
   };
 
   const faq = {
@@ -257,8 +277,8 @@ export default async function HomePage() {
               </Link>
             </div>
             <p className="hero-meta">
-              No credit card required. Protect peace of mind for{" "}
-              {plan.monthlyLabel.toLowerCase()}.
+              No credit card required. Peace of mind for less than $0.50 a day
+              with annual billing.
             </p>
             <div style={{ marginTop: 12 }}>
               <CurrencyToggle initial={visitorCurrency.currency} compact />
@@ -410,40 +430,19 @@ export default async function HomePage() {
         </section>
 
         <section className="section">
-          <div className="pricing-card card">
-            <div>
-              <p className="eyebrow">Simple Pricing</p>
-              <h2>
-                Simple, predictable pricing for families - $5 USD or $6 CAD
-                per month, no contracts, cancel anytime.
-              </h2>
-              <p className="pricing-amount">
-                <span
-                  className="pricing-amount-item"
-                  dangerouslySetInnerHTML={{
-                    __html: plan.marketing.dailyCard,
-                  }}
-                />
-              </p>
-              <p className="pricing-copy">{plan.marketing.yearlyCard}</p>
-              <p className="pricing-copy">{plan.marketing.peaceOfMind}</p>
-              <div style={{ marginTop: 14 }}>
-                <CurrencyToggle initial={visitorCurrency.currency} />
-              </div>
-            </div>
-            <div className="card pricing-includes">
-              <p className="pricing-badge">7-Day Free Trial</p>
-              <ul className="check-list">
-                <li>Unlimited daily SMS check-ins</li>
-                <li>Automated escalation alerts to your phone</li>
-                <li>Cancel or pause anytime</li>
-              </ul>
-              <SmartBuyNowButton
-                className="button primary"
-                label="Protect Your Loved One Today"
-              />
-            </div>
+          <div className="section-heading">
+            <p className="eyebrow">Simple Pricing</p>
+            <h2>
+              Two ways to protect your peace of mind - monthly flexibility or
+              annual savings.
+            </h2>
+            <p className="section-copy">
+              Choose Monthly Standard for short-term needs, or lock in Annual
+              Peace of Mind to save ~20% and keep daily check-ins running for
+              under $0.50 a day.
+            </p>
           </div>
+          <LandingPricingSection initialCurrency={visitorCurrency.currency} />
         </section>
 
         <section className="section">

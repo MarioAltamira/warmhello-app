@@ -1,110 +1,484 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useState } from "react";
-import { CLICKWRAP_CHECKOUT_LABEL, TOS_VERSION_CURRENT } from "@/lib/constants";
+import { legalLinks } from "@/lib/routes";
+import {
+  BillingCurrency,
+  BillingInterval,
+  DEFAULT_INTERVAL,
+  pricingPlanFor,
+  isBillingInterval,
+} from "@/lib/pricing";
+import { IntervalToggle } from "@/components/interval-toggle";
+import {
+  CPA_AUTO_RENEW_BULLETS,
+  LEGAL_DISCLAIMER_UNIVERSAL,
+} from "@/lib/constants";
 
-export default function SubscribeClient({ subscriberId }: { subscriberId: string }) {
+type SubscribeClientProps = {
+  subscriberId: string;
+  currency: BillingCurrency;
+};
+
+const TICK = "✓";
+
+export function SubscribeClient({
+  subscriberId,
+  currency,
+}: SubscribeClientProps) {
+  const [tosConsent, setTosConsent] = useState(false);
+  const [caregiverConsent, setCaregiverConsent] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState<string>("");
-  const [failed, setFailed] = useState<boolean>(false);
-  const [consentChecked, setConsentChecked] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [billingInterval, setBillingInterval] = useState<BillingInterval>(DEFAULT_INTERVAL);
+
+  const plan = useMemo(() => pricingPlanFor(currency), [currency]);
+
+  const annualEquiv = plan.annual.equivalentMonthly;
+  const monthlyAmt = plan.monthly.amount;
 
   async function proceed() {
-    if (!consentChecked) {
-      setFailed(true);
-      setStatus("Please accept the Terms of Service and authorization to continue.");
+    if (!tosConsent || !caregiverConsent) {
+      setError("Please accept both terms before continuing.");
       return;
     }
-
+    setError(null);
     setLoading(true);
-    setFailed(false);
-    setStatus("Preparing secure checkout...");
-
+    const interval = isBillingInterval(billingInterval)
+      ? billingInterval
+      : DEFAULT_INTERVAL;
     try {
-      const res = await fetch(`/api/subscribe/${encodeURIComponent(subscriberId)}`, {
+      const res = await fetch(`/api/subscribe/${subscriberId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          tos_version: TOS_VERSION_CURRENT,
-          caregiver_ack: true,
+          tos_version: "2025-08-14",
+          caregiver_ack: "true",
+          billing_interval: interval,
         }),
       });
-      const data = (await res.json()) as {
-        ok?: boolean;
-        url?: string | null;
-        message?: string;
-      };
-      if (!res.ok || !data.ok || !data.url) {
-        setFailed(true);
-        setLoading(false);
-        setStatus(data.message ?? "Checkout is not available right now.");
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok || !body.ok || !body.checkoutUrl) {
+        const message =
+          body.message ??
+          "Something went wrong while preparing checkout. Please try again in a moment.";
+        setError(message);
         return;
       }
-      setStatus("Redirecting to Stripe Checkout...");
-      window.location.href = data.url;
-    } catch {
-      setFailed(true);
+      window.location.href = body.checkoutUrl;
+    } catch (err) {
+      console.error(err);
+      setError(
+        "Unable to reach the billing service. Please check your connection and try again.",
+      );
+    } finally {
       setLoading(false);
-      setStatus("We could not start checkout right now.");
     }
   }
 
   return (
-    <div style={{ textAlign: "left" }}>
-      <label
-        className="checkbox-grid-row"
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          gap: 12,
-          padding: "16px",
-          border: "1px solid var(--border)",
-          borderRadius: 12,
-          background: "rgba(15, 23, 42, 0.3)",
-        }}
-      >
-        <input
-          type="checkbox"
-          checked={consentChecked}
-          onChange={(event) => setConsentChecked(event.target.checked)}
-        />
-        <div style={{ fontSize: 14, lineHeight: 1.55 }}>
-          <div style={{ whiteSpace: "pre-line" }}>{CLICKWRAP_CHECKOUT_LABEL}</div>
-          <div style={{ marginTop: 6, fontSize: 13, color: "var(--muted)" }}>
-            <Link href="/terms" className="inline-link">
+    <main className="subscribe-shell">
+      <div className="subscribe-layout">
+        <header className="subscribe-header">
+          <Link href="/" className="subscribe-brand">
+            <span className="subscribe-brand-mark" aria-hidden>
+              {"{ "}
+              <strong>WH</strong>
+              {" }"}
+            </span>
+            <span className="subscribe-brand-name">Warm-Hello</span>
+          </Link>
+          <Link href={legalLinks.privacy} className="subscribe-top-link">
+            Privacy Policy
+          </Link>
+        </header>
+
+        <section className="subscribe-grid">
+          <div className="subscribe-summary card">
+            <p className="eyebrow" style={{ marginTop: 0, marginBottom: 6 }}>
+              Almost Done
+            </p>
+            <h1 className="subscribe-title">Review & confirm</h1>
+            <p className="subscribe-lede">
+              Warm-Hello will send a gentle one-tap daily SMS check-in to your
+              loved one every morning and alert your family if two consecutive
+              checks are missed.
+            </p>
+
+            <div className="subscribe-summary-items">
+              <div>
+                <span>Seniors receiving daily check-ins</span>
+                <strong>1 adult</strong>
+              </div>
+              <div>
+                <span>Senior contact number</span>
+                <strong>Configured in dashboard</strong>
+              </div>
+              <div>
+                <span>Family account email</span>
+                <strong>Your account email</strong>
+              </div>
+              <div>
+                <span>Family contacts</span>
+                <strong>Up to 2 emergency contacts</strong>
+              </div>
+              <div>
+                <span>Support channel</span>
+                <strong>care@warm-hello.com</strong>
+              </div>
+              <div>
+                <span>Monthly SMS escalation alerts</span>
+                <strong>Included</strong>
+              </div>
+            </div>
+
+            <div
+              style={{
+                marginTop: 24,
+                display: "flex",
+                flexDirection: "column",
+                gap: 12,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 12,
+                  flexWrap: "wrap",
+                }}
+              >
+                <div>
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: 13,
+                      color: "var(--muted)",
+                      textTransform: "uppercase",
+                      letterSpacing: 0.6,
+                      fontWeight: 700,
+                    }}
+                  >
+                    {plan.marketing.billingFrequencyLabel}
+                  </p>
+                  <p style={{ margin: "2px 0 0", fontWeight: 600 }}>
+                    {billingInterval === "annual"
+                      ? plan.annual.billedAnnuallyLabel
+                      : `Billed monthly at ${plan.monthly.displayLabel}`}
+                  </p>
+                </div>
+                <IntervalToggle
+                  value={billingInterval}
+                  onChange={setBillingInterval}
+                  compact
+                />
+              </div>
+
+              <div
+                className="subscribe-plan-compare"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 10,
+                  marginTop: 4,
+                }}
+              >
+                <div
+                  className={`subscribe-plan-chip ${billingInterval === "monthly" ? "is-selected" : ""}`}
+                  style={{
+                    padding: 14,
+                    borderRadius: 12,
+                    border:
+                      billingInterval === "monthly"
+                        ? "2px solid var(--accent-muted)"
+                        : "2px solid var(--border)",
+                    background:
+                      billingInterval === "monthly"
+                        ? "color-mix(in oklab, var(--accent) 6%, var(--surface))"
+                        : "var(--surface-elevated)",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => setBillingInterval("monthly")}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setBillingInterval("monthly");
+                    }
+                  }}
+                >
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      letterSpacing: 0.4,
+                      textTransform: "uppercase",
+                      color: "var(--muted)",
+                    }}
+                  >
+                    Monthly Standard
+                  </p>
+                  <p style={{ margin: "4px 0 0", fontSize: 18, fontWeight: 800 }}>
+                    {plan.currencySymbol}
+                    {monthlyAmt.toFixed(2)}
+                    <span style={{ fontSize: 13, fontWeight: 500, color: "var(--muted)" }}>
+                      /mo
+                    </span>
+                  </p>
+                  <p
+                    style={{
+                      margin: "6px 0 0",
+                      fontSize: 12,
+                      color: "var(--muted)",
+                    }}
+                  >
+                    Flexible billing. Cancel anytime.
+                  </p>
+                </div>
+
+                <div
+                  className={`subscribe-plan-chip ${billingInterval === "annual" ? "is-selected" : ""}`}
+                  style={{
+                    position: "relative",
+                    padding: 14,
+                    borderRadius: 12,
+                    border:
+                      billingInterval === "annual"
+                        ? "2px solid color-mix(in oklab, var(--accent) 60%, transparent)"
+                        : "2px solid var(--border)",
+                    background:
+                      billingInterval === "annual"
+                        ? "linear-gradient(180deg, color-mix(in oklab, var(--accent) 8%, var(--surface)) 0%, var(--surface) 100%)"
+                        : "var(--surface-elevated)",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => setBillingInterval("annual")}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setBillingInterval("annual");
+                    }
+                  }}
+                >
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: -10,
+                      right: 10,
+                      padding: "3px 9px",
+                      borderRadius: 999,
+                      fontSize: 10,
+                      fontWeight: 800,
+                      letterSpacing: 0.3,
+                      textTransform: "uppercase",
+                      background: "var(--accent)",
+                      color: "var(--accent-contrast)",
+                    }}
+                  >
+                    Save ~20%
+                  </span>
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      letterSpacing: 0.4,
+                      textTransform: "uppercase",
+                      color: "var(--muted)",
+                    }}
+                  >
+                    Annual Peace of Mind
+                  </p>
+                  <p style={{ margin: "4px 0 0", fontSize: 18, fontWeight: 800 }}>
+                    {plan.currencySymbol}
+                    {annualEquiv.toFixed(2)}
+                    <span style={{ fontSize: 13, fontWeight: 500, color: "var(--muted)" }}>
+                      /mo equiv
+                    </span>
+                  </p>
+                  <p
+                    style={{
+                      margin: "6px 0 0",
+                      fontSize: 12,
+                      color: "var(--muted)",
+                    }}
+                  >
+                    {plan.annual.billedAnnuallyLabel}
+                  </p>
+                </div>
+              </div>
+
+              <div className="subscribe-cost">
+                <span>Today</span>
+                <strong>Free during 7-day trial</strong>
+              </div>
+              <div className="subscribe-cost">
+                <span>{plan.marketing.billingFrequencyLabel}</span>
+                <strong>
+                  {billingInterval === "annual"
+                    ? plan.annual.displayLabel
+                    : plan.monthly.displayLabel}
+                </strong>
+              </div>
+              <div className="subscribe-cost">
+                <span>
+                  {billingInterval === "annual"
+                    ? "Daily equivalent"
+                    : "Daily equivalent (approx.)"}
+                </span>
+                <strong>
+                  {plan.currencySymbol}
+                  {(
+                    billingInterval === "annual"
+                      ? plan.annual.dailyAmount
+                      : plan.monthly.amount / 30
+                  ).toFixed(2)}
+                  /day
+                </strong>
+              </div>
+              <div className="subscribe-cost subscribe-cost-final">
+                <span>30-day money-back guarantee</span>
+                <strong>Included</strong>
+              </div>
+            </div>
+
+            <ul className="check-list subscribe-check-list">
+              <li>
+                <span aria-hidden style={{ marginRight: 8, color: "var(--accent)" }}>
+                  {TICK}
+                </span>
+                {plan.marketing.featureBulletContacts}
+              </li>
+              <li>
+                <span aria-hidden style={{ marginRight: 8, color: "var(--accent)" }}>
+                  {TICK}
+                </span>
+                {plan.marketing.featureBulletStandardSenior}
+              </li>
+              <li>
+                <span aria-hidden style={{ marginRight: 8, color: "var(--accent)" }}>
+                  {TICK}
+                </span>
+                {plan.marketing.featureBulletPeaceOfMind}
+              </li>
+            </ul>
+          </div>
+
+          <div className="subscribe-cta card">
+            <h2 className="subscribe-cta-title">Activate your trial</h2>
+            <p className="subscribe-cta-lede">
+              We never charge during the trial. You can cancel from the family
+              dashboard before the 7th day if Warm-Hello isn&apos;t the right
+              fit.
+            </p>
+
+            <label className="consent-row">
+              <input
+                type="checkbox"
+                checked={tosConsent}
+                onChange={(event) => setTosConsent(event.target.checked)}
+              />
+              <span>
+                I agree to the{" "}
+                <Link href={legalLinks.terms} target="_blank" rel="noreferrer">
+                  Terms of Service
+                </Link>{" "}
+                and{" "}
+                <Link href={legalLinks.privacy} target="_blank" rel="noreferrer">
+                  Privacy Policy
+                </Link>
+                .
+              </span>
+            </label>
+
+            <label className="consent-row">
+              <input
+                type="checkbox"
+                checked={caregiverConsent}
+                onChange={(event) => setCaregiverConsent(event.target.checked)}
+              />
+              <span>
+                I confirm I am a caregiver or trusted contact for this senior
+                and I have permission to enroll them in daily SMS check-ins.
+              </span>
+            </label>
+
+            <button
+              type="button"
+              className="button primary subscribe-proceed-button"
+              disabled={loading || !tosConsent || !caregiverConsent}
+              onClick={proceed}
+            >
+              {loading ? "Preparing checkout…" : "Proceed to Checkout"}
+            </button>
+
+            {error ? (
+              <div className="subscribe-submit-error" role="alert">
+                {error}
+              </div>
+            ) : null}
+
+            <p className="subscribe-security-note">
+              Secure payments and subscription management are powered by
+              Stripe.
+            </p>
+          </div>
+        </section>
+
+        <section
+          className="card subscribe-cpa-card"
+          style={{
+            marginTop: 24,
+            textAlign: "left",
+            border: "2px solid var(--accent-muted)",
+            background: "rgba(250, 204, 21, 0.06)",
+          }}
+        >
+          <p style={{ marginTop: 0 }}>
+            <strong>Auto-renewal &amp; billing transparency (Ontario CPA):</strong>
+          </p>
+          <ul className="prompt-list" style={{ marginTop: 10, textAlign: "left" }}>
+            {CPA_AUTO_RENEW_BULLETS.map((bullet, i) => (
+              <li key={i}>
+                <strong>{bullet}</strong>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section
+          className="card subscribe-legal-card"
+          style={{
+            marginTop: 20,
+            textAlign: "left",
+            border: "2px solid rgb(250, 204, 21)",
+            background: "rgba(250, 204, 21, 0.10)",
+          }}
+        >
+          <blockquote className="notice-block" style={{ marginTop: 0, marginBottom: 0 }}>
+            {LEGAL_DISCLAIMER_UNIVERSAL}
+          </blockquote>
+          <p style={{ marginTop: 8, fontSize: 13, color: "var(--muted)" }}>
+            Read the full{" "}
+            <Link href={legalLinks.terms} className="inline-link">
               Terms of Service
             </Link>{" "}
-            ·{" "}
-            <Link href="/privacy" className="inline-link">
+            and{" "}
+            <Link href={legalLinks.privacy} className="inline-link">
               Privacy Policy
             </Link>
-          </div>
-        </div>
-      </label>
-
-      <div className="actions" style={{ marginTop: 20, justifyContent: "center" }}>
-        <button
-          type="button"
-          className="button primary"
-          disabled={!consentChecked || loading}
-          onClick={() => void proceed()}
-        >
-          {loading ? "Preparing Checkout..." : "Proceed to Checkout"}
-        </button>
-        <Link href="/dashboard" className="button secondary">
-          Back to Dashboard
-        </Link>
+            .
+          </p>
+        </section>
       </div>
-
-      {status ? <p style={{ marginTop: 14, textAlign: "center" }}>{status}</p> : null}
-      {failed && !loading ? (
-        <div className="actions" style={{ marginTop: 12, justifyContent: "center" }}>
-          <button type="button" className="button secondary" onClick={() => void proceed()}>
-            Try again
-          </button>
-        </div>
-      ) : null}
-    </div>
+    </main>
   );
 }
+
+export default SubscribeClient;

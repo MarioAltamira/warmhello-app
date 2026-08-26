@@ -1,10 +1,14 @@
 import { cookies } from "next/headers";
 import {
   BillingCurrency,
+  BillingInterval,
   CURRENCY_COOKIE_NAME,
   DEFAULT_CURRENCY,
+  DEFAULT_INTERVAL,
   isBillingCurrency,
+  isBillingInterval,
   PRICING_PLANS,
+  variantFor,
 } from "@/lib/pricing";
 import { prisma } from "@/lib/prisma";
 
@@ -75,12 +79,42 @@ export async function resolveCurrencyForCurrentVisitor(options?: {
   });
 }
 
-export function getStripePriceIdFor(currency: BillingCurrency): string | null {
-  const plan = PRICING_PLANS[currency];
-  const value = process.env[plan.priceIdEnv];
+export function getStripePriceIdFor(
+  currency: BillingCurrency,
+  interval: BillingInterval = DEFAULT_INTERVAL,
+): string | null {
+  const variant = variantFor(currency, interval);
+  const value = process.env[variant.priceIdEnv];
   if (value && value.trim().length > 0) return value.trim();
-  if (currency === "USD" && process.env.STRIPE_PRICE_ID?.trim()) {
+
+  const fallbackEnv =
+    interval === "annual"
+      ? currency === "USD"
+        ? "STRIPE_PRICE_ID_USD_ANNUAL"
+        : "STRIPE_PRICE_ID_CAD_ANNUAL"
+      : currency === "USD"
+        ? "STRIPE_PRICE_ID_USD_MONTHLY"
+        : "STRIPE_PRICE_ID_CAD_MONTHLY";
+  const fallbackValue = process.env[fallbackEnv];
+  if (fallbackValue && fallbackValue.trim().length > 0) return fallbackValue.trim();
+
+  if (process.env.STRIPE_PRICE_ID?.trim()) {
     return process.env.STRIPE_PRICE_ID.trim();
   }
   return null;
+}
+
+export function isValidIntervalCombo(
+  currency: BillingCurrency,
+  interval: BillingInterval,
+): boolean {
+  return Boolean(getStripePriceIdFor(currency, interval));
+}
+
+export function coerceInterval(
+  raw: unknown,
+  fallback: BillingInterval = DEFAULT_INTERVAL,
+): BillingInterval {
+  if (isBillingInterval(raw)) return raw;
+  return fallback;
 }

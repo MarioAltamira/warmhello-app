@@ -3,10 +3,12 @@ import { z } from "zod";
 import { createCheckoutSession } from "@/lib/stripe";
 import { getSubscriberSession } from "@/lib/subscriber-session";
 import { parseJsonBody } from "@/lib/zod-parse";
+import { coerceInterval } from "@/lib/visitor-currency";
 
 const bodySchema = z.object({
   customerEmail: z.string().email(),
   subscriberId: z.string().min(1),
+  billing_interval: z.unknown().optional(),
 });
 
 export async function POST(request: Request) {
@@ -28,7 +30,12 @@ export async function POST(request: Request) {
     );
   }
 
-  const result = await createCheckoutSession({ subscriberId: parsed.data.subscriberId });
+  const billingInterval = coerceInterval(parsed.data.billing_interval);
+
+  const result = await createCheckoutSession({
+    subscriberId: parsed.data.subscriberId,
+    billingInterval,
+  });
 
   if (!result.ok) {
     return NextResponse.json(result, { status: 400 });

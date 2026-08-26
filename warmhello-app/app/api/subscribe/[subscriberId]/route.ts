@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createCheckoutSession } from "@/lib/stripe";
 import { getSubscriberSession } from "@/lib/subscriber-session";
+import { coerceInterval } from "@/lib/visitor-currency";
 
 export async function POST(
   request: Request,
@@ -26,15 +27,26 @@ export async function POST(
     );
   }
 
-  let body: { tos_version?: string; caregiver_ack?: boolean } = {};
+  let body: {
+    tos_version?: string;
+    caregiver_ack?: boolean;
+    billing_interval?: unknown;
+  } = {};
   try {
-    body = (await request.json()) as { tos_version?: string; caregiver_ack?: boolean };
+    body = (await request.json()) as {
+      tos_version?: string;
+      caregiver_ack?: boolean;
+      billing_interval?: unknown;
+    };
   } catch {
     body = {};
   }
 
+  const billingInterval = coerceInterval(body.billing_interval);
+
   const result = await createCheckoutSession({
     subscriberId,
+    billingInterval,
     metadata: {
       tos_version: body.tos_version ?? "v2026-08-21",
       caregiver_ack: body.caregiver_ack ? "1" : "0",
@@ -47,4 +59,3 @@ export async function POST(
 
   return NextResponse.json(result);
 }
-

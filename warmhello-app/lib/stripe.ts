@@ -1,7 +1,14 @@
 import Stripe from "stripe";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
-import { BillingCurrency, isBillingCurrency } from "@/lib/pricing";
+import {
+  BillingCurrency,
+  BillingInterval,
+  DEFAULT_INTERVAL,
+  isBillingCurrency,
+  isBillingInterval,
+  pricingPlanFor,
+} from "@/lib/pricing";
 import { getStripePriceIdFor } from "@/lib/visitor-currency";
 
 type ConsoleWithWarn = Console & {
@@ -43,6 +50,7 @@ export async function resolveCheckoutCurrency(input: {
 
 export async function createCheckoutSession(input: {
   subscriberId: string;
+  billingInterval?: BillingInterval | null;
   metadata?: Record<string, string>;
 }) {
   const stripe = getStripeClient();
@@ -67,24 +75,35 @@ export async function createCheckoutSession(input: {
   const currency: BillingCurrency = isBillingCurrency(subscriber.billingCurrency)
     ? subscriber.billingCurrency
     : "USD";
-  const priceId = getStripePriceIdFor(currency);
+  const rawInterval = input.billingInterval;
+  const interval: BillingInterval = isBillingInterval(rawInterval)
+    ? rawInterval
+    : DEFAULT_INTERVAL;
+  const priceId = getStripePriceIdFor(currency, interval);
   if (!stripe || !priceId) {
     return {
       ok: false as const,
       message:
-        "Stripe is not configured for the selected currency. Please contact sales@warm-hello.com.",
+        "Stripe is not configured for the selected currency and plan. Please contact sales@warm-hello.com.",
     };
   }
 
-  const monthlyAmount = currency === "USD" ? "5.00" : "6.00";
-  const yearlyAmount = currency === "USD" ? "60.00" : "72.00";
-  const dailyAmount = currency === "USD" ? "0.16" : "0.20";
+  const plan = pricingPlanFor(currency);
+  const monthlyAmount = plan.monthly.amount.toFixed(2);
+  const annualTotal = plan.annual.totalPerYear.toFixed(2);
+  const annualEquivMonthly = plan.annual.equivalentMonthly.toFixed(2);
+  const dailyAmount = plan.annual.dailyAmount.toFixed(2);
   const currencyLong =
     currency === "USD" ? "US Dollar (USD)" : "Canadian Dollar (CAD)";
+
+  const planSummaryLabel =
+    interval === "annual"
+      ? `${currencyLong} — Annual at $${annualTotal}/year (about $${annualEquivMonthly}/month, $${dailyAmount}/day)`
+      : `${currencyLong} — Monthly at $${monthlyAmount}/month`;
   const currencyDropdownLabel =
-    currency === "USD"
-      ? `US Dollar (USD) - $${monthlyAmount}/month, $${yearlyAmount}/year`
-      : `Canadian Dollar (CAD) - $${monthlyAmount}/month, $${yearlyAmount}/year`;
+    interval === "annual"
+      ? `${currencyLong} — $${annualEquivMonthly}/month equiv, billed $${annualTotal}/year, $${dailyAmount}/day`
+      : `${currencyLong} — $${monthlyAmount}/month, billed monthly`;
 
   const hasExistingStripeCustomer = Boolean(subscriber.stripeCustomerId);
 
@@ -140,13 +159,15 @@ export async function createCheckoutSession(input: {
         type: "text" as const,
         optional: true as const,
         text: {
-          default_value: `${currencyLong} — $${monthlyAmount}/month, $${yearlyAmount}/year billed annually, about $${dailyAmount}/day`,
+          default_value: planSummaryLabel,
         },
       },
     ],
     subscription_data: {
       metadata: {
         subscriberId: subscriber.id,
+        billingInterval: interval,
+        billingCurrency: currency,
         ...(input.metadata ?? {}),
       },
       payment_settings: {
@@ -156,6 +177,7 @@ export async function createCheckoutSession(input: {
     metadata: {
       subscriberId: subscriber.id,
       billingCurrency: currency,
+      billingInterval: interval,
       ...(input.metadata ?? {}),
     },
     invoice_settings: {

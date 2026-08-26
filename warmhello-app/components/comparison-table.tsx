@@ -44,18 +44,15 @@ function buildRows(currency: BillingCurrency): ComparisonRow[] {
   const plan = pricingPlanFor(currency);
   const other =
     currency === "USD" ? PRICING_PLANS.CAD : PRICING_PLANS.USD;
+
+  const planLabel = (p: typeof plan) =>
+    `${p.currencySymbol}${p.monthly.amount.toFixed(2)}/mo · ${p.currencySymbol}${p.annual.totalPerYear.toFixed(2)}/yr (${p.currencySymbol}${p.annual.dailyAmount.toFixed(2)}/day, save ~20% annual)`;
+
   const costCell: RowCell = {
     variant: "highlight",
-    value: `${plan.currency} ${plan.monthlyLabel.replace(
-      new RegExp(`^${plan.currency}\\s+`, "i"),
-      "",
-    )} · ${plan.dailyLabel.replace(
-      new RegExp(`^${plan.currency}\\s+`, "i"),
-      "",
-    )} · billed ${plan.yearlyLabel.replace(
-      new RegExp(`^${plan.currency}\\s+`, "i"),
-      "",
-    )} (or ${other.currency} $${other.monthlyAmount.toFixed(2)} per month · $${other.dailyAmount.toFixed(2)} per day · billed $${other.yearlyAmount.toFixed(2)} per year for ${other.currency === "USD" ? "United States" : "Canada"} customers)`,
+    value: `${planLabel(plan)} · or ${other.currency} ${planLabel(
+      other,
+    )} for ${other.currency === "USD" ? "United States" : "Canada"} customers. 30-day money-back guarantee.`,
   };
 
   return [
