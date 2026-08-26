@@ -265,7 +265,7 @@ export async function createCheckoutSession(input: {
     }
   }
 
-  return { ok: true as const, url: session.url };
+  return { ok: true as const, url: session.url, checkoutUrl: session.url };
 }
 
 export async function getPriceInfo(priceId?: string) {
