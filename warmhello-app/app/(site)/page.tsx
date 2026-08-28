@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import CurrencyToggle from "@/components/currency-toggle";
+import { HeroAdVideo } from "@/components/hero-ad-video";
 import { LegalLinksPanel } from "@/components/legal-links-panel";
 import { SmartBuyNowButton } from "@/components/smart-buy-now-button";
 import { ComparisonTable } from "@/components/comparison-table";
@@ -286,14 +287,21 @@ export default async function HomePage() {
           </div>
 
           <div className="hero-visual card" style={{ marginTop: -8 }}>
-            <div className="hero-photo">
+            <div
+              className="hero-photo"
+              style={{
+                maxWidth: "80%",
+                marginLeft: "auto",
+                marginRight: "auto",
+              }}
+            >
               <Image
                 src="/hero-warmhello.png"
                 alt="Senior woman living alone receiving a one-tap Warm-Hello daily SMS check-in on a smartphone at home."
                 fill
                 priority
                 className="hero-photo-image"
-                sizes="(max-width: 720px) 100vw, 420px"
+                sizes="(max-width: 720px) 100vw, 360px"
               />
             </div>
             <div className="hero-quote">
@@ -304,35 +312,7 @@ export default async function HomePage() {
               </p>
             </div>
 
-            <div
-              style={{
-                marginTop: 20,
-                borderRadius: 14,
-                overflow: "hidden",
-                border: "1px solid var(--border)",
-                background: "#000000",
-                boxShadow: "0 18px 45px -18px rgba(15,23,42,0.65)",
-              }}
-            >
-              <video
-                src="/WH Ad 1.mp4"
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="auto"
-                poster="/hero-warmhello.png"
-                title="Warm-Hello — 30-second ad: Gentle daily SMS check-ins for seniors living alone."
-                style={{
-                  width: "100%",
-                  height: "auto",
-                  display: "block",
-                  aspectRatio: "16 / 9",
-                  objectFit: "cover",
-                  background: "#000000",
-                }}
-              />
-            </div>
+            <HeroAdVideo />
           </div>
         </section>
 
