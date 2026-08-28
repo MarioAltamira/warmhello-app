@@ -179,7 +179,8 @@ export function SubscribeClient({
                 className="subscribe-plan-compare"
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
+                  gridTemplateColumns: "minmax(240px, 300px) minmax(240px, 300px)",
+                  justifyContent: "center",
                   gap: 10,
                   marginTop: 4,
                 }}

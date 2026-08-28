@@ -62,10 +62,15 @@ export function SmartBuyNowButton({ className, label }: SmartBuyNowButtonProps) 
     return (
       <button
         type="button"
+        disabled
+        aria-busy="true"
         className={className ?? "button buy-now-button"}
-        onClick={() => {
-          window.location.href = protectAuthHref;
+        style={{
+          opacity: 0.72,
+          cursor: "wait",
+          pointerEvents: "none",
         }}
+        title="Loading…"
       >
         {label ?? "Buy Now"}
       </button>
