@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BuyNowButton } from "@/components/buy-now-button";
+import { SmartBuyNowButton } from "@/components/smart-buy-now-button";
 import { DashboardDisclaimerBanner } from "@/components/dashboard-disclaimer-banner";
 import { getDashboardSnapshot } from "@/lib/checkins";
 import { prisma } from "@/lib/prisma";
@@ -144,11 +144,7 @@ export default async function DashboardPage() {
         </div>
         {(snapshot.subscriberId ?? subscriberId) ? (
           <div style={{ marginTop: 16 }}>
-            <BuyNowButton
-              subscriberId={snapshot.subscriberId ?? subscriberId}
-              intent={snapshot.buyNowIntent}
-              timeRemainingLabel={snapshot.timeRemainingLabel}
-            />
+            <SmartBuyNowButton className="button buy-now-button" />
           </div>
         ) : null}
       </section>

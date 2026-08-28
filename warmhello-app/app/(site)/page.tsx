@@ -285,7 +285,7 @@ export default async function HomePage() {
             </div>
           </div>
 
-          <div className="hero-visual card">
+          <div className="hero-visual card" style={{ marginTop: -8 }}>
             <div className="hero-photo">
               <Image
                 src="/hero-warmhello.png"
@@ -302,6 +302,36 @@ export default async function HomePage() {
                 A gentle text arrives, tap confirms everything is okay, and
                 the day begins without stress for anyone.
               </p>
+            </div>
+
+            <div
+              style={{
+                marginTop: 20,
+                borderRadius: 14,
+                overflow: "hidden",
+                border: "1px solid var(--border)",
+                background: "#000000",
+                boxShadow: "0 18px 45px -18px rgba(15,23,42,0.65)",
+              }}
+            >
+              <video
+                src="/WH Ad 1.mp4"
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="auto"
+                poster="/hero-warmhello.png"
+                title="Warm-Hello — 30-second ad: Gentle daily SMS check-ins for seniors living alone."
+                style={{
+                  width: "100%",
+                  height: "auto",
+                  display: "block",
+                  aspectRatio: "16 / 9",
+                  objectFit: "cover",
+                  background: "#000000",
+                }}
+              />
             </div>
           </div>
         </section>

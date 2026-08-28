@@ -101,7 +101,12 @@ export function LegalLinksPanel(_props: Props) {
   return (
     <section className="section">
       <div className="card footer-links-card">
-        <h3 className="footer-brand">Warm-Hello</h3>
+        <h3
+          className="footer-brand"
+          style={{ fontSize: 18, fontWeight: 800, marginTop: 4 }}
+        >
+          Warm-Hello
+        </h3>
         <p className="footer-links-heading">
           <strong>Quick Links</strong>
         </p>
@@ -340,7 +345,14 @@ export function LegalLinksPanel(_props: Props) {
 
         <hr className="footer-divider" />
 
-        <p className="footer-disclaimer">
+        <p
+          className="footer-disclaimer"
+          style={{
+            fontSize: 10,
+            lineHeight: 1.55,
+            opacity: 0.92,
+          }}
+        >
           &copy; 2026 Warm-Hello. All rights reserved. | {LEGAL_DISCLAIMER_UNIVERSAL}{" "}
           <Link href="/terms" className="inline-link">
             Read full Terms

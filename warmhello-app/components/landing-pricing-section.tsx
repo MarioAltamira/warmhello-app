@@ -49,14 +49,38 @@ export function LandingPricingSection({ initialCurrency }: Props) {
       <div className="pricing-dual-toggles" style={{
         display: "flex",
         flexWrap: "wrap",
-        gap: 14,
-        justifyContent: "center",
+        gap: 16,
+        justifyContent: "space-between",
         alignItems: "center",
         marginBottom: 28,
+        padding: "14px 22px",
+        borderRadius: 14,
+        background: "var(--surface-elevated)",
+        border: "1px solid var(--border)",
       }}>
-        <IntervalToggle value={interval} onChange={setInterval} />
-        <div style={{ width: 1, height: 28, background: "var(--border)", margin: "0 6px" }} />
-        <CurrencyToggle initial={currency} compact onChanged={handleCurrencyChange} />
+        <h2
+          style={{
+            margin: 0,
+            fontSize: 28,
+            lineHeight: 1.15,
+            fontWeight: 800,
+            letterSpacing: -0.01,
+            color: "var(--text)",
+          }}
+        >
+          Select your Plan.
+        </h2>
+        <div style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 14,
+          alignItems: "center",
+          justifyContent: "flex-end",
+        }}>
+          <IntervalToggle value={interval} onChange={setInterval} />
+          <div style={{ width: 1, height: 28, background: "var(--border)", margin: "0 6px" }} />
+          <CurrencyToggle initial={currency} compact onChanged={handleCurrencyChange} />
+        </div>
       </div>
 
       <div
