@@ -25,7 +25,7 @@ const gentleCheckinQuestionsPost: BlogPost = {
   title:
     "12 Gentle Daily Check-In Questions for Seniors Living Alone (That Don't Make Them Feel Babied)",
   description:
-      "Caregiver-tested daily check-in questions aging parents will actually enjoy answering. No more 'are you okay?' - try these 12 warm, dignity-first SMS conversation openers instead.",
+      "Family-tested daily check-in questions aging parents will actually enjoy answering. No more 'are you okay?' - try these 12 warm, dignity-first SMS conversation openers instead.",
   keywords: [
     "daily check in questions for seniors",
     "how to check in on elderly parents living alone",
@@ -36,7 +36,7 @@ const gentleCheckinQuestionsPost: BlogPost = {
   publishedAt: "2026-08-08T00:00:00.000Z",
   updatedAt: "2026-08-08T00:00:00.000Z",
   author: "Warm-Hello Editorial",
-  tags: ["Caregiving", "Daily Check-Ins", "Family Communication", "Seniors Living Alone"],
+  tags: ["Family Communication", "Daily Check-Ins", "Seniors Living Alone", "Staying Connected"],
   excerpt:
     "Stop asking 'are you okay?' and leaving your parent feeling patronized. These 12 dignity-first SMS check-in questions get real answers without making seniors feel like children. Includes 3 special frames for the first week after a move to living alone.",
   body: [
@@ -52,11 +52,11 @@ const gentleCheckinQuestionsPost: BlogPost = {
     {
       kind: "p",
       text:
-        "The best daily check-in questions for aging parents living alone do two things at once: they quietly surface safety signals (did they get up? eat? leave the house?) AND give your parent a chance to talk about something they actually find interesting. A good question feels like a conversation opener from a caring child, not a nurse's checklist.",
+        "The best daily check-in questions for aging parents living alone do two things at once: they quietly surface routine signals (did they get up? eat? leave the house?) AND give your parent a chance to talk about something they actually find interesting. A good question feels like a conversation opener from a caring child, not a checklist.",
     },
     {
       kind: "h2",
-      text: "The 12 questions caregivers swear by (rotate 2-3 each day)",
+      text: "The 12 questions families swear by (rotate 2-3 each day)",
     },
     {
       kind: "p",
@@ -87,10 +87,10 @@ const gentleCheckinQuestionsPost: BlogPost = {
     {
       kind: "ul",
       items: [
-        "They assume competence, not risk. Questions like 'what did you have for lunch' are framed as curiosity, not a medication audit.",
-        "Red flags show up as silence or change in pattern, not explicit admission. If Mom always answered #5 with a recipe and suddenly says 'nothing much', you call her — no need to turn every text into an intervention.",
-        "They leave room for pride. Your dad can brag about fixing the gutter or beating the grocery line instead of describing a symptom list.",
-        "They reward effort. A kid sibling can reply to 'show us one thing from where you're sitting' with a photo of the grandkids, making it multi-generational, not just a caregiver chore.",
+        "They assume competence, not risk. Questions like 'what did you have for lunch' are framed as curiosity, not an audit.",
+        "Pattern changes show up as silence or a shift in response, not explicit admission. If Mom always answered #5 with a recipe and suddenly says 'nothing much', you call her — no need to turn every text into a follow-up issue.",
+        "They leave room for pride. Your dad can brag about fixing the gutter or beating the grocery line instead of describing a medical detail.",
+        "They reward effort. A kid sibling can reply to 'show us one thing from where you're sitting' with a photo of the grandkids, making it multi-generational, not just a family task.",
       ],
     },
     {
@@ -118,7 +118,7 @@ const gentleCheckinQuestionsPost: BlogPost = {
     },
     {
       kind: "h2",
-      text: "When a short reply IS a red flag (and when it isn't)",
+      text: "When a short reply IS a pattern change (and when it isn't)",
     },
     {
       kind: "p",
@@ -132,19 +132,19 @@ const gentleCheckinQuestionsPost: BlogPost = {
     {
       kind: "p",
       text:
-        "At 7:30 or 8:00 a.m. local time, send a 2-question check-in SMS. By 9:30, most replies are in. Reply to the CONTENT of the answer, not just 'glad you're okay'. If dad mentions he's going to the hardware store, text back at noon: 'What did you end up making with that 2x4?' - that's how you build a habit of real communication on top of the safety layer. Safety and warmth, not one or the other. That's the whole point.",
+        "At 7:30 or 8:00 a.m. local time, send a 2-question check-in SMS. By 9:30, most replies are in. Reply to the CONTENT of the answer, not just 'glad you're okay'. If dad mentions he's going to the hardware store, text back at noon: 'What did you end up making with that 2x4?' - that's how you build a habit of real communication on top of the check-in routine. Connection and warmth, not one or the other. That's the whole point.",
     },
   ],
   faq: [
     {
       q: "What time of day should I send a daily check-in text to my elderly parent?",
       a:
-        "Between 7:30 and 9:30 a.m. local time, after breakfast but before doctor appointments or senior center visits. Avoid evenings - that's when fatigue and loneliness can make even neutral questions feel like monitoring.",
+        "Between 7:30 and 9:30 a.m. local time, after breakfast but before appointments or senior center visits. Avoid evenings - that's when fatigue and loneliness can make even neutral questions feel like checking up.",
     },
     {
       q: "My parent never texts back. Should I switch to phone calls only?",
       a:
-        "No - not yet. Some non-texter parents actually prefer knowing the check-in is there even if they don't reply; the unanswered counter gives them a safety net if they do fall. After 2 silent days, call. Warm-Hello automates that nudge so you never have to remember.",
+        "No - not yet. Some non-texter parents actually prefer knowing the check-in is there even if they don't reply; the unanswered counter gives a clear pattern if they don't reply for multiple days. After 2 silent days, call. Warm-Hello automates that nudge so you never have to remember.",
     },
     {
       q: "How long should a daily check-in text be?",
@@ -154,7 +154,7 @@ const gentleCheckinQuestionsPost: BlogPost = {
     {
       q: "What do I do if my parent feels the daily texts are 'policing' them?",
       a:
-        "Ask THEM what they'd want instead. Say: 'These are for my peace of mind, but I don't want them to annoy you. What would feel like caring instead of checking?' Often swapping 'did you eat' for a daily photo of the grandkids changes the tone instantly.",
+        "Ask THEM what they'd want instead. Say: 'These help me stay in the loop, but I don't want them to annoy you. What would feel like caring instead of checking?' Often swapping 'did you eat' for a daily photo of the grandkids changes the tone instantly.",
     },
   ],
 };

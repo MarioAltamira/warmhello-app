@@ -1,18 +1,22 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LEGAL_ENTITY_PLACEHOLDERS } from "@/lib/legal-placeholders";
+import {
+  PrivacyChoicesInlineButton,
+  PrivacyChoicesInlineLink,
+} from "@/components/privacy-choices-inline";
 
 export const metadata: Metadata = {
   title: "Privacy Policy · Warm-Hello",
   description:
-    "Privacy Policy for Warm-Hello. Compliant with PIPEDA, Quebec Law 25, Ontario PHIPA, CASL, US CCPA/CPRA, and mandatory carrier 10DLC SMS disclosure language.",
+    "Privacy Policy for Warm-Hello. This Privacy Policy explains how 10894796 Canada Inc., doing business as Warm-Hello, collects, uses, discloses, retains, and protects personal information when you use the Warm-Hello website, applications, products, and services.",
   robots: "noindex,nofollow",
 };
 
 const E = LEGAL_ENTITY_PLACEHOLDERS;
 
 export default function PrivacyPage() {
-  const lastUpdated = "August 21, 2026";
+  const lastUpdated = "August 29, 2026";
 
   return (
     <main className="shell">
@@ -25,784 +29,1496 @@ export default function PrivacyPage() {
         <p className="section-meta">
           <strong>Last Updated and Effective Date:</strong> {lastUpdated}
         </p>
+        <p>
+          This Privacy Policy explains how <strong>10894796 Canada Inc.</strong>,
+          doing business as Warm-Hello (&ldquo;Warm-Hello,&rdquo; &ldquo;we,&rdquo;
+          &ldquo;us,&rdquo; or &ldquo;our&rdquo;), collects, uses, discloses,
+          retains, and protects personal information when you use the Warm-Hello
+          website, applications, products, and services (collectively, the
+          &ldquo;Service&rdquo;).
+        </p>
+        <p>
+          10894796 Canada Inc. is a corporation incorporated under the federal
+          laws of Canada.
+        </p>
+        <address style={{ fontStyle: "normal", margin: "8px 0 4px" }}>
+          <strong>Mailing Address:</strong>
+          <br />
+          53 Lancewood Cres
+          <br />
+          Brampton, Ontario, Canada
+          <br />
+          L6S 5Y5
+        </address>
+        <p>
+          <strong>Privacy Contact:</strong>{" "}
+          <a
+            href={`mailto:${E.SUPPORT_EMAIL}`}
+            className="inline-link"
+          >
+            {E.SUPPORT_EMAIL}
+          </a>
+        </p>
+        <p>
+          This Privacy Policy applies to users in Canada, the United States,
+          and other jurisdictions where Warm-Hello makes the Service available.
+        </p>
+        <p>
+          By using the Service, you acknowledge that you have read this Privacy
+          Policy. Where applicable law requires consent to a particular
+          processing activity, Warm-Hello will obtain that consent through an
+          appropriate mechanism.
+        </p>
 
-        <blockquote className="notice-block">
-          <strong>Scope:</strong> This Privacy Policy describes how{" "}
-          <strong>{E.LEGAL_ENTITY_NAME}</strong> (&quot;Warm-Hello,&quot;
-          &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) collects, uses,
-          stores, discloses, retains, and otherwise processes personal
-          information in connection with the Warm-Hello automated SMS check-in
-          service (the &quot;Service&quot;). We respect your privacy and are
-          committed to protecting personal information in accordance with the
-          federal <em>Personal Information Protection and Electronic Documents
-          Act</em> (PIPEDA), provincial privacy laws including Quebec&apos;s
-          <em> Act to modernize legislative provisions as regards the protection
-          of personal information</em> (Law 25), British Columbia&apos;s{" "}
-          <em>Personal Information Protection Act</em> (BC PIPA), Alberta&apos;s{" "}
-          <em>Personal Information Protection Act</em> (AB PIPA), Ontario&apos;s{" "}
-          <em>Personal Health Information Protection Act, 2004</em> (PHIPA), and,
-          for US residents, the California <em>Consumer Privacy Act</em> (CCPA
-          / CPRA) and other applicable US state privacy laws.
-        </blockquote>
-
-        <section id="controller">
-          <h2>1. Data Controller &amp; Contact Information</h2>
+        <section id="important-info">
+          <h2>1. Important Information About Warm-Hello</h2>
           <p>
-            Warm-Hello is the data controller and, where applicable under
-            PIPEDA, the &quot;organization&quot; responsible for the
-            collection, use, disclosure, and retention of personal information
-            collected through the Service. Our contact information is:
+            Warm-Hello is a communication and check-in service designed to help
+            individuals maintain routine check-ins with designated personal
+            contacts.
           </p>
-          <address>
-            <strong>{E.LEGAL_ENTITY_NAME}</strong>
-            <br />
-            Attn: Chief Privacy Officer / Compliance
-            <br />
-            {E.CA_MAILING_ADDRESS}
-            <br />
-            Email (privacy &amp; Individual Access Requests — IARs):{" "}
-            <a href={`mailto:${E.SUPPORT_EMAIL}`} className="inline-link">
-              {E.SUPPORT_EMAIL}
-            </a>
-          </address>
           <p>
-            PIPEDA Principle 4.1.1: Warm-Hello designates the role of Chief
-            Privacy Officer (CPO) with responsibility for compliance. Contact
-            the CPO at the address above for any privacy question, complaint,
-            or request.
+            Warm-Hello is <strong>not</strong> a medical alert system, medical
+            monitoring service, personal emergency response system (PERS),
+            healthcare service, or emergency-response service.
+          </p>
+          <p>
+            Warm-Hello does not determine whether a person is safe, healthy,
+            injured, ill, incapacitated, or experiencing an emergency.
+          </p>
+          <p>
+            A missed check-in does not mean that an emergency has occurred.
+          </p>
+          <p>
+            Warm-Hello does not contact 911, police, fire departments,
+            ambulance services, hospitals, physicians, or other
+            emergency-response organizations on behalf of users.
+          </p>
+          <p>
+            In an actual or suspected emergency, users should immediately
+            contact 911 or the applicable local emergency service.
           </p>
         </section>
 
         <section id="collected">
-          <h2>2. Categories of Personal Information Collected</h2>
+          <h2>2. Information We Collect</h2>
           <p>
-            Warm-Hello only collects personal information that is reasonably
-            necessary for the purpose of providing safety check-in services,
-            billing, and account administration. We do not collect more
-            personal information than is necessary. At the time of this
-            update, the categories of personal information collected are:
+            The information we collect depends on how you interact with
+            Warm-Hello.
+          </p>
+
+          <h3>2.1 Account Information</h3>
+          <p>When you create an account, we may collect:</p>
+          <ul className="longform-list">
+            <li>Name;</li>
+            <li>Email address;</li>
+            <li>Password or authentication information;</li>
+            <li>Telephone number;</li>
+            <li>Account preferences;</li>
+            <li>Subscription information;</li>
+            <li>Billing status;</li>
+            <li>Country or province/state;</li>
+            <li>Time zone;</li>
+            <li>Account creation date; and</li>
+            <li>
+              Other information necessary to establish and administer your
+              account.
+            </li>
+          </ul>
+
+          <h3>2.2 Senior Information</h3>
+          <p>
+            If you use Warm-Hello to enroll another person as a Senior, we may
+            collect information such as:
           </p>
           <ul className="longform-list">
+            <li>Senior&rsquo;s name;</li>
+            <li>Senior&rsquo;s telephone number;</li>
+            <li>Preferred check-in schedule;</li>
+            <li>Check-in preferences;</li>
+            <li>Time zone;</li>
+            <li>Notification preferences;</li>
+            <li>Check-in response status; and</li>
+            <li>Other information necessary to provide the Service.</li>
+          </ul>
+          <p>
+            You are responsible for obtaining any consent or authorization
+            required before providing another person&rsquo;s personal
+            information to Warm-Hello.
+          </p>
+
+          <h3>2.3 Emergency Contact Information</h3>
+          <p>
+            We may collect information about designated personal contacts,
+            including:
+          </p>
+          <ul className="longform-list">
+            <li>Name;</li>
+            <li>Telephone number;</li>
+            <li>Email address;</li>
+            <li>Relationship to the Senior, if provided;</li>
+            <li>Notification preferences; and</li>
+            <li>Notification or communication status.</li>
+          </ul>
+          <p>
+            You must only provide emergency-contact information for individuals
+            who have authorized you to provide their information to Warm-Hello
+            and who have agreed to receive applicable notifications.
+          </p>
+          <p>
+            Warm-Hello does not verify whether an emergency contact is
+            qualified, available, or capable of responding to a notification.
+          </p>
+
+          <h3>2.4 Check-In Information</h3>
+          <p>
+            Warm-Hello may collect information necessary to operate the
+            check-in functionality, including:
+          </p>
+          <ul className="longform-list">
+            <li>Date and time a check-in was scheduled;</li>
+            <li>Date and time a check-in message was sent;</li>
+            <li>Whether a response was received;</li>
+            <li>Date and time a response was received;</li>
+            <li>Whether a scheduled check-in was missed;</li>
+            <li>Notification status;</li>
             <li>
-              <strong>Account Owner / Account Manager Data (Adult Child /
-              Caregiver):</strong> Full name, email address, billing address
-              (pass-through to Stripe), and authenticated session data.
-              Payment card data is never stored by Warm-Hello; it is processed
-              directly by our PCI-DSS compliant payment processor, Stripe.
+              Delivery status where provided by telecommunications or
+              messaging providers; and
             </li>
+            <li>Related technical logs.</li>
+          </ul>
+          <p>
+            A check-in response or missed check-in is an operational event. It
+            is not a medical, health, safety, or emergency determination.
+          </p>
+
+          <h3>2.5 Communications</h3>
+          <p>
+            We may collect and retain information concerning communications
+            with Warm-Hello, including:
+          </p>
+          <ul className="longform-list">
+            <li>Customer-support requests;</li>
+            <li>Emails;</li>
+            <li>Feedback;</li>
+            <li>Communications with our support personnel;</li>
+            <li>Requests to cancel an account;</li>
+            <li>Billing inquiries; and</li>
+            <li>Other communications you voluntarily provide.</li>
+          </ul>
+          <p>
+            Warm-Hello&rsquo;s operational SMS functionality is intended to
+            facilitate check-ins and notifications.
+          </p>
+
+          <h3>2.6 Payment Information</h3>
+          <p>
+            Payments may be processed by Stripe or another third-party payment
+            processor.
+          </p>
+          <p>
+            Warm-Hello does not intentionally store complete payment-card
+            numbers.
+          </p>
+          <p>We may receive and retain information such as:</p>
+          <ul className="longform-list">
+            <li>Transaction amount;</li>
+            <li>Currency;</li>
+            <li>Subscription type;</li>
+            <li>Billing status;</li>
+            <li>Transaction date;</li>
+            <li>Payment status;</li>
             <li>
-              <strong>Senior Contact Data:</strong> Full name, mobile telephone
-              number in E.164 format, time zone, preferred daily check-in
-              time, and grace window preference.
+              Last four digits of a payment card, where provided by the
+              payment processor;
             </li>
+            <li>Card brand;</li>
+            <li>Billing country; and</li>
             <li>
-              <strong>Emergency Contact Data:</strong> Full name, relationship
-              to the Senior, mobile telephone number, and email address.
-            </li>
-            <li>
-              <strong>Check-in Log Data (Operational History):</strong> Date
-              and time of automated SMS check-in prompts sent to the Senior,
-              Senior reply timestamp (if any), check-in status (confirmed /
-              missed / escalated), and escalation notification dispatch log
-              (timestamp + target emergency contact).
-            </li>
-            <li>
-              <strong>Subscription, Billing, and Tax Data:</strong> Stripe
-              customer ID, Stripe subscription ID, subscription status,
-              current period end date, selected billing currency, invoice
-              numbers, and tax amounts collected. Retained in accordance with
-              the Income Tax Act (Canada) and equivalent US IRS record-keeping
-              requirements.
-            </li>
-            <li>
-              <strong>SMS Consent &amp; Compliance Records (PIPEDA / CASL /
-              TCPA):</strong> Date and time of caregiver-authorization
-              clickwrap consent, checkbox version string, Terms of Service
-              acceptance timestamp, Terms version, dashboard legal disclaimer
-              dismissal timestamp, and STOP / HELP / START inbound SMS reply
-              logs with timestamps and carrier message IDs.
-            </li>
-            <li>
-              <strong>Technical Data (Automatically Collected):</strong> Web
-              server access logs (IP address, browser user agent string,
-              referring URL, timestamps) for up to 30 days for fraud detection,
-              abuse prevention, and network security purposes. IP addresses
-              are not linked to the subscriber account profile after the 30
-              day window expires unless required by valid legal process or
-              fraud investigation.
+              Other transaction information supplied by the payment processor.
             </li>
           </ul>
           <p>
-            <strong>No Health Information Sought:</strong> Warm-Hello does
-            NOT intentionally solicit, collect, or store personal health
-            information (PHI). We are NOT a health information custodian under
-            PHIPA or equivalent provincial health privacy law, and we are NOT
-            a covered entity or business associate under the U.S. Health
-            Insurance Portability and Accountability Act of 1996 (HIPAA). If
-            you or any other person inadvertently provides us with PHI or
-            sensitive medical information (diagnoses, medications, physician
-            notes, etc.), please email {E.SUPPORT_EMAIL} with the subject
-            &quot;Unintended PHI Deletion Request&quot; and we will purge the
-            information from our systems within the shortest time practicable
-            and document the deletion.
+            Payment processors may separately collect and process payment
+            information under their own privacy policies and terms.
           </p>
-        </section>
 
-        <section id="third-party-senior">
-          <h2>
-            3. Third-Party Senior Data — Caregiver Authorization &amp;
-            Warranties (PIPEDA Principle 4.3; Quebec Law 25 S. 12)
-          </h2>
+          <h3>2.7 Device and Technical Information</h3>
           <p>
-            Because the Service is typically set up by an adult child or
-            caregiver (Account Manager) on behalf of a Senior, the Account
-            Manager frequently provides us with personal information of a
-            third party (the Senior) and personal information about the
-            Senior&apos;s emergency contacts. In accordance with PIPEDA
-            Principle 4.3, Quebec Law 25 S. 12–14, and applicable law:
+            When you access the Service, we may automatically collect technical
+            information, including:
           </p>
-          <ol className="longform-list">
+          <ul className="longform-list">
+            <li>IP address;</li>
+            <li>Browser type;</li>
+            <li>Operating system;</li>
+            <li>Device type;</li>
+            <li>Device identifiers;</li>
+            <li>Language settings;</li>
+            <li>Time zone;</li>
+            <li>Approximate geographic location derived from IP address;</li>
+            <li>Pages or screens viewed;</li>
+            <li>Referring website;</li>
+            <li>Dates and times of access;</li>
+            <li>Session information;</li>
+            <li>Error logs;</li>
+            <li>Diagnostic information;</li>
+            <li>Security information; and</li>
             <li>
-              The Account Manager represents and warrants that, at the time
-              they provide any third-party personal information, they have
-              obtained the <strong>explicit, informed, and voluntary consent</strong>{" "}
-              of each individual whose personal information is being submitted
-              — specifically, the Senior and each named Emergency Contact — to
-              the collection, use, disclosure, and cross-border processing of
-              their information for the purposes described in this Privacy
-              Policy;
+              Other technical information necessary to operate, secure, and
+              improve the Service.
             </li>
-            <li>
-              OR, the Account Manager represents and warrants that they are
-              the legally authorized representative (guardian, substitute
-              decision-maker, holder of power of attorney for personal care, or
-              equivalent) of each such individual, and that they are legally
-              authorized to consent on that individual&apos;s behalf;
-            </li>
-            <li>
-              The Account Manager acknowledges that the provision of false or
-              unauthorized third-party personal information is a material
-              breach of the Terms of Service and may expose Warm-Hello to
-              regulatory inquiries by the Office of the Privacy Commissioner
-              of Canada (OPC), the Commission d&apos;accès à l&apos;information
-              (CAI) du Québec, or equivalent regulators.
-            </li>
-          </ol>
-        </section>
+          </ul>
 
-        <section id="purposes">
-          <h2>4. Purposes for Which We Collect, Use, and Disclose Information</h2>
+          <h3>2.8 Cookies and Similar Technologies</h3>
           <p>
-            Personal information is collected, used, and disclosed only for
-            purposes that a reasonable person would consider appropriate in the
-            circumstances (PIPEDA Principle 4.4). Specifically:
+            We may use cookies, pixels, tags, SDKs, local storage, APIs, and
+            similar technologies.
           </p>
-          <ol className="longform-list">
-            <li>
-              <strong>To provide the core Service:</strong> Send the daily
-              automated SMS check-in prompt to the Senior; detect missed
-              check-ins; notify designated emergency contacts; surface
-              check-in history in the Warm-Hello Dashboard; and power
-              dashboards, reports, and timeline views.
-            </li>
-            <li>
-              <strong>Billing, subscription management, and accounting:</strong>{" "}
-              Collect payment via Stripe; issue receipts and tax invoices;
-              calculate and remit GST/HST, PST/QST, and US state sales taxes as
-              required; comply with the Income Tax Act (Canada) and IRS 1099-K
-              record-keeping requirements.
-            </li>
-            <li>
-              <strong>CASL/TCPA/DNCL SMS compliance:</strong> Produce consent
-              records on demand during regulatory audits; process STOP, HELP,
-              and START keyword replies; and demonstrate opt-in lineage to
-              carriers (Telnyx / Twilio / US 10DLC / Canadian CLC auditors).
-            </li>
-            <li>
-              <strong>Customer support and account administration:</strong>{" "}
-              Respond to billing, technical support, feature requests, and
-              complaints.
-            </li>
-            <li>
-              <strong>Fraud prevention, safety, and integrity:</strong> Detect
-              and prevent abusive signups, unauthorized access, credential
-              stuffing attacks, impersonation of Seniors or emergency
-              contacts, and other threats to the Service.
-            </li>
-            <li>
-              <strong>Legal and regulatory compliance:</strong> Comply with
-              valid subpoenas, court orders, warrants, regulatory production
-              orders, and other lawful demands from recognized governmental or
-              regulatory authorities in Canada and/or the United States (see
-              Section 5).
-            </li>
-            <li>
-              <strong>Business transaction:</strong> In the event of a merger,
-              acquisition, divestiture, consolidation, reorganization, or sale
-              of all or substantially all of the assets of Warm-Hello (in
-              whole or in part), personal information may be transferred as a
-              business asset, subject to appropriate confidentiality
-              protections and notice to affected individuals where required by
-              law.
-            </li>
-          </ol>
+          <p>These technologies may be used for:</p>
+          <ul className="longform-list">
+            <li>Authentication;</li>
+            <li>Security;</li>
+            <li>Fraud prevention;</li>
+            <li>Account functionality;</li>
+            <li>Preferences;</li>
+            <li>Analytics;</li>
+            <li>Performance monitoring;</li>
+            <li>Conversion measurement;</li>
+            <li>Advertising;</li>
+            <li>Retargeting;</li>
+            <li>Campaign attribution; and</li>
+            <li>Website and Service improvement.</li>
+          </ul>
+          <p>
+            Where applicable law requires consent before non-essential
+            technologies are used, Warm-Hello will obtain the required consent.
+          </p>
         </section>
 
-        <section id="cross-border">
-          <h2>
-            5. Cross-Border Transfer &amp; Disclosure of Personal Information
-            (PIPEDA Sch. 1 Principle 4.1.3; Quebec Law 25 Ch. VI)
-          </h2>
-          {E.DATA_RESIDENCY_DISCLOSURE_REQUIRED ? (
-            <>
-              <p>
-                <strong>NOTICE REGARDING CROSS-BORDER DATA PROCESSING OUTSIDE OF
-                CANADA.</strong> Warm-Hello operates the Service using a
-                combination of our own systems and services provided by
-                established third-party technology vendors. Personal
-                information that we collect may be stored and/or processed on
-                servers located outside of the user&apos;s home jurisdiction,
-                including but not limited to the following countries:
-              </p>
-              <ul className="longform-list">
-                {E.DATA_PROCESSING_COUNTRIES.map((country) => (
-                  <li key={country}>{country}</li>
-                ))}
-              </ul>
-              <p>
-                <strong>Foreign Law Enforcement Access Notice (USA PATRIOT
-                Act):</strong> Personal information stored or processed in the
-                United States may be accessible to United States law
-                enforcement, intelligence, and national security authorities
-                pursuant to the laws of the United States, including, without
-                limitation, the <em>Uniting and Strengthening America by
-                Providing Appropriate Tools Required to Intercept and Obstruct
-                Terrorism Act of 2001</em> (USA PATRIOT Act).
-              </p>
-              <p>
-                Where personal information is transferred to a third-party
-                service provider outside of Canada or the European Economic
-                Area, Warm-Hello takes reasonable contractual and operational
-                steps to ensure that the information receives a comparable
-                level of protection to that required by PIPEDA, Quebec Law 25,
-                and applicable provincial law. These steps include
-                industry-standard encryption in transit and at rest, access
-                controls, limited processing purposes, written data processing
-                agreements imposing equivalent PIPEDA/Schumer II-level
-                obligations on the processor, and documented information
-                security policies.
-              </p>
-              <p>
-                You may request a list of Warm-Hello&apos;s current
-                cross-border sub-processors and copies of the applicable data
-                processing agreements by writing to the Chief Privacy Officer
-                at the address in Section 1.
-              </p>
-            </>
-          ) : (
-            <p>
-              All personal information collected by Warm-Hello is stored and
-              processed within Canada by Canadian-based service providers that
-              are subject to PIPEDA and equivalent provincial privacy
-              legislation. Personal information is not intentionally
-              transferred or processed outside of Canada except in the case of
-              individual remote access by a user or the rare valid legal
-              process scenario described in Section 4(f).
+        <section id="how-used">
+          <h2>3. How We Use Personal Information</h2>
+          <p>
+            We may use personal information for the following purposes:
+          </p>
+
+          <h3>3.1 Providing the Service</h3>
+          <p>We use personal information to:</p>
+          <ul className="longform-list">
+            <li>Create and manage accounts;</li>
+            <li>Enroll Seniors;</li>
+            <li>Schedule check-ins;</li>
+            <li>Send check-in prompts;</li>
+            <li>Receive check-in responses;</li>
+            <li>Identify missed check-ins;</li>
+            <li>Send missed-check-in notifications;</li>
+            <li>Send account communications;</li>
+            <li>Provide customer support;</li>
+            <li>Process subscriptions;</li>
+            <li>Process payments;</li>
+            <li>Maintain account security; and</li>
+            <li>
+              Otherwise provide functionality requested by the customer.
+            </li>
+          </ul>
+
+          <h3>3.2 Security and Fraud Prevention</h3>
+          <p>We may use information to:</p>
+          <ul className="longform-list">
+            <li>Detect and prevent fraud;</li>
+            <li>Detect unauthorized access;</li>
+            <li>Protect accounts;</li>
+            <li>Investigate security incidents;</li>
+            <li>Prevent abuse;</li>
+            <li>Maintain system integrity; and</li>
+            <li>Protect Warm-Hello, users, and third parties.</li>
+          </ul>
+
+          <h3>3.3 Analytics and Improvement</h3>
+          <p>We may use information to:</p>
+          <ul className="longform-list">
+            <li>Understand how users interact with the Service;</li>
+            <li>Identify technical problems;</li>
+            <li>Improve features;</li>
+            <li>Improve usability;</li>
+            <li>Measure performance;</li>
+            <li>Conduct internal analysis; and</li>
+            <li>Develop and improve the Service.</li>
+          </ul>
+
+          <h3>3.4 Communications</h3>
+          <p>
+            We may use contact information to provide:
+          </p>
+          <ul className="longform-list">
+            <li>Transactional communications;</li>
+            <li>Operational communications;</li>
+            <li>Security notifications;</li>
+            <li>Account notices;</li>
+            <li>Billing notices;</li>
+            <li>Service announcements;</li>
+            <li>Customer support; and</li>
+            <li>Marketing communications where legally permitted.</li>
+          </ul>
+
+          <h3>3.5 Advertising and Marketing</h3>
+          <p>
+            Warm-Hello may use advertising and measurement services to:
+          </p>
+          <ul className="longform-list">
+            <li>Advertise Warm-Hello;</li>
+            <li>Measure advertising effectiveness;</li>
+            <li>Measure website conversions;</li>
+            <li>Understand campaign performance;</li>
+            <li>Attribute registrations or purchases to advertising campaigns;</li>
+            <li>Limit repetitive advertisements;</li>
+            <li>Detect fraudulent advertising activity;</li>
+            <li>Build or use permitted audience segments; and</li>
+            <li>Improve advertising campaigns.</li>
+          </ul>
+          <p>
+            Warm-Hello may advertise through services operated by third
+            parties, including Google and Meta.
+          </p>
+          <p>
+            Warm-Hello will operate advertising technologies in accordance
+            with applicable privacy laws and applicable consent or opt-out
+            requirements.
+          </p>
+        </section>
+
+        <section id="advertising-analytics">
+          <h2>4. Advertising, Google, Meta, Analytics, and Retargeting</h2>
+          <p>
+            Warm-Hello may use third-party advertising and analytics
+            technologies on its website and other digital properties.
+          </p>
+          <p>
+            These technologies may include cookies, pixels, tags, APIs, SDKs,
+            conversion tracking, and similar technologies.
+          </p>
+          <p>
+            Depending on the technology and applicable law, information may
+            include:
+          </p>
+          <ul className="longform-list">
+            <li>IP address;</li>
+            <li>Browser information;</li>
+            <li>Device information;</li>
+            <li>Cookie identifiers;</li>
+            <li>Advertising identifiers;</li>
+            <li>Pages visited;</li>
+            <li>Website interactions;</li>
+            <li>Advertisement interactions;</li>
+            <li>Conversion events;</li>
+            <li>Approximate location;</li>
+            <li>Referring URL;</li>
+            <li>Date and time of activity; and</li>
+            <li>Other technical or usage information.</li>
+          </ul>
+          <p>
+            Warm-Hello may use this information to measure advertising
+            campaigns, understand website traffic, and deliver or measure
+            advertisements.
+          </p>
+          <p>
+            Warm-Hello may use Google Ads, Google Analytics, Meta advertising
+            technologies, and comparable advertising or analytics services.
+          </p>
+          <p>
+            Third-party advertising providers may process information according
+            to their own privacy policies.
+          </p>
+          <p>
+            Warm-Hello does not intentionally provide advertising platforms
+            with:
+          </p>
+          <ul className="longform-list">
+            <li>Senior check-in message contents;</li>
+            <li>
+              SMS opt-in or consent records for independent advertising
+              purposes;
+            </li>
+            <li>
+              Emergency-contact information for independent advertising
+              purposes;
+            </li>
+            <li>Medical information; or</li>
+            <li>Detailed health information</li>
+          </ul>
+          <p>
+            for those platforms&rsquo; independent advertising or
+            behavioral-targeting purposes.
+          </p>
+          <p>
+            Warm-Hello will not intentionally use the contents of private
+            Senior check-in communications to create advertising audiences.
+          </p>
+          <p>
+            Where applicable law requires consent before advertising or
+            analytics technologies are activated, Warm-Hello will obtain the
+            required consent.
+          </p>
+          <p>
+            Where applicable law provides a right to opt out of targeted
+            advertising, sale, sharing, or similar processing, Warm-Hello will
+            provide the applicable mechanism.
+          </p>
+        </section>
+
+        <section id="cookies-choices">
+          <h2>5. Cookies and Privacy Choices</h2>
+          <p>
+            Warm-Hello may use the following categories of technologies.
+          </p>
+
+          <h3>5.1 Strictly Necessary Technologies</h3>
+          <p>These technologies may be necessary to:</p>
+          <ul className="longform-list">
+            <li>Authenticate users;</li>
+            <li>Maintain account sessions;</li>
+            <li>Protect accounts;</li>
+            <li>Prevent fraud;</li>
+            <li>Maintain security;</li>
+            <li>Process transactions;</li>
+            <li>Store required preferences; and</li>
+            <li>Provide core Service functionality.</li>
+          </ul>
+          <p>
+            Where permitted by law, strictly necessary technologies may
+            operate without consent because they are necessary to provide the
+            Service requested by the user.
+          </p>
+
+          <h3>5.2 Analytics Technologies</h3>
+          <p>Analytics technologies help us understand:</p>
+          <ul className="longform-list">
+            <li>Website traffic;</li>
+            <li>Product usage;</li>
+            <li>Technical performance;</li>
+            <li>Conversion rates;</li>
+            <li>User journeys; and</li>
+            <li>Advertising effectiveness.</li>
+          </ul>
+          <p>
+            Where legally required, non-essential analytics technologies will
+            only be activated after the required consent is obtained.
+          </p>
+
+          <h3>5.3 Advertising Technologies</h3>
+          <p>Advertising technologies may be used for:</p>
+          <ul className="longform-list">
+            <li>Advertising;</li>
+            <li>Retargeting;</li>
+            <li>Conversion measurement;</li>
+            <li>Campaign attribution;</li>
+            <li>Audience measurement;</li>
+            <li>Fraud prevention; and</li>
+            <li>Advertising optimization.</li>
+          </ul>
+          <p>
+            Where required by applicable law, users will be given the ability
+            to consent to or decline applicable technologies.
+          </p>
+
+          <h3>5.4 Your Privacy Choices</h3>
+          <p>Depending on your jurisdiction, Warm-Hello may provide:</p>
+          <ul className="longform-list">
+            <li>A cookie consent banner;</li>
+            <li>A privacy preference center;</li>
+            <li>
+              A &ldquo;Your Privacy Choices&rdquo; link (click{" "}
+              <strong>
+                <PrivacyChoicesInlineLink />
+              </strong>{" "}
+              to open it now);
+            </li>
+            <li>An opt-out mechanism for targeted advertising;</li>
+            <li>
+              An opt-out mechanism for the sale or sharing of personal
+              information where applicable; or
+            </li>
+            <li>Other legally required privacy controls.</li>
+          </ul>
+          <div
+            style={{
+              margin: "18px 0",
+              padding: "14px 18px",
+              border: "1px solid rgba(255,214,102,0.25)",
+              background: "rgba(255,214,102,0.06)",
+              borderRadius: 12,
+            }}
+          >
+            <p style={{ margin: 0 }}>
+              <strong>Open the Warm-Hello preference center:</strong>{" "}
             </p>
-          )}
-        </section>
-
-        <section id="sms-10dlc-casl">
-          <h2>6. SMS &amp; Mobile Data — Mandatory Carrier &amp; Regulatory Disclosures</h2>
-          <h3>6.1 US 10DLC MANDATORY MOBILE DATA STATEMENT (NON-NEGOTIABLE)</h3>
+            <div style={{ marginTop: 10 }}>
+              <PrivacyChoicesInlineButton />
+            </div>
+            <p className="section-meta" style={{ margin: "10px 0 0" }}>
+              Covers: Strictly Necessary (always on), Analytics, Targeted
+              Advertising, and Sale / Sharing of Personal Information. Your
+              choices are stored locally and persist until you change or reset
+              them.
+            </p>
+          </div>
           <p>
-            The following paragraph is required verbatim by US mobile carrier
-            10DLC compliance programs and MUST be reproduced exactly in any
-            privacy policy posted by a commercial SMS sender:
+            You may also configure your browser to restrict certain cookies.
           </p>
-          <blockquote className="notice-block">
-            No mobile information will be shared with third parties/affiliates
-            for marketing/promotional purposes. All the above categories
-            exclude text messaging originator opt-in data and consent; this
-            information will not be shared with any third parties.
-          </blockquote>
           <p>
-            Warm-Hello confirms the foregoing: originator opt-in data (the
-            record that a mobile subscriber consented to receive SMS from
-            Warm-Hello&apos;s sender IDs) and opt-in consent artifacts are
-            never sold, rented, licensed, or shared with any unaffiliated
-            third party, except to our SMS delivery provider (currently
-            Telnyx LLC) for the sole purpose of delivering the Service and
-            complying with carrier audit obligations, or as required by valid
-            legal process described in Section 4(f).
-          </p>
-
-          <h3>6.2 CANADA CASL COMPLIANCE STATEMENT (S. 6 &amp; S. 13, CASL)</h3>
-          <blockquote className="notice-block">
-            <strong>Compliance with Canada&apos;s Anti-Spam Legislation
-            (CASL):</strong> For recipients of our SMS check-ins in Canada, we
-            obtain express opt-in consent before sending any commercial
-            electronic message (CEM). Purely operational messages — namely,
-            the routine daily automated SMS safety check-in prompts and
-            missed-check-in escalation alerts — are exempt from the CEM
-            consent requirements of CASL as messages sent to deliver a
-            product, service, or subscription the recipient is entitled to
-            receive under a pre-existing contractual or legitimate interest
-            relationship. Warm-Hello&apos;s operational check-in SMS contains
-            NO promotional, referral, discount, or upsell language of any
-            kind. Any commercial marketing message that Warm-Hello might send
-            in the future (for example, feature announcements or referral
-            incentives) will only be transmitted with separate documented
-            express opt-in and will clearly identify the sender, provide a
-            valid Canadian mailing address, and include a fully functional
-            1-click unsubscribe/opt-out mechanism that processes requests
-            within ten (10) business days as required by s. 11(1)(c) of
-            CASL.
-          </blockquote>
-
-          <h3>6.3 STOP / HELP / START (Dual Compliance CASL + TCPA)</h3>
-          <p>
-            Every automated outbound SMS message sent by or on behalf of
-            Warm-Hello acknowledges and supports the following standard
-            mobile carrier reply keywords:
-          </p>
-          <ul className="longform-list">
-            <li>
-              <strong>STOP</strong> — Reply STOP to immediately opt out of all
-              further Warm-Hello check-in and escalation SMS. One final
-              confirmation message will be sent acknowledging the opt-out.
-              Thereafter, no further operational SMS will be sent to the
-              mobile number, except for non-SMS communications required by law
-              or by the Terms of Service (billing receipts, regulatory
-              notifications).
-            </li>
-            <li>
-              <strong>HELP</strong> — Reply HELP to receive compliance and
-              support information, including: the legal name and Canadian
-              mailing address of the sender, support contact email,
-              explanation of the service, and the STOP/START keywords above.
-            </li>
-            <li>
-              <strong>START</strong> — After an earlier STOP, reply START to
-              re-opt-in to check-in SMS (subject to a new express-opt-in
-              confirmation).
-            </li>
-          </ul>
-          <p>
-            Standard carrier message and data rates may apply to all SMS
-            messages regardless of opt-in status. Mobile subscribers should
-            consult their wireless carrier for plan details.
-          </p>
-
-          <h3>6.4 CASL 6-Year Consent Record Retention (s. 13(1))</h3>
-          <p>
-            Pursuant to s. 13(1) of the CASL and accompanying CRTC guidelines,
-            Warm-Hello retains all SMS consent records (caregiver clickwrap
-            consent timestamp and version, first-check-in success message
-            ID, STOP/HELP/START reply timestamps, and caregiver authorization
-            checkbox acknowledgements) for a period of{" "}
-            <strong>
-              {E.SMS_CONSENT_RECORDS_RETENTION_YEARS} years
-            </strong>{" "}
-            after the date of the LAST message sent to the relevant mobile
-            telephone number. These records are NOT PII-purged on subscriber
-            account deletion because they are required regulatory compliance
-            artifacts under a statutory 6-year retention period. They are
-            stored separately in a dedicated, access-restricted consent
-            tombstone table and are used solely in the event of a CRTC, DNCL,
-            FTC, or carrier compliance audit. See Section 9 for full retention
-            schedule.
+            Disabling certain technologies may affect the functionality of the
+            website or Service.
           </p>
         </section>
 
-        <section id="safeguards">
-          <h2>7. Security Safeguards (PIPEDA Principle 4.7)</h2>
+        <section id="disclosure">
+          <h2>6. How We Disclose Personal Information</h2>
           <p>
-            Warm-Hello protects personal information using safeguards
-            appropriate to the sensitivity of the information. Implemented
-            safeguards include, where applicable:
+            We may disclose personal information to the following categories of
+            recipients where reasonably necessary for the purposes described in
+            this Privacy Policy.
+          </p>
+
+          <h3>6.1 Service Providers</h3>
+          <p>
+            We may disclose information to vendors and service providers that
+            help us operate the Service, including providers for:
           </p>
           <ul className="longform-list">
+            <li>Cloud hosting;</li>
+            <li>Database infrastructure;</li>
+            <li>SMS and telecommunications;</li>
+            <li>Email delivery;</li>
+            <li>Payment processing;</li>
+            <li>Customer support;</li>
+            <li>Security;</li>
+            <li>Analytics;</li>
+            <li>Advertising;</li>
+            <li>Website infrastructure;</li>
+            <li>Software development;</li>
+            <li>Error monitoring;</li>
+            <li>Fraud prevention; and</li>
+            <li>Other business functions.</li>
+          </ul>
+          <p>
+            Service providers are expected to process personal information only
+            for authorized purposes and in accordance with applicable
+            contractual obligations.
+          </p>
+
+          <h3>6.2 Designated Contacts</h3>
+          <p>
+            Where the Service is configured to send a notification to a
+            designated contact, the applicable information may be disclosed to
+            that contact.
+          </p>
+          <p>For example, a missed-check-in notification may disclose:</p>
+          <ul className="longform-list">
+            <li>The Senior&rsquo;s name;</li>
             <li>
-              TLS 1.3 encryption for all data in transit between users and
-              Warm-Hello, and between Warm-Hello and sub-processors (Stripe,
-              Supabase, Telnyx, AWS SES);
+              The fact that a scheduled check-in response was not received; and
             </li>
             <li>
-              AES-256 encryption for personal data at rest on primary
-              database infrastructure;
-            </li>
-            <li>
-              Role-based access controls (RBAC) and the principle of least
-              privilege for all internal and sub-processor access;
-            </li>
-            <li>
-              Authentication via secure Next.js server-side sessions (no
-              client-stored bearer tokens);
-            </li>
-            <li>
-              Physical and administrative security measures on cloud servers
-              provided by SOC 2 Type II certified infrastructure vendors
-              (AWS, Supabase, Stripe);
-            </li>
-            <li>
-              Limited automated logging; automated rotation of API keys and
-              webhook secrets;
-            </li>
-            <li>
-              Annual security review and, for material vendor changes, a
-              documented vendor risk assessment (VRA) prior to onboarding.
+              Information necessary to identify or understand the notification.
             </li>
           </ul>
           <p>
-            While no method of transmission or storage is 100% secure, Warm-Hello
-            maintains safeguards that are consistent with or exceed industry
-            standards for SaaS consumer check-in services of our size and
-            maturity. In the event of a security incident that creates a
-            reasonable risk of significant harm to an identifiable individual
-            as defined by PIPEDA S. 10.1(3), Quebec Law 25 S. 40–43, or
-            equivalent state breach-notification legislation (e.g., California
-            AB 199, NY SHIELD Act), we will: (a) notify the OPC / CAI /
-            applicable regulator within the time required by law; (b) notify
-            affected individuals without unreasonable delay where required by
-            law; and (c) provide an incident summary post via email to
-            affected Account Managers.
+            Warm-Hello does not disclose medical diagnoses or detailed medical
+            records through routine check-in notifications.
+          </p>
+
+          <h3>6.3 Payment Providers</h3>
+          <p>
+            Payment information may be disclosed to payment processors for
+            purposes including:
+          </p>
+          <ul className="longform-list">
+            <li>Processing transactions;</li>
+            <li>Verifying payments;</li>
+            <li>Preventing fraud;</li>
+            <li>Managing subscriptions;</li>
+            <li>Processing refunds; and</li>
+            <li>Maintaining payment records.</li>
+          </ul>
+
+          <h3>6.4 Advertising and Analytics Providers</h3>
+          <p>
+            We may disclose technical, usage, and advertising-related
+            information to analytics and advertising providers as described in
+            this Privacy Policy.
+          </p>
+          <p>
+            We will not intentionally disclose Senior check-in message
+            content, medical information, or emergency-contact information to
+            advertising providers for their independent advertising purposes.
+          </p>
+
+          <h3>6.5 Legal and Regulatory Disclosure</h3>
+          <p>
+            We may disclose personal information where reasonably necessary to:
+          </p>
+          <ul className="longform-list">
+            <li>Comply with applicable law;</li>
+            <li>Respond to valid legal process;</li>
+            <li>
+              Respond to subpoenas, warrants, court orders, or governmental
+              requests;
+            </li>
+            <li>Protect our legal rights;</li>
+            <li>Investigate fraud or abuse;</li>
+            <li>
+              Protect the safety or security of users or the public; or
+            </li>
+            <li>Prevent or investigate suspected unlawful activity.</li>
+          </ul>
+          <p>
+            Where legally permitted, we may seek to limit requests to
+            information reasonably necessary for the applicable legal purpose.
+          </p>
+          <p>
+            Where legally permitted and reasonably practicable, we may provide
+            notice to affected individuals concerning certain government or
+            legal requests.
+          </p>
+
+          <h3>6.6 Business Transfers</h3>
+          <p>
+            Personal information may be disclosed or transferred as part of:
+          </p>
+          <ul className="longform-list">
+            <li>A merger;</li>
+            <li>Acquisition;</li>
+            <li>Corporate reorganization;</li>
+            <li>Financing;</li>
+            <li>Sale of assets;</li>
+            <li>Sale of the company; or</li>
+            <li>Similar business transaction.</li>
+          </ul>
+          <p>
+            Where required by applicable law, Warm-Hello will provide notice
+            and/or obtain consent for such a transfer.
+          </p>
+
+          <h3>6.7 With Your Direction or Consent</h3>
+          <p>
+            We may disclose personal information when you direct us to do so
+            or where you have provided applicable consent.
           </p>
         </section>
 
-        <section id="retention">
-          <h2>8. Retention &amp; Destruction Schedule (PIPEDA Princ. 4.5; Law 25 S. 26)</h2>
+        <section id="sms-text">
+          <h2>7. SMS and Text Messaging</h2>
           <p>
-            Personal information is retained only for as long as is reasonably
-            necessary to fulfill the identified purposes for which it was
-            collected or as required by law. Our current retention schedule is:
+            Warm-Hello may use SMS messaging to provide check-in prompts,
+            missed-check-in notifications, account communications, and other
+            operational communications.
           </p>
+          <p>
+            SMS delivery depends on third-party telecommunications carriers,
+            networks, devices, and other infrastructure.
+          </p>
+          <p>Warm-Hello does not guarantee that any SMS message will be:</p>
           <ul className="longform-list">
-            <li>
-              <strong>Check-in log data (confirmed / missed timestamps,
-              Senior reply content):</strong> {E.CHECKIN_LOGS_RETENTION_MONTHS}{" "}
-              months from the date of the last check-in, or 24 months from the
-              date of account cancellation, whichever is later. After this
-              period, check-in rows are soft-deleted (PII fields — reply
-              content, Senior free-text, display name — set to null; only
-              the date and a boolean confirmed/missed flag retained for
-              aggregate, anonymized product metrics).
-            </li>
-            <li>
-              <strong>Subscription, billing, tax, and invoice records:</strong>{" "}
-              {E.BILLING_LOGS_RETENTION_YEARS} years from the end of the tax
-              year in which the payment was processed, per s. 230 of the
-              Canadian <em>Income Tax Act</em>, s. 6038B of the US Internal
-              Revenue Code, and generally accepted accounting principles
-              (GAAP/IFRS).
-            </li>
-            <li>
-              <strong>SMS consent records &amp; STOP/HELP/START tombstone
-              table (CASL s. 13(1)):</strong>{" "}
-              {E.SMS_CONSENT_RECORDS_RETENTION_YEARS} years from the date of
-              the last SMS message sent to or received from the associated
-              phone number. Records are retained even after account closure.
-            </li>
-            <li>
-              <strong>Account Owner profile data (name, email, session):</strong>{" "}
-              Retained for the duration of the active account plus 12 months
-              after the later of (a) the effective date of account closure or
-              (b) final resolution of any pending billing dispute, outstanding
-              refund request, regulatory complaint, or legal process.
-              Thereafter, PII is hard-deleted or permanently anonymized,
-              except for the SMS consent records and billing records listed
-              above which are retained for their statutory retention periods.
-            </li>
-            <li>
-              <strong>Server access logs (IP, user agent):</strong> 30 days,
-              then rotated/purged.
-            </li>
+            <li>Delivered;</li>
+            <li>Delivered on time;</li>
+            <li>Received;</li>
+            <li>Read;</li>
+            <li>Heard;</li>
+            <li>Understood; or</li>
+            <li>Responded to.</li>
           </ul>
           <p>
-            Upon expiry of the applicable retention period, personal
-            information is either destroyed in a secure, irreversible manner
-            (shredded via zeroized cryptographic key wipe where feasible) or
-            converted to a truly anonymized, aggregate form that can no longer
-            be linked to an identifiable individual.
+            Warm-Hello does not sell, rent, license, or provide SMS opt-in
+            information or text-message consent records to third parties for
+            their own marketing purposes.
           </p>
+          <p>
+            Operational SMS messages are intended to contain service-related
+            information.
+          </p>
+          <p>
+            Where applicable law requires consent, disclosures, or an opt-out
+            mechanism for a particular communication, Warm-Hello will comply
+            with those requirements.
+          </p>
+          <p>
+            Recipients may use available unsubscribe mechanisms, including
+            STOP where applicable, to stop eligible SMS communications.
+          </p>
+          <p>
+            HELP may be used where supported to request assistance.
+          </p>
+          <p>
+            Stopping SMS communications may prevent Warm-Hello from
+            functioning as intended.
+          </p>
+          <p>Standard message and data rates may apply.</p>
         </section>
 
-        <section id="individual-rights">
-          <h2>
-            9. Your Individual Privacy Rights (Access, Correction, Erasure,
-            Portability, Withdrawal of Consent)
-          </h2>
-
-          <h3>9.1 For All Individuals Globally</h3>
+        <section id="health-info">
+          <h2>8. Health and Medical Information</h2>
           <p>
-            Upon written request and subject to our right to verify the
-            identity of the requester, every individual has the right to:
+            Warm-Hello is not designed to collect, maintain, or process medical
+            records or detailed health information.
           </p>
+          <p>Warm-Hello does not intentionally solicit:</p>
           <ul className="longform-list">
-            <li>
-              <strong>Access:</strong> Request confirmation of whether we hold
-              personal information about you, the categories of information
-              held, a description of the purposes for which it is used, and a
-              copy of the personal information itself (a PIPEDA Individual
-              Access Request, or &quot;IAR&quot;).
-            </li>
-            <li>
-              <strong>Correction:</strong> Request the correction of any
-              inaccurate or incomplete personal information held about you.
-            </li>
-            <li>
-              <strong>Erasure (&quot;Right to be Forgotten&quot;):</strong>{" "}
-              Request deletion of the personal information we hold about you,
-              subject to our legal obligations to retain certain records for
-              their statutory retention periods (notably CASL SMS consent
-              records — 6 years — and tax/billing records — 7 years), which
-              will be retained in an access-restricted compliance store and
-              not otherwise processed.
-            </li>
-            <li>
-              <strong>Withdrawal of Consent:</strong> Withdraw any consent you
-              previously provided to the processing of your personal
-              information, subject to contractual and legal restrictions and
-              reasonable prior notice. For SMS, replying STOP from your mobile
-              is the recommended withdrawal mechanism (effective immediately);
-              withdrawal by other means will be processed within the statutory
-              time. Withdrawal of consent does not affect the lawfulness of
-              any processing conducted prior to withdrawal.
-            </li>
+            <li>Diagnoses;</li>
+            <li>Medical records;</li>
+            <li>Treatment information;</li>
+            <li>Medication information;</li>
+            <li>Physician instructions;</li>
+            <li>Insurance information;</li>
+            <li>Detailed medical history; or</li>
+            <li>Other sensitive medical or health information.</li>
           </ul>
           <p>
-            <strong>How to Submit a Request (Signed-in users have a faster
-            path):</strong>
+            Users should not enter or transmit such information through the
+            Service.
           </p>
-          <ol className="longform-list">
-            <li>
-              <strong>Option A (Faster — signed in):</strong> From the
-              Warm-Hello Dashboard → Settings, use the
-              &quot;<strong>Download My Data (JSON)</strong>&quot; and
-              &quot;<strong>Permanently Delete My Account</strong>&quot;
-              one-click tools. Account deletion immediately cancels any active
-              subscription, scrambles all PII fields on the Account Manager
-              and Senior records (see retention schedule above), and flips the
-              global SMS opt-out flag on the Senior phone. A confirmation
-              email is sent within 24 hours.
-            </li>
-            <li>
-              <strong>Option B (Email — for non-signed-in users, Seniors,
-              Emergency Contacts, or regulators):</strong> Send a signed
-              written request to{" "}
-              <a href={`mailto:${E.SUPPORT_EMAIL}`} className="inline-link">
-                {E.SUPPORT_EMAIL}
-              </a>{" "}
-              with the subject &quot;IAR / Privacy Request&quot;. Include your
-              full legal name, the email or phone number associated with the
-              account, and a description of the specific right you are
-              exercising. We reserve the right to request additional identity
-              verification (e.g., photo of government-issued ID) before
-              disclosing or deleting personal information to protect against
-              impersonation fraud.
-            </li>
-          </ol>
           <p>
-            <strong>Response Time:</strong> We will respond to all verifiable
-            privacy requests within <strong>{E.DAYS_TO_RESPOND_IAR} calendar
-            days</strong>, unless an extension is permitted or required by law,
-            in which case we will notify you of the extension in writing
-            within the first 30 days and before the statutory deadline
-            applicable to the jurisdiction of the request (30 days under
-            PIPEDA Principle 4.9; 45 days under CCPA/CPRA; 30 days under
-            Quebec Law 25 S. 51). Where a request is manifestly unfounded or
-            excessive, a reasonable administrative fee may be charged or the
-            request declined in accordance with applicable law.
+            If health or medical information is voluntarily submitted despite
+            these restrictions, Warm-Hello may delete or remove that
+            information where reasonably practicable and may take other
+            appropriate measures.
           </p>
-
-          <h3>9.2 For California Residents (CCPA/CPRA)</h3>
           <p>
-            If you are a California resident, the CCPA provides you with
-            additional rights regarding personal information collected by a
-            business subject to the CCPA. To the extent that Warm-Hello is
-            deemed a &quot;business&quot; or &quot;service provider&quot;
-            under the CCPA with respect to your personal information, you
-            have the right to: (a) request disclosure of the categories and
-            specific pieces of personal information collected, used, disclosed,
-            or sold in the preceding 12 months; (b) request deletion of your
-            personal information (subject to statutory exceptions); (c) opt
-            out of the &quot;sale&quot; of your personal information to third
-            parties; and (d) not be discriminated against for exercising any
-            of your CCPA rights. Warm-Hello DOES NOT sell personal
-            information of California consumers in the traditional sense,
-            and specifically DOES NOT sell SMS opt-in records (see Section
-            6.1 above). If, in the future, we engage in any activity that
-            would be deemed a &quot;sale&quot; under the CCPA, we will provide
-            a &quot;Do Not Sell My Personal Information&quot; link prominently
-            on our home page and Terms/Privacy footer. All of the mechanisms
-            listed in Section 9.1 above are fully available to California
-            residents.
+            Warm-Hello does not intentionally use Senior health information
+            for advertising or behavioral targeting.
           </p>
-
-          <h3>9.3 For Quebec Residents (Law 25 — Chapitre 3, Titre 1er)</h3>
           <p>
-            Si vous résidez au Québec, la Loi sur la protection des renseignements
-            personnels dans le secteur privé (Loi 25, chapitre 3 du Recueil des
-            lois du Québec, chapitre P-39.1) vous accorde des droits
-            spécifiques, notamment le droit d&apos;accès, de rectification, de
-            désindexation, de portabilité et d&apos;effacement visés aux
-            articles 50 à 55 de ladite Loi. Pour exercer ces droits, utilisez
-            les voies décrites à l&apos;article 9.1 ci-dessus. Les demandes
-            peuvent être déposées en français ou en anglais. L&apos;Office de
-            protection du consommateur (OPC) et la Commission d&apos;accès à
-            l&apos;information (CAI) demeurent vos autorités de surveillance
-            compétentes en matière de protection de la vie privée au Québec.
+            Warm-Hello is not a HIPAA-covered entity or business associate
+            solely by virtue of providing the Service. The Service should not
+            be used to transmit information that is required to be handled
+            through a HIPAA-compliant system.
+          </p>
+          <p>
+            Nothing in this section is intended to exclude any privacy or
+            data-protection obligation that applies to Warm-Hello under
+            applicable law.
           </p>
         </section>
 
         <section id="children">
-          <h2>10. Children&apos;s Privacy — No Service Intentionally Offered to Minors</h2>
+          <h2>9. Children&rsquo;s Privacy</h2>
+          <p>The Service is intended for adults.</p>
           <p>
-            The Service is a family safety tool intended for use by and for
-            adult Seniors. We do not knowingly solicit, market, or offer the
-            Service to children under the age of majority in their
-            jurisdiction of residence (generally 18 years; 19 in Alberta,
-            British Columbia, Newfoundland and Labrador, New Brunswick,
-            Northwest Territories, Nunavut, and Yukon). In compliance with the
-            U.S. Children&apos;s Online Privacy Protection Act (COPPA), we do
-            not knowingly collect personal information from children under 13
-            years of age. If you become aware that a child has provided us
-            with personal information in violation of this Section, please
-            contact {E.SUPPORT_EMAIL} immediately and we will take reasonable
-            steps to promptly delete the applicable information from our
-            systems.
+            Warm-Hello does not knowingly collect personal information from
+            children under 13 in the United States or from children below the
+            applicable age of consent in other jurisdictions where applicable
+            law imposes a higher age requirement, without legally required
+            parental or guardian consent.
+          </p>
+          <p>
+            If we learn that we have collected personal information from a
+            child in circumstances where collection was not legally permitted,
+            we will take reasonable steps to delete the information.
+          </p>
+          <p>
+            Parents or legal guardians who believe a child has provided
+            personal information to Warm-Hello may contact us at:
+          </p>
+          <p style={{ margin: "4px 0 6px" }}>
+            <a
+              href={`mailto:${E.SUPPORT_EMAIL}`}
+              className="inline-link"
+            >
+              {E.SUPPORT_EMAIL}
+            </a>
           </p>
         </section>
 
-        <section id="cookies">
-          <h2>11. Cookies, Analytics, &amp; Advertising</h2>
+        <section id="retention">
+          <h2>10. Data Retention</h2>
           <p>
-            At the time this Privacy Policy was last updated, Warm-Hello uses
-            first-party, strictly-necessary session cookies solely to
-            authenticate signed-in Account Managers and to prevent cross-site
-            request forgery (CSRF). We do not use third-party tracking
-            cookies, advertising networks, re-targeting pixels, or behavioral
-            advertising on the Service. We do not sell, rent, or share user
-            information for marketing purposes with any third party. If we
-            change this policy in the future to use non-essential analytics or
-            advertising cookies, we will: (a) update this Section; (b) add a
-            cookie consent banner compliant with Quebec Law 25, the EU GDPR,
-            and the California CCPA; and (c) re-notify existing users in
-            accordance with Section 14.
-          </p>
-        </section>
-
-        <section id="third-parties">
-          <h2>12. Third-Party Service Providers — Current List</h2>
-          <p>
-            The following categories of sub-processors and service providers
-            may have access to personal information in the course of providing
-            their services to Warm-Hello. Each is subject to contractual data
-            protection provisions:
+            Warm-Hello retains personal information for as long as reasonably
+            necessary to:
           </p>
           <ul className="longform-list">
+            <li>Provide the Service;</li>
+            <li>Maintain accounts;</li>
+            <li>Process subscriptions;</li>
+            <li>Maintain transaction records;</li>
+            <li>Provide customer support;</li>
+            <li>Meet legal and regulatory obligations;</li>
+            <li>Resolve disputes;</li>
+            <li>Enforce agreements;</li>
+            <li>Prevent fraud;</li>
+            <li>Maintain security; and</li>
+            <li>Protect legitimate business interests.</li>
+          </ul>
+          <p>
+            Retention periods vary depending on the type of information and
+            the purpose for which it was collected.
+          </p>
+          <p>
+            When personal information is no longer reasonably required,
+            Warm-Hello will take reasonable steps to delete, anonymize, or
+            securely dispose of it, subject to applicable legal, regulatory,
+            security, backup, and recordkeeping requirements.
+          </p>
+          <p>
+            Backup copies may remain for a limited period after deletion in
+            accordance with applicable backup and disaster-recovery procedures.
+          </p>
+        </section>
+
+        <section id="security">
+          <h2>11. Security</h2>
+          <p>
+            Warm-Hello uses reasonable administrative, technical, and
+            organizational safeguards designed to protect personal information
+            against unauthorized access, use, disclosure, alteration, loss, or
+            destruction.
+          </p>
+          <p>Depending on the circumstances, safeguards may include:</p>
+          <ul className="longform-list">
+            <li>Access controls;</li>
+            <li>Authentication controls;</li>
+            <li>Encryption in transit;</li>
             <li>
-              <strong>Infrastructure &amp; Database:</strong> Supabase (AWS
-              hosted), Vercel (deployment hosting).
+              Encryption or other protections for stored information where
+              appropriate;
             </li>
+            <li>Logging and monitoring;</li>
+            <li>Security updates;</li>
+            <li>Vendor controls;</li>
+            <li>Least-privilege access;</li>
+            <li>Backup and recovery procedures; and</li>
+            <li>Incident-response procedures.</li>
+          </ul>
+          <p>
+            No method of transmission, storage, or electronic security is
+            completely secure.
+          </p>
+          <p>
+            Accordingly, Warm-Hello cannot guarantee that personal information
+            will never be accessed, disclosed, altered, lost, or destroyed
+            through circumstances beyond our reasonable control.
+          </p>
+        </section>
+
+        <section id="cross-border">
+          <h2>12. Cross-Border Processing</h2>
+          <p>
+            Personal information may be stored or processed in Canada, the
+            United States, or other jurisdictions where Warm-Hello or its
+            service providers operate.
+          </p>
+          <p>
+            When personal information is transferred to a jurisdiction outside
+            the individual&rsquo;s home jurisdiction, Warm-Hello will take
+            reasonable contractual, technical, and organizational measures
+            appropriate to the circumstances to protect the information and
+            comply with applicable privacy laws.
+          </p>
+          <p>
+            Personal information processed in the United States may be subject
+            to lawful access by U.S. federal, state, or local authorities under
+            applicable U.S. law.
+          </p>
+          <p>
+            Warm-Hello does not voluntarily disclose personal information to
+            government authorities except where required or permitted by
+            applicable law, valid legal process, or an applicable emergency or
+            safety exception.
+          </p>
+          <p>
+            Where legally permitted, Warm-Hello will use reasonable efforts to
+            limit government requests to the information legally required and
+            to notify affected individuals when legally permitted and
+            reasonably practicable.
+          </p>
+          <p>
+            Warm-Hello maintains written contractual privacy and security
+            requirements for applicable service providers and limits provider
+            access to personal information to purposes necessary to provide
+            their contracted services.
+          </p>
+        </section>
+
+        <section id="canadian-rights">
+          <h2>13. Canadian Privacy Rights</h2>
+          <p>
+            Warm-Hello is committed to complying with applicable Canadian
+            privacy legislation.
+          </p>
+          <p>
+            Depending on the circumstances and jurisdiction, Canadian
+            individuals may have rights concerning their personal information,
+            including:
+          </p>
+          <ul className="longform-list">
+            <li>The right to request access to personal information;</li>
             <li>
-              <strong>Payments, Billing, Tax Calculation:</strong> Stripe,
-              Inc. (payment processing via PCI-DSS compliant endpoints;
-              automatic tax calculation via Stripe Tax; receipt issuance).
+              The right to request correction of inaccurate information;
             </li>
+            <li>The right to withdraw consent where permitted by law;</li>
             <li>
-              <strong>SMS Delivery &amp; 10DLC/CLC Carrier Registration:</strong>{" "}
-              Telnyx LLC (long-code and toll-free SMS carrier).
+              The right to request information about how personal information
+              is collected, used, and disclosed;
             </li>
+            <li>The right to make a privacy complaint; and</li>
             <li>
-              <strong>Transactional Email:</strong> Amazon Web Services
-              (AWS) SES (billing receipts, renewal reminders, check-in
-              escalation emails to emergency contacts).
-            </li>
-            <li>
-              <strong>Customer Support:</strong> Email via {E.SUPPORT_EMAIL}.
-            </li>
-            <li>
-              <strong>Professional Advisors:</strong> External legal counsel,
-              chartered professional accountants, and IT security auditors,
-              each bound by professional confidentiality obligations.
+              Other rights provided by applicable federal, provincial, or
+              territorial privacy legislation.
             </li>
           </ul>
           <p>
-            A complete, current list of sub-processors and their respective
-            data processing agreement statuses is available upon written
-            request from the Chief Privacy Officer per Section 1.
+            Warm-Hello will process privacy requests in accordance with the
+            law applicable to the individual and the circumstances.
+          </p>
+          <p>
+            Certain information may be exempt from access, correction,
+            deletion, or other requests where an applicable legal exception
+            applies.
+          </p>
+        </section>
+
+        <section id="quebec-rights">
+          <h2>14. Quebec Privacy Rights</h2>
+          <p>
+            If you are located in Quebec, additional rights may apply under
+            Quebec privacy legislation, including the Act respecting the
+            protection of personal information in the private sector and other
+            applicable laws.
+          </p>
+          <p>
+            Where applicable, individuals may have rights relating to:
+          </p>
+          <ul className="longform-list">
+            <li>Access;</li>
+            <li>Correction;</li>
+            <li>Withdrawal of consent;</li>
+            <li>
+              Information concerning the use and disclosure of personal
+              information;
+            </li>
+            <li>Data portability;</li>
+            <li>Privacy impact assessments;</li>
+            <li>Automated processing;</li>
+            <li>Retention and destruction; and</li>
+            <li>Other rights provided by Quebec law.</li>
+          </ul>
+          <p>
+            Warm-Hello will comply with mandatory Quebec privacy requirements
+            applicable to its activities.
+          </p>
+          <p>
+            Nothing in this Privacy Policy is intended to waive or restrict a
+            mandatory right provided by Quebec law.
+          </p>
+        </section>
+
+        <section id="us-rights">
+          <h2>15. United States Privacy Rights</h2>
+          <p>
+            Warm-Hello is committed to complying with applicable U.S. federal
+            and state privacy laws.
+          </p>
+          <p>
+            Depending on your state of residence and whether the applicable
+            law applies to Warm-Hello, you may have rights concerning your
+            personal information.
+          </p>
+          <p>These rights may include:</p>
+          <ul className="longform-list">
+            <li>The right to know or access personal information;</li>
+            <li>The right to correct inaccurate personal information;</li>
+            <li>
+              The right to request deletion of personal information, subject
+              to legal exceptions;
+            </li>
+            <li>
+              The right to obtain a portable copy of certain personal
+              information;
+            </li>
+            <li>The right to opt out of the sale of personal information;</li>
+            <li>
+              The right to opt out of sharing personal information for
+              cross-context behavioral advertising or targeted advertising
+              where applicable;
+            </li>
+            <li>
+              The right to limit certain uses of sensitive personal
+              information where applicable;
+            </li>
+            <li>
+              The right to opt out of certain profiling or automated
+              decision-making activities where applicable;
+            </li>
+            <li>
+              The right to appeal certain privacy-request decisions where
+              required;
+            </li>
+            <li>
+              The right to use an authorized agent where permitted; and
+            </li>
+            <li>
+              The right not to receive discriminatory treatment for
+              exercising applicable privacy rights.
+            </li>
+          </ul>
+          <p>
+            Not every right applies in every jurisdiction or to every
+            individual.
+          </p>
+        </section>
+
+        <section id="california">
+          <h2>16. California Residents</h2>
+          <p>
+            If you are a California resident and the California Consumer
+            Privacy Act, as amended by the California Privacy Rights Act
+            (collectively, the &ldquo;CCPA&rdquo;), applies to Warm-Hello, you
+            may have rights including:
+          </p>
+          <ul className="longform-list">
+            <li>
+              The right to know and access personal information collected
+              about you;
+            </li>
+            <li>
+              The right to request deletion of personal information, subject
+              to statutory exceptions;
+            </li>
+            <li>The right to correct inaccurate personal information;</li>
+            <li>
+              The right to obtain certain information in a portable format;
+            </li>
+            <li>The right to opt out of the sale of personal information;</li>
+            <li>
+              The right to opt out of the sharing of personal information for
+              cross-context behavioral advertising;
+            </li>
+            <li>
+              The right to limit certain uses of sensitive personal
+              information, where applicable;
+            </li>
+            <li>
+              The right to opt out of certain profiling or automated
+              decision-making activities, where applicable;
+            </li>
+            <li>
+              The right to appeal certain decisions concerning privacy
+              requests; and
+            </li>
+            <li>
+              The right not to be discriminated against for exercising CCPA
+              rights.
+            </li>
+          </ul>
+
+          <h3>16.1 Sale of Personal Information</h3>
+          <p>
+            Warm-Hello does not sell personal information for monetary
+            consideration.
+          </p>
+          <p>
+            Warm-Hello does not sell, rent, license, or otherwise provide SMS
+            opt-in information or text-message consent records to third
+            parties for their own marketing purposes.
+          </p>
+
+          <h3>16.2 Sharing for Advertising</h3>
+          <p>
+            Certain uses of third-party advertising, analytics, pixels,
+            cookies, or similar technologies may constitute &ldquo;sharing&rdquo;
+            under the CCPA even where Warm-Hello does not receive monetary
+            consideration for the disclosure.
+          </p>
+          <p>
+            If Warm-Hello engages in processing that constitutes &ldquo;sharing&rdquo;
+            under the CCPA, Warm-Hello will provide the applicable opt-out
+            mechanism.
+          </p>
+          <p>
+            California residents may use the &ldquo;Your Privacy Choices&rdquo;
+            mechanism provided on the Warm-Hello website where applicable:
+          </p>
+          <div style={{ margin: "10px 0 14px" }}>
+            <PrivacyChoicesInlineButton />
+          </div>
+
+          <h3>16.3 Sensitive Personal Information</h3>
+          <p>
+            Warm-Hello does not intentionally collect detailed health
+            information through the Service.
+          </p>
+          <p>
+            Where sensitive personal information is collected or processed,
+            Warm-Hello will handle that information in accordance with
+            applicable California law.
+          </p>
+
+          <h3>16.4 Non-Discrimination</h3>
+          <p>
+            Warm-Hello will not discriminate against a California consumer for
+            exercising rights protected by the CCPA.
+          </p>
+
+          <h3>16.5 Verification</h3>
+          <p>
+            Warm-Hello may require reasonable identity verification before
+            completing certain privacy requests.
+          </p>
+          <p>
+            The verification process will be designed to protect personal
+            information against unauthorized disclosure.
+          </p>
+        </section>
+
+        <section id="other-us-states">
+          <h2>17. Other U.S. State Privacy Laws</h2>
+          <p>
+            Residents of states with comprehensive privacy legislation may
+            have additional rights depending on:
+          </p>
+          <ul className="longform-list">
+            <li>Their state of residence;</li>
+            <li>The applicability of the relevant statute;</li>
+            <li>The effective date of the statute;</li>
+            <li>Applicable statutory thresholds; and</li>
+            <li>The nature of Warm-Hello&rsquo;s activities.</li>
+          </ul>
+          <p>
+            Warm-Hello will honor rights required by applicable state privacy
+            laws.
+          </p>
+          <p>These rights may include rights concerning:</p>
+          <ul className="longform-list">
+            <li>Access;</li>
+            <li>Correction;</li>
+            <li>Deletion;</li>
+            <li>Portability;</li>
+            <li>Sale;</li>
+            <li>Sharing;</li>
+            <li>Targeted advertising;</li>
+            <li>Sensitive personal information;</li>
+            <li>Profiling;</li>
+            <li>Appeals;</li>
+            <li>Authorized agents; and</li>
+            <li>Other rights provided by applicable state law.</li>
+          </ul>
+          <p>
+            Where a state law provides a specific request deadline,
+            verification procedure, appeal process, or other requirement,
+            Warm-Hello will follow the applicable legal requirement.
+          </p>
+        </section>
+
+        <section id="privacy-requests">
+          <h2>18. Privacy Requests</h2>
+          <p>To submit a privacy request, contact:</p>
+          <address style={{ fontStyle: "normal", margin: "6px 0 10px" }}>
+            <strong>Email:</strong>{" "}
+            <a
+              href={`mailto:${E.SUPPORT_EMAIL}`}
+              className="inline-link"
+            >
+              {E.SUPPORT_EMAIL}
+            </a>
+            <br />
+            <strong>Mail:</strong>
+            <br />
+            10894796 Canada Inc. d/b/a Warm-Hello
+            <br />
+            Attn: Privacy Officer
+            <br />
+            53 Lancewood Cres
+            <br />
+            Brampton, Ontario, Canada
+            <br />
+            L6S 5Y5
+          </address>
+          <p>
+            When permitted by law, we may request information reasonably
+            necessary to verify your identity before fulfilling a privacy
+            request.
+          </p>
+          <p>
+            If you use an authorized agent, we may require proof of
+            authorization where permitted or required by applicable law.
+          </p>
+          <p>
+            We will respond to valid privacy requests within the time required
+            by applicable law.
+          </p>
+          <p>
+            If additional time is legally permitted and reasonably necessary,
+            we may extend the response period and provide the required notice.
+          </p>
+        </section>
+
+        <section id="appeals">
+          <h2>19. Appeals</h2>
+          <p>
+            Where applicable law provides a right to appeal a decision
+            concerning a privacy request, you may submit an appeal by
+            contacting:
+          </p>
+          <p style={{ margin: "4px 0 6px" }}>
+            <a
+              href={`mailto:${E.SUPPORT_EMAIL}`}
+              className="inline-link"
+            >
+              {E.SUPPORT_EMAIL}
+            </a>
+          </p>
+          <p>
+            The appeal should identify the original request and explain why
+            you believe the decision should be reconsidered.
+          </p>
+          <p>
+            Warm-Hello will process the appeal in accordance with applicable
+            law.
+          </p>
+        </section>
+
+        <section id="do-not-track">
+          <h2>20. Do Not Track</h2>
+          <p>Some browsers provide &ldquo;Do Not Track&rdquo; signals.</p>
+          <p>
+            Because there is currently no universally accepted technical
+            standard governing all Do Not Track signals, Warm-Hello may not
+            respond to every such signal.
+          </p>
+          <p>
+            Where applicable law requires Warm-Hello to recognize a
+            browser-based or device-based opt-out preference signal,
+            Warm-Hello will take reasonable steps to recognize and process
+            the signal as required by applicable law.
+          </p>
+        </section>
+
+        <section id="third-party-services">
+          <h2>21. Third-Party Services and Websites</h2>
+          <p>
+            The Service may contain links to third-party websites,
+            applications, or services.
+          </p>
+          <p>
+            Warm-Hello does not control third-party privacy practices.
+          </p>
+          <p>
+            Third-party services may collect, use, and disclose information
+            under their own privacy policies.
+          </p>
+          <p>
+            This Privacy Policy does not apply to independent third-party
+            websites or services.
+          </p>
+          <p>
+            You should review the privacy policies of third-party services
+            before providing personal information to them.
+          </p>
+        </section>
+
+        <section id="ad-platforms">
+          <h2>22. Advertising Platforms</h2>
+          <p>
+            Warm-Hello may use third-party advertising platforms, including
+            Google and Meta.
+          </p>
+          <p>
+            These companies may independently process certain information
+            according to their own privacy policies and terms.
+          </p>
+          <p>
+            Warm-Hello does not control the independent privacy practices of
+            third-party advertising platforms.
+          </p>
+          <p>
+            Warm-Hello&rsquo;s use of advertising technologies is intended to
+            comply with applicable law and the restrictions described in this
+            Privacy Policy.
+          </p>
+        </section>
+
+        <section id="business-records">
+          <h2>23. Business and Legal Records</h2>
+          <p>
+            Warm-Hello may retain certain information for legitimate business
+            and legal purposes, including:
+          </p>
+          <ul className="longform-list">
+            <li>Transaction records;</li>
+            <li>Subscription records;</li>
+            <li>Tax records;</li>
+            <li>Consent records;</li>
+            <li>Communications records;</li>
+            <li>Security logs;</li>
+            <li>Privacy requests;</li>
+            <li>Legal correspondence;</li>
+            <li>Fraud-prevention records; and</li>
+            <li>
+              Records necessary to establish, exercise, or defend legal
+              claims.
+            </li>
+          </ul>
+          <p>
+            Such information may be retained even after an account is closed
+            where reasonably necessary for those purposes or where required by
+            law.
           </p>
         </section>
 
         <section id="changes">
-          <h2>13. Updates to This Privacy Policy</h2>
+          <h2>24. Changes to This Privacy Policy</h2>
           <p>
-            We reserve the right to amend this Privacy Policy from time to
-            time. Material changes (changes that materially expand or alter
-            the ways in which we use or share personal information, or that
-            affect enforceable rights) will be brought to your attention at
-            least thirty (30) calendar days before they become effective via:
-            (a) a prominent notice on the Dashboard home screen; (b) an email
-            to the primary Account Owner email on file; or (c) a new
-            clickwrap acceptance prompt the next time the Account Owner logs
-            in after the change is posted. Your continued use of the Service
-            after the effective date of an amended Privacy Policy constitutes
-            acceptance of the amended terms, unless you submit a request to
-            delete your account in accordance with Section 9 before the
-            effective date.
+            Warm-Hello may update this Privacy Policy from time to time.
+          </p>
+          <p>Changes may be made to reflect:</p>
+          <ul className="longform-list">
+            <li>Changes in applicable law;</li>
+            <li>Changes to the Service;</li>
+            <li>Changes to our business practices;</li>
+            <li>New features;</li>
+            <li>New service providers;</li>
+            <li>Changes to advertising or analytics technologies;</li>
+            <li>Security improvements; or</li>
+            <li>Other legitimate business requirements.</li>
+          </ul>
+          <p>
+            When we make material changes, we will provide notice through an
+            appropriate method where required by applicable law.
+          </p>
+          <p>
+            The updated Privacy Policy will include a revised effective date.
+          </p>
+          <p>
+            Your continued use of the Service after the effective date of an
+            updated Privacy Policy may constitute acknowledgment of the
+            changes where permitted by applicable law.
+          </p>
+          <p>
+            Where applicable law requires affirmative consent to a material
+            change, Warm-Hello will obtain the required consent.
           </p>
         </section>
 
-        <section id="questions">
-          <h2>14. Questions &amp; Regulatory Complaints</h2>
+        <section id="contact">
+          <h2>25. Contact Us</h2>
           <p>
-            If you have any questions, concerns, or complaints regarding this
-            Privacy Policy, the practices of the Service, or our handling of
-            personal information, please first contact:
+            For privacy questions, requests, complaints, or concerns, contact:
           </p>
-          <address>
-            <strong>{E.LEGAL_ENTITY_NAME}</strong>
+          <address style={{ fontStyle: "normal", margin: "6px 0 10px" }}>
+            <strong>10894796 Canada Inc.</strong> d/b/a Warm-Hello
             <br />
-            Attn: Chief Privacy Officer / Compliance
+            Attn: Privacy Officer
             <br />
-            {E.CA_MAILING_ADDRESS}
+            53 Lancewood Cres
             <br />
-            Email:{" "}
-            <a href={`mailto:${E.SUPPORT_EMAIL}`} className="inline-link">
+            Brampton, Ontario, Canada
+            <br />
+            L6S 5Y5
+            <br />
+            <strong>Email:</strong>{" "}
+            <a
+              href={`mailto:${E.SUPPORT_EMAIL}`}
+              className="inline-link"
+            >
               {E.SUPPORT_EMAIL}
             </a>
           </address>
           <p>
-            We take privacy complaints seriously. Every complaint is logged,
-            acknowledged in writing within 5 business days, investigated, and
-            responded to in writing within the time required by applicable law
-            (at a maximum, 30 calendar days for PIPEDA complaints). If you
-            are not satisfied with the resolution of your complaint, you may
-            escalate it to the applicable supervisory authority, including:
+            We encourage users to contact us first so that we can attempt to
+            address privacy concerns directly.
           </p>
+          <p>
+            Individuals may also have the right to file a complaint with the
+            applicable privacy regulator or governmental authority in their
+            jurisdiction.
+          </p>
+        </section>
+
+        <section id="summary">
+          <h2>26. Privacy Policy Summary</h2>
+          <p>For clarity, the most important points are:</p>
           <ul className="longform-list">
             <li>
-              <strong>Office of the Privacy Commissioner of Canada (OPC):</strong>{" "}
-              https://www.priv.gc.ca
+              Warm-Hello collects information necessary to provide its
+              check-in and notification service.
             </li>
             <li>
-              <strong>Commission d&apos;accès à l&apos;information (Québec):</strong>{" "}
-              https://www.cai.gouv.qc.ca
+              Warm-Hello does not intentionally collect detailed medical
+              information.
             </li>
             <li>
-              <strong>California Privacy Protection Agency (CPPA / California
-              residents):</strong> https://cppa.ca.gov
+              Warm-Hello is not an emergency or medical alert service.
+            </li>
+            <li>
+              A missed check-in does not mean that an emergency has occurred.
+            </li>
+            <li>
+              Warm-Hello does not contact 911 or emergency services.
+            </li>
+            <li>SMS delivery cannot be guaranteed.</li>
+            <li>
+              Personal information may be processed in Canada, the United
+              States, and other jurisdictions where Warm-Hello or its service
+              providers operate.
+            </li>
+            <li>
+              Warm-Hello may use Google, Meta, analytics, advertising, and
+              conversion-measurement technologies.
+            </li>
+            <li>
+              Warm-Hello does not intentionally provide Senior check-in
+              message contents, medical information, or emergency-contact
+              information to advertising platforms for their independent
+              advertising purposes.
+            </li>
+            <li>
+              Warm-Hello does not sell personal information for monetary
+              consideration.
+            </li>
+            <li>
+              Warm-Hello does not sell, rent, license, or provide SMS opt-in
+              information or text-message consent records to third parties for
+              their own marketing purposes.
+            </li>
+            <li>
+              Where applicable law provides privacy choices concerning
+              targeted advertising, sale, sharing, or similar processing,
+              Warm-Hello will provide the required mechanisms.
+            </li>
+            <li>
+              Users may contact Warm-Hello at{" "}
+              <a
+                href={`mailto:${E.SUPPORT_EMAIL}`}
+                className="inline-link"
+              >
+                {E.SUPPORT_EMAIL}
+              </a>{" "}
+              regarding privacy requests or concerns.
             </li>
           </ul>
         </section>
 
-        <hr className="footer-divider" />
-        <p style={{ opacity: 0.7, fontSize: 12 }}>
-          This document includes both English and French statutory rights
-          disclosures. A full French translation is not provided at this time;
-          please email {E.SUPPORT_EMAIL} to request a French-language version
-          for Quebec consumer contract purposes under Bill 101 / Law 96.
+        <p
+          style={{
+            marginTop: 32,
+            paddingTop: 20,
+            borderTop: "1px solid rgba(255,255,255,0.08)",
+            color: "#7b829a",
+            fontSize: "13px",
+            lineHeight: 1.8,
+          }}
+        >
+          <strong style={{ color: "#a8b0c5" }}>10894796 Canada Inc.</strong> d/b/a
+          Warm-Hello
+          <br />
+          53 Lancewood Cres, Brampton, Ontario, Canada L6S 5Y5
+          <br />
+          <a
+            href={`mailto:${E.SUPPORT_EMAIL}`}
+            className="inline-link"
+            style={{ color: "#7b829a" }}
+          >
+            {E.SUPPORT_EMAIL}
+          </a>
         </p>
         <p style={{ opacity: 0.7, fontSize: 12 }}>
           <Link href="/terms" className="inline-link">

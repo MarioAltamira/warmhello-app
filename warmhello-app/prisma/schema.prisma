@@ -20,6 +20,17 @@ enum BillingCurrency {
   CAD
 }
 
+enum BillingInterval {
+  MONTHLY
+  ANNUAL
+}
+
+enum CancellationStatus {
+  NONE
+  PENDING_AT_PERIOD_END
+  CANCELED
+}
+
 enum CheckInStatus {
   PENDING
   CONFIRMED
@@ -45,6 +56,16 @@ enum SmsStatus {
   RECEIVED
 }
 
+enum LegalConsentEvent {
+  TERMS_ACCEPTED
+  PRIVACY_ACKNOWLEDGED
+  SUBSCRIPTION_PURCHASE
+  OPERATIONAL_SMS_OPT_IN
+  MARKETING_SMS_OPT_IN
+  MARKETING_EMAIL_OPT_IN
+  SENIOR_SMS_AUTHORIZATION
+}
+
 model Subscriber {
   id                                String             @id @default(cuid())
   email                             String             @unique
@@ -54,11 +75,28 @@ model Subscriber {
   stripeSubscriptionId              String?            @unique
   subscriptionStatus                SubscriptionStatus @default(TRIAL)
   billingCurrency                   BillingCurrency    @default(USD)
+  billingInterval                   BillingInterval    @default(MONTHLY)
+  subscriptionPriceAmount           Decimal?           @db.Decimal(10, 2)
   currentPeriodEndsAt               DateTime?
+  nextRenewalDate                   DateTime?
+  trialStartedAt                    DateTime?
+  trialEndedAt                      DateTime?
+  subscriptionStartedAt             DateTime?
+  cancellationStatus                CancellationStatus @default(NONE)
+  cancellationDate                  DateTime?
+  cancellationRequestedAt           DateTime?
   unsubscribedAt                    DateTime?
   tosAcceptedAt                     DateTime?
-  tosVersion                        String?            @default("v2026-08-21")
+  tosVersion                        String?            @default("v2026-08-29")
+  privacyPolicyVersion              String?            @default("v2026-08-29")
+  privacyAcknowledgedAt             DateTime?
   caregiverSeniorConsentAckAt       DateTime?
+  marketingEmailConsent             Boolean            @default(false)
+  marketingEmailConsentAt           DateTime?
+  marketingSmsConsent               Boolean            @default(false)
+  marketingSmsConsentAt             DateTime?
+  operationalSmsConsentGrantedAt    DateTime?
+  subscriptionTermsDisclosureVer    String?
   dashboardDisclaimerDismissedAt    DateTime?
   created                           DateTime           @default(now()) @map("Created")
   createdAt                         DateTime           @default(now())
@@ -67,6 +105,7 @@ model Subscriber {
   contacts                          Contact[]
   checkIns                          CheckIn[]
   smsLogs                           SmsLog[]
+  consentAudits                     LegalConsentAudit[]
 }
 
 model Senior {
@@ -81,6 +120,10 @@ model Senior {
   secondAttemptHours         Int        @default(1)
   active                     Boolean    @default(true)
   caregiverConsentAckAt      DateTime?
+  operationalSmsConsent      Boolean    @default(false)
+  operationalSmsConsentAt    DateTime?
+  selfSmsConsent             Boolean    @default(false)
+  selfSmsConsentAt           DateTime?
   smsOptedOut                Boolean    @default(false)
   smsOptedOutAt              DateTime?
   createdAt                  DateTime   @default(now())
@@ -183,6 +226,31 @@ model SmsConsentTombstone {
 
   @@index([phoneE164])
   @@index([retainedUntil])
+}
+
+model LegalConsentAudit {
+  id                  String             @id @default(cuid())
+  subscriberId        String?
+  subscriber          Subscriber?        @relation(fields: [subscriberId], references: [id], onDelete: SetNull)
+  event               LegalConsentEvent
+  ipAddress           String?
+  userAgent           String?
+  termsVersion        String?
+  privacyVersion      String?
+  subscriptionPlan    BillingCurrency?
+  billingInterval     String?
+  priceAmount         Float?
+  currency            BillingCurrency?
+  stripeSessionId     String?
+  stripeSubscriptionId String?
+  seniorPhoneNumber   String?
+  phoneE164           String?
+  metadata            Json?
+  createdAt           DateTime           @default(now())
+
+  @@index([subscriberId, createdAt])
+  @@index([event, createdAt])
+  @@index([createdAt])
 }
 
 model ShortLink {

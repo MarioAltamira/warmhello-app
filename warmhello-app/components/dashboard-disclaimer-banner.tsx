@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { LEGAL_DISCLAIMER_CONDENSED } from "@/lib/constants";
+import { LEGAL_DISCLAIMER_CONDENSED, EMERGENCY_WARNING_DASHBOARD } from "@/lib/constants";
 
 type Props = { subscriberId: string; initiallyDismissed: boolean };
 
@@ -43,7 +43,10 @@ export function DashboardDisclaimerBanner({ subscriberId, initiallyDismissed }: 
       }}
     >
       <blockquote className="notice-block" style={{ marginTop: 0, marginBottom: 0 }}>
-        <strong>{LEGAL_DISCLAIMER_CONDENSED}</strong>
+        <strong>{EMERGENCY_WARNING_DASHBOARD}</strong>
+        <div style={{ marginTop: 6, fontSize: 13, color: "var(--muted)" }}>
+          {LEGAL_DISCLAIMER_CONDENSED}
+        </div>
       </blockquote>
       <button
         type="button"

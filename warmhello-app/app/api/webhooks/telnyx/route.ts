@@ -5,6 +5,10 @@ import { env } from "@/lib/env";
 import { normalizePhone } from "@/lib/phone";
 import { sendSms } from "@/lib/sms";
 import { LEGAL_ENTITY_PLACEHOLDERS as E } from "@/lib/legal-placeholders";
+import {
+  sendSmsOptOutConfirmationEmail,
+  sendSmsOptInReenabledEmail,
+} from "@/lib/trial-emails";
 
 function extractInboundMessage(body: unknown) {
   const payload =
@@ -189,6 +193,12 @@ export async function POST(request: Request) {
 
   if (isStop) {
     const now = new Date();
+    const optedOutAtLabel = now.toLocaleDateString(undefined, {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
     try {
       if (seniorRow) {
         await prisma?.senior.update({
@@ -204,12 +214,46 @@ export async function POST(request: Request) {
     } catch {
       // ignore
     }
+    try {
+      if (seniorRow) {
+        const senior = await prisma?.senior.findUnique({
+          where: { id: seniorRow.id },
+          select: { firstName: true, lastName: true, phoneNumber: true },
+        });
+        const subscriber = await prisma?.subscriber.findUnique({
+          where: { id: seniorRow.subscriberId },
+          select: { id: true, email: true, unsubscribedAt: true },
+        });
+        if (senior && subscriber?.email && !subscriber.unsubscribedAt) {
+          const seniorFullName =
+            `${senior.firstName ?? ""} ${senior.lastName ?? ""}`.trim() ||
+            `Senior ${seniorRow.id}`;
+          const phoneDigits = (senior.phoneNumber || from || "").replace(/\D/g, "");
+          const seniorPhoneLast4 = phoneDigits.slice(-4) || "0000";
+          await sendSmsOptOutConfirmationEmail({
+            subscriberId: subscriber.id,
+            subscriberEmail: subscriber.email,
+            seniorFullName,
+            seniorPhoneLast4,
+            optedOutAtLabel,
+          }).catch(() => null);
+        }
+      }
+    } catch {
+      // best-effort only
+    }
     keywordReply =
       "You have opted out of Warm-Hello SMS check-ins. No further messages will be sent to this number. Reply START to re-enable.";
   } else if (isHelp) {
     keywordReply = helpReply();
   } else if (isStart) {
     const now = new Date();
+    const optedInAtLabel = now.toLocaleDateString(undefined, {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
     try {
       if (seniorRow) {
         await prisma?.senior.update({
@@ -225,6 +269,34 @@ export async function POST(request: Request) {
       });
     } catch {
       // ignore
+    }
+    try {
+      if (seniorRow) {
+        const senior = await prisma?.senior.findUnique({
+          where: { id: seniorRow.id },
+          select: { firstName: true, lastName: true, phoneNumber: true },
+        });
+        const subscriber = await prisma?.subscriber.findUnique({
+          where: { id: seniorRow.subscriberId },
+          select: { id: true, email: true, unsubscribedAt: true },
+        });
+        if (senior && subscriber?.email && !subscriber.unsubscribedAt) {
+          const seniorFullName =
+            `${senior.firstName ?? ""} ${senior.lastName ?? ""}`.trim() ||
+            `Senior ${seniorRow.id}`;
+          const phoneDigits = (senior.phoneNumber || from || "").replace(/\D/g, "");
+          const seniorPhoneLast4 = phoneDigits.slice(-4) || "0000";
+          await sendSmsOptInReenabledEmail({
+            subscriberId: subscriber.id,
+            subscriberEmail: subscriber.email,
+            seniorFullName,
+            seniorPhoneLast4,
+            optedInAtLabel,
+          }).catch(() => null);
+        }
+      }
+    } catch {
+      // best-effort only
     }
     keywordReply =
       "Welcome back. You have opted in to Warm-Hello SMS check-ins. Msg & data rates may apply. Reply STOP to opt out, HELP for info.";

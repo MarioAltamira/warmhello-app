@@ -9,6 +9,7 @@ import {
 } from "@/lib/subscriber-session";
 import { prisma } from "@/lib/prisma";
 import { getStripeClient } from "@/lib/stripe";
+import { sendAccountDeletionConfirmationEmail } from "@/lib/trial-emails";
 
 export const dynamic = "force-dynamic";
 
@@ -41,8 +42,10 @@ export async function POST(request: Request) {
       where: { id: subscriberId },
       select: {
         email: true,
+        fullName: true,
         stripeCustomerId: true,
         stripeSubscriptionId: true,
+        unsubscribedAt: true,
       },
     });
     if (!subscriber) {
@@ -78,6 +81,24 @@ export async function POST(request: Request) {
     }
 
     const now = new Date();
+    const deletionEffectiveLabel = now.toLocaleDateString(undefined, {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    const originalEmail = subscriber.email;
+    const originalFullName = subscriber.fullName;
+
+    try {
+      await sendAccountDeletionConfirmationEmail({
+        subscriberEmail: originalEmail,
+        subscriberFullName: originalFullName,
+        effectiveDateLabel: deletionEffectiveLabel,
+      }).catch(() => null);
+    } catch {
+      // best-effort only
+    }
 
     await prisma.$transaction(async (tx) => {
       const seniors = await tx.senior.findMany({

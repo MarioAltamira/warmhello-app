@@ -7,7 +7,14 @@ import { BillingCurrency } from "@/lib/pricing";
 import { normalizeTimeZone, timeZoneOptions } from "@/lib/timezones";
 import {
   CLICKWRAP_SENIOR_ADD_LABEL,
+  CLICKWRAP_SENIOR_SMS_OPERATIONAL_LABEL,
+  CLICKWRAP_MARKETING_EMAIL_LABEL,
   LEGAL_DISCLAIMER_CONDENSED,
+  TOS_VERSION_CURRENT,
+  PRIVACY_VERSION_CURRENT,
+  FREE_TRIAL_DOES_NOT_AUTO_CONVERT,
+  EMERGENCY_WARNING_ONBOARDING,
+  EMERGENCY_WARNING_SENIOR_SETUP,
 } from "@/lib/constants";
 
 type HouseholdResponse = {
@@ -146,6 +153,8 @@ const initialForm = {
   contactRelationship: "Son",
   contactPhone: stripNorthAmericanCountryCode("+15551230003"),
   additionalContacts: [] as AdditionalContactState[],
+  seniorOperationalSmsConsent: false,
+  marketingEmailConsent: false,
 };
 
 const blankDefaultForm = {
@@ -164,6 +173,8 @@ const blankDefaultForm = {
   contactRelationship: "",
   contactPhone: "",
   additionalContacts: [] as AdditionalContactState[],
+  seniorOperationalSmsConsent: false,
+  marketingEmailConsent: false,
 };
 
 function buildInitialForm(
@@ -193,6 +204,8 @@ function buildInitialForm(
         relationship: c.relationship,
         phone: stripNorthAmericanCountryCode(c.phoneNumber),
       })),
+      seniorOperationalSmsConsent: false,
+      marketingEmailConsent: false,
     };
   }
 
@@ -202,7 +215,6 @@ function buildInitialForm(
     subscriberEmail: signupDefaults?.subscriberEmail?.trim() || initialForm.subscriberEmail,
   };
 }
-
 function formatScheduledFor(value?: string, timeZone?: string) {
   if (!value) {
     return null;
@@ -344,6 +356,12 @@ export function OnboardingForm({
       );
       return;
     }
+    if (!form.seniorOperationalSmsConsent) {
+      setStatusMessage(
+        "Please confirm Senior SMS Check-In Consent before continuing — you must be authorized to provide the senior's mobile number for check-in SMS.",
+      );
+      return;
+    }
 
     setSubmitting(true);
     setSavedHousehold(undefined);
@@ -388,6 +406,10 @@ export function OnboardingForm({
         },
         additionalContacts,
         caregiverAck: true,
+        tosVersion: TOS_VERSION_CURRENT,
+        privacyVersion: PRIVACY_VERSION_CURRENT,
+        seniorOperationalSmsConsent: Boolean(form.seniorOperationalSmsConsent),
+        marketingEmailConsent: Boolean(form.marketingEmailConsent),
       };
 
       const response = await fetch("/api/subscribers", {
@@ -515,7 +537,10 @@ export function OnboardingForm({
             background: "color-mix(in srgb, var(--primary) 8%, transparent)",
           }}
         >
-          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8 }}>Subscriber Details</div>
+          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 2 }}>Account Manager</div>
+          <p style={{ marginTop: 0, marginBottom: 8, fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>
+            You&apos;re responsible for setting up and managing this account.
+          </p>
           <div className="form-grid">
             <label>
               Caregiver name
@@ -554,7 +579,7 @@ export function OnboardingForm({
             <div>
               <p className="region-pick-heading-title">Your region &amp; pricing</p>
               <p className="region-pick-heading-note">
-                Choose the region that matches where you live. This sets the currency and the price you&apos;ll pay after your free trial. You can change it later from your dashboard or using the currency switcher next to any price.
+                Choose the region that matches where you live. This sets the currency and the price you&apos;ll pay if you decide to subscribe after your free trial. The 7-day free trial does not automatically convert to a paid subscription — no credit card is required to start.
               </p>
             </div>
           </div>
@@ -567,14 +592,14 @@ export function OnboardingForm({
               {
                 value: "USD" as BillingCurrency,
                 label: "🇺🇸 United States",
-                price: "USD $5.00 / month",
-                detail: "Equivalent to USD $60.00 per year · about USD $0.16 per day",
+                price: "USD $14.99 / month",
+                detail: "Or USD $144.00 per year (save ~20% · approx. $11.99/month)",
               },
               {
                 value: "CAD" as BillingCurrency,
                 label: "🇨🇦 Canada",
-                price: "CAD $6.00 / month",
-                detail: "Equivalent to CAD $72.00 per year · about CAD $0.20 per day",
+                price: "CAD $19.99 / month",
+                detail: "Or CAD $180.00 per year (save ~20% · approx. $14.99/month)",
               },
             ].map((option) => {
               const selected = form.billingCurrency === option.value;
@@ -604,6 +629,21 @@ export function OnboardingForm({
               background: "rgba(250, 204, 21, 0.08)",
               padding: 12,
               borderRadius: 12,
+              marginTop: 6,
+              marginBottom: 4,
+            }}
+          >
+            <p style={{ marginTop: 0, marginBottom: 0 }}>
+              <strong>{EMERGENCY_WARNING_ONBOARDING}</strong>
+            </p>
+          </div>
+          <div
+            className="form-grid-wide"
+            style={{
+              border: "2px solid rgb(250, 204, 21)",
+              background: "rgba(250, 204, 21, 0.08)",
+              padding: 12,
+              borderRadius: 12,
             }}
           >
             <p style={{ marginTop: 0, marginBottom: 0 }}>
@@ -624,7 +664,23 @@ export function OnboardingForm({
             background: "color-mix(in srgb, rgb(34, 197, 94) 8%, transparent)",
           }}
         >
-          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8 }}>Senior&apos;s Detail</div>
+          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 2 }}>Senior</div>
+          <p style={{ marginTop: 0, marginBottom: 8, fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>
+            Warm-Hello will send scheduled check-in messages to this phone number.
+          </p>
+          <p
+            style={{
+              margin: "0 0 10px",
+              padding: "10px 12px",
+              borderRadius: 10,
+              border: "1px solid color-mix(in oklab, rgb(250, 204, 21) 45%, var(--border))",
+              background: "rgba(250, 204, 21, 0.06)",
+              fontSize: 13,
+              lineHeight: 1.55,
+            }}
+          >
+            <strong>{EMERGENCY_WARNING_SENIOR_SETUP}</strong>
+          </p>
           <div className="form-grid">
             <label>
               Senior first name
@@ -845,7 +901,7 @@ export function OnboardingForm({
                     fontSize: 13,
                   }}
                 >
-                  Up to 2 total emergency contacts (1 primary + 1 additional) will all receive the check-in confirmation and escalation SMS messages.
+                  Up to 2 total trusted escalation contacts (1 primary + 1 additional) will all receive the check-in confirmation and escalation SMS messages.
                 </p>
               </div>
             ) : null}
@@ -881,11 +937,73 @@ export function OnboardingForm({
             </div>
           </div>
         </label>
+        <label
+          className="form-grid-wide checkbox-grid-row"
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 12,
+            padding: "16px",
+            border: "1px solid color-mix(in oklab, rgb(16, 185, 129) 50%, var(--border))",
+            borderRadius: 12,
+            background: "color-mix(in oklab, rgb(16, 185, 129) 7%, transparent)",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={Boolean(form.seniorOperationalSmsConsent)}
+            onChange={(event) =>
+              updateField("seniorOperationalSmsConsent", event.target.checked as any)
+            }
+          />
+          <div style={{ fontSize: 14, lineHeight: 1.55 }}>
+            <div style={{ whiteSpace: "pre-line" }}>
+              {CLICKWRAP_SENIOR_SMS_OPERATIONAL_LABEL}
+            </div>
+          </div>
+        </label>
+        <label
+          className="form-grid-wide checkbox-grid-row"
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 12,
+            padding: "16px",
+            border: "1px dashed var(--border)",
+            borderRadius: 12,
+            background: "transparent",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={Boolean(form.marketingEmailConsent)}
+            onChange={(event) =>
+              updateField("marketingEmailConsent", event.target.checked as any)
+            }
+          />
+          <div style={{ fontSize: 14, lineHeight: 1.55 }}>
+            <div style={{ whiteSpace: "pre-line" }}>{CLICKWRAP_MARKETING_EMAIL_LABEL}</div>
+          </div>
+        </label>
+        <p
+          className="form-grid-wide"
+          style={{
+            margin: 0,
+            padding: "12px 14px",
+            borderRadius: 10,
+            border: "1px dashed color-mix(in oklab, rgb(59, 130, 246) 40%, var(--border))",
+            color: "var(--muted)",
+            fontSize: 13,
+            lineHeight: 1.6,
+          }}
+        >
+          <strong>Free trial — no payment required.</strong> {FREE_TRIAL_DOES_NOT_AUTO_CONVERT}
+        </p>
         <div className="form-actions">
           <button
             className="button primary"
             type="submit"
-            disabled={submitting || !caregiverConsentChecked}
+            disabled={submitting || !caregiverConsentChecked || !form.seniorOperationalSmsConsent}
             onClick={() => {
               submitIntent.current = "save";
             }}

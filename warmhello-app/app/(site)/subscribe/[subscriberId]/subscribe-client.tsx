@@ -9,11 +9,17 @@ import {
   DEFAULT_INTERVAL,
   pricingPlanFor,
   isBillingInterval,
+  variantFor,
 } from "@/lib/pricing";
 import { IntervalToggle } from "@/components/interval-toggle";
 import {
   CPA_AUTO_RENEW_BULLETS,
   LEGAL_DISCLAIMER_UNIVERSAL,
+  CLICKWRAP_PAID_CHECKOUT_LABEL,
+  PAID_RENEWAL_MEDIALINE,
+  FREE_TRIAL_DOES_NOT_AUTO_CONVERT,
+  TOS_VERSION_CURRENT,
+  PRIVACY_VERSION_CURRENT,
 } from "@/lib/constants";
 
 type SubscribeClientProps = {
@@ -27,7 +33,7 @@ export function SubscribeClient({
   subscriberId,
   currency,
 }: SubscribeClientProps) {
-  const [consentAll, setConsentAll] = useState(false);
+  const [termsChecked, setTermsChecked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [billingInterval, setBillingInterval] = useState<BillingInterval>(DEFAULT_INTERVAL);
@@ -37,9 +43,17 @@ export function SubscribeClient({
   const annualEquiv = plan.annual.equivalentMonthly;
   const monthlyAmt = plan.monthly.amount;
 
+  const selectedVariant = variantFor(currency, billingInterval);
+  const subscribeButtonLabel =
+    billingInterval === "annual"
+      ? `Subscribe — ${plan.currencySymbol}${plan.annual.amount.toFixed(2)} ${currency}/year`
+      : `Subscribe — ${plan.currencySymbol}${plan.monthly.amount.toFixed(2)} ${currency}/month`;
+
   async function proceed() {
-    if (!consentAll) {
-      setError("Please confirm both terms and caregiver authorization before continuing.");
+    if (!termsChecked) {
+      setError(
+        "Please check the box to agree to the Terms of Service and acknowledge the Privacy Policy before continuing.",
+      );
       return;
     }
     setError(null);
@@ -52,8 +66,9 @@ export function SubscribeClient({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          tos_version: "2025-08-14",
-          caregiver_ack: consentAll ? "1" : "0",
+          tos_version: TOS_VERSION_CURRENT,
+          privacy_version: PRIVACY_VERSION_CURRENT,
+          terms_checked: true,
           billing_interval: interval,
         }),
       });
@@ -120,7 +135,7 @@ export function SubscribeClient({
               </div>
               <div>
                 <span>Family contacts</span>
-                <strong>Up to 2 emergency contacts</strong>
+                <strong>Up to 2 trusted escalation contacts</strong>
               </div>
               <div>
                 <span>Support channel</span>
@@ -344,10 +359,7 @@ export function SubscribeClient({
                   /day
                 </strong>
               </div>
-              <div className="subscribe-cost subscribe-cost-final">
-                <span>30-day money-back guarantee</span>
-                <strong>Included</strong>
-              </div>
+
             </div>
 
             <ul className="check-list subscribe-check-list">
@@ -373,12 +385,30 @@ export function SubscribeClient({
           </div>
 
           <div className="subscribe-cta card">
-            <h2 className="subscribe-cta-title">Activate your trial</h2>
+            <h2 className="subscribe-cta-title">Choose a plan to continue</h2>
             <p className="subscribe-cta-lede">
-              We never charge during the trial. You can cancel from the family
-              dashboard before the 7th day if Warm-Hello isn&apos;t the right
-              fit.
+              Your free trial has ended. To continue using Warm-Hello, actively
+              select a plan and complete checkout below. No charge is made until
+              you confirm purchase on the next screen.
             </p>
+
+            <div
+              className="subscribe-renewal-mediabar"
+              style={{
+                margin: "4px 0 18px",
+                padding: "14px 16px",
+                borderRadius: 12,
+                border: "2px solid color-mix(in oklab, var(--accent) 40%, var(--border))",
+                background: "color-mix(in oklab, var(--accent) 7%, var(--surface))",
+                fontSize: 14,
+                lineHeight: 1.55,
+              }}
+            >
+              <strong>{PAID_RENEWAL_MEDIALINE}</strong>
+              <div style={{ marginTop: 6, color: "var(--muted)" }}>
+                {FREE_TRIAL_DOES_NOT_AUTO_CONVERT}
+              </div>
+            </div>
 
             <label
               className="consent-row"
@@ -388,10 +418,10 @@ export function SubscribeClient({
                 gap: 16,
                 padding: "16px 18px",
                 borderRadius: 12,
-                border: consentAll
+                border: termsChecked
                   ? "2px solid color-mix(in oklab, var(--accent) 55%, transparent)"
                   : "2px solid var(--border)",
-                background: consentAll
+                background: termsChecked
                   ? "color-mix(in oklab, var(--accent) 6%, var(--surface))"
                   : "var(--surface-elevated)",
                 cursor: "pointer",
@@ -400,9 +430,9 @@ export function SubscribeClient({
             >
               <input
                 type="checkbox"
-                checked={consentAll}
-                onChange={(event) => setConsentAll(event.target.checked)}
-                aria-label="I agree to the Terms of Service and Privacy Policy, and I confirm I am authorized to enroll this senior."
+                checked={termsChecked}
+                onChange={(event) => setTermsChecked(event.target.checked)}
+                aria-label={CLICKWRAP_PAID_CHECKOUT_LABEL}
                 style={{
                   width: 26,
                   height: 26,
@@ -421,27 +451,65 @@ export function SubscribeClient({
                   fontWeight: 500,
                 }}
               >
-                I agree to the{" "}
-                <Link href={legalLinks.terms} target="_blank" rel="noreferrer">
-                  Terms of Service
-                </Link>{" "}
-                and{" "}
-                <Link href={legalLinks.privacy} target="_blank" rel="noreferrer">
-                  Privacy Policy
-                </Link>
-                , and I confirm I am a caregiver or trusted contact for this senior
-                with permission to enroll them in daily SMS check-ins.
+                {CLICKWRAP_PAID_CHECKOUT_LABEL}
+                <br />
+                <span style={{ color: "var(--muted)", fontSize: 13 }}>
+                  (
+                  <Link href={legalLinks.terms} target="_blank" rel="noreferrer">
+                    Terms of Service
+                  </Link>{" "}
+                  ·{" "}
+                  <Link href={legalLinks.privacy} target="_blank" rel="noreferrer">
+                    Privacy Policy
+                  </Link>
+                  )
+                </span>
               </span>
             </label>
 
             <button
               type="button"
               className="button primary subscribe-proceed-button"
-              disabled={loading || !consentAll}
+              disabled={loading || !termsChecked}
               onClick={proceed}
+              style={{
+                fontSize: 17,
+                fontWeight: 800,
+                padding: "18px 22px",
+                letterSpacing: 0.2,
+                wordBreak: "break-word",
+              }}
             >
-              {loading ? "Preparing checkout…" : "Proceed to Checkout"}
+              {loading ? "Preparing checkout…" : subscribeButtonLabel}
             </button>
+
+            <p
+              className="subscribe-billing-disclosure"
+              style={{
+                marginTop: 14,
+                marginBottom: 0,
+                padding: "12px 14px",
+                borderRadius: 10,
+                border: "1px solid var(--border)",
+                background: "rgba(15, 23, 42, 0.25)",
+                fontSize: 13,
+                lineHeight: 1.6,
+                color: "var(--muted)",
+                textAlign: "left",
+              }}
+            >
+              By selecting{" "}
+              <strong style={{ color: "var(--text)" }}>Subscribe</strong>, you agree to the{" "}
+              <Link href={legalLinks.terms} target="_blank" rel="noreferrer" className="inline-link">
+                Terms of Service
+              </Link>{" "}
+              and acknowledge the{" "}
+              <Link href={legalLinks.privacy} target="_blank" rel="noreferrer" className="inline-link">
+                Privacy Policy
+              </Link>
+              . This is a recurring subscription that automatically renews each billing period until cancelled. Your selected subscription price{" "}
+              <strong style={{ color: "var(--text)" }}>plus applicable taxes</strong> will be charged at renewal. {FREE_TRIAL_DOES_NOT_AUTO_CONVERT}
+            </p>
 
             {error ? (
               <div className="subscribe-submit-error" role="alert">

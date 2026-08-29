@@ -67,6 +67,8 @@ export async function POST(request: Request) {
         data: {
           subscriptionStatus: "PAST_DUE",
           currentPeriodEndsAt: summary.trialEndsAt,
+          trialEndedAt: summary.trialEndsAt,
+          trialStartedAt: subscriber.trialStartedAt ?? subscriber.created,
         },
       });
       newStatus = "PAST_DUE";

@@ -1,7 +1,7 @@
 import type Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { BillingCurrency, isBillingCurrency } from "@/lib/pricing";
-import { sendSuccessfulSubscriptionEmail } from "@/lib/trial-emails";
+import { sendSuccessfulSubscriptionEmail, sendInvoicePaymentFailedEmail } from "@/lib/trial-emails";
 import { getStripeClient } from "@/lib/stripe";
 
 type ConsoleWithWarn = Console & {
@@ -111,12 +111,16 @@ export async function applyStripeEvent(event: Stripe.Event) {
 
       let currentPeriodEndsAt: Date | undefined;
       let billingCurrencyFromStripe: BillingCurrency | undefined;
+      let billingIntervalFromStripe: "MONTHLY" | "ANNUAL" | undefined;
+      let subscriptionPriceAmount: number | undefined;
       if (subscriptionId) {
         try {
           const { getStripeClient } = await import("@/lib/stripe");
           const stripe = getStripeClient();
           if (stripe) {
-            const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+            const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
+              expand: ["items.data.price"],
+            });
             const endsAt = stripeCurrentPeriodEnd(subscription);
             if (endsAt) currentPeriodEndsAt = endsAt;
             billingCurrencyFromStripe = currencyFromSessionOrSubscription({
@@ -124,6 +128,16 @@ export async function applyStripeEvent(event: Stripe.Event) {
               subscriptionCurrency: subscription.currency,
               metadataCurrency: (session.metadata as { billingCurrency?: unknown } | null)?.billingCurrency,
             });
+            const firstItem = subscription.items?.data?.[0];
+            const price = firstItem?.price;
+            if (price) {
+              const recurring = (price as Stripe.Price).recurring;
+              const interval = recurring?.interval;
+              billingIntervalFromStripe = interval === "year" ? "ANNUAL" : "MONTHLY";
+              if (typeof price.unit_amount === "number") {
+                subscriptionPriceAmount = price.unit_amount / 100;
+              }
+            }
           }
         } catch (error) {
           console.warn(
@@ -141,8 +155,11 @@ export async function applyStripeEvent(event: Stripe.Event) {
 
       const now = new Date();
       const sessionMetadata = (session.metadata ?? {}) as Record<string, string | undefined>;
-      const tosVersion = sessionMetadata.tos_version ?? "v2026-08-21";
+      const tosVersion = sessionMetadata.tos_version ?? "v2026-08-29";
+      const privacyVersion = sessionMetadata.privacy_version ?? "v2026-08-29";
       const caregiverAck = sessionMetadata.caregiver_ack === "1";
+      const subscriptionTermsDisclosureVer =
+        `CPA_DISCLOSURE_v1 | TOS_${tosVersion} | PRIVACY_${privacyVersion}`;
 
       const updateResult = await prisma.subscriber.updateMany({
         where: subscriberId
@@ -154,8 +171,17 @@ export async function applyStripeEvent(event: Stripe.Event) {
           subscriptionStatus: "ACTIVE",
           billingCurrency: sessionCurrency,
           currentPeriodEndsAt,
+          nextRenewalDate: currentPeriodEndsAt,
+          subscriptionStartedAt: now,
+          billingInterval: billingIntervalFromStripe ?? "MONTHLY",
+          subscriptionPriceAmount: typeof subscriptionPriceAmount === "number"
+            ? subscriptionPriceAmount
+            : undefined,
+          subscriptionTermsDisclosureVer,
           tosAcceptedAt: now,
+          privacyAcknowledgedAt: now,
           tosVersion,
+          privacyPolicyVersion: privacyVersion,
           caregiverSeniorConsentAckAt: caregiverAck ? now : undefined,
         },
       });
@@ -345,6 +371,63 @@ export async function applyStripeEvent(event: Stripe.Event) {
         `[stripe-webhook:invoice.paid] event.id=${event.id} billing_reason=${invoice.billing_reason ?? "null"} customerId=${customerId ?? "null"} subscriptionId=${subscriptionId ?? "null"} invoiceId=${invoice.id}`,
       );
 
+      if (invoice.billing_reason !== "subscription_create" && subscriptionId && prisma) {
+        try {
+          const { getStripeClient } = await import("@/lib/stripe");
+          const stripe = getStripeClient();
+          let renewalPeriodEnd: Date | null = null;
+          let renewalInterval: "MONTHLY" | "ANNUAL" | undefined;
+          let renewalPrice: number | undefined;
+          let renewalCurrency: BillingCurrency | undefined;
+          if (stripe) {
+            try {
+              const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
+              expand: ["items.data.price"],
+              });
+            renewalPeriodEnd = stripeCurrentPeriodEnd(subscription);
+            renewalCurrency = currencyFromSessionOrSubscription({
+              subscriptionCurrency: subscription.currency,
+            });
+            const firstItem = subscription.items?.data?.[0];
+            const price = firstItem?.price;
+            if (price) {
+              const recurring = (price as Stripe.Price).recurring;
+              renewalInterval = recurring?.interval === "year" ? "ANNUAL" : "MONTHLY";
+              if (typeof price.unit_amount === "number") {
+                renewalPrice = price.unit_amount / 100;
+              }
+            }
+            } catch (subErr) {
+              console.warn(
+                `[stripe-webhook:invoice.paid] renewal subscription retrieve failed: ${subErr instanceof Error ? subErr.message : String(subErr)}`,
+              );
+            }
+          }
+          await prisma.subscriber.updateMany({
+            where: {
+              OR: [
+              ...(subscriptionId ? [{ stripeSubscriptionId: subscriptionId }] : []),
+              ...(customerId ? [{ stripeCustomerId: customerId }] : []),
+              ],
+            },
+            data: {
+              currentPeriodEndsAt: renewalPeriodEnd ?? undefined,
+              nextRenewalDate: renewalPeriodEnd ?? undefined,
+              billingInterval: renewalInterval ?? undefined,
+              subscriptionPriceAmount: typeof renewalPrice === "number" ? renewalPrice : undefined,
+              billingCurrency: renewalCurrency ?? undefined,
+            },
+          });
+          console.log(
+            `[stripe-webhook:invoice.paid] renewal evidence synced for subscription=${subscriptionId ?? "null"}`,
+          );
+        } catch (renewalErr) {
+          console.warn(
+            `[stripe-webhook:invoice.paid] renewal sync failed (non-fatal): ${renewalErr instanceof Error ? renewalErr.message : String(renewalErr)}`,
+          );
+        }
+      }
+
       if (invoice.billing_reason !== "subscription_create") {
         console.log(
           `[stripe-webhook:invoice.paid] SKIP success-email: billing_reason="${invoice.billing_reason ?? "null"}" !== "subscription_create" (this is a renewal or adjustment)`,
@@ -504,6 +587,35 @@ export async function applyStripeEvent(event: Stripe.Event) {
         subscriptionCurrency: subscription.currency,
       });
 
+      let syncInterval: "MONTHLY" | "ANNUAL" | undefined;
+      let syncPriceAmount: number | undefined;
+      const firstItem = subscription.items?.data?.[0];
+      const price = firstItem?.price;
+      if (price) {
+        const recurring = (price as Stripe.Price).recurring;
+        const interval = recurring?.interval;
+        syncInterval = interval === "year" ? "ANNUAL" : "MONTHLY";
+        if (typeof price.unit_amount === "number") {
+          syncPriceAmount = price.unit_amount / 100;
+        }
+      }
+
+      const mappedStatus = mapStripeSubscriptionStatus(subscription);
+      const now = new Date();
+      let cancellationRequestedAt: Date | undefined;
+      let cancellationDate: Date | undefined;
+      let cancellationStatus: "NONE" | "PENDING_AT_PERIOD_END" | "CANCELED" = "NONE";
+      if (subscription.cancel_at_period_end && (mappedStatus === "ACTIVE" || mappedStatus === "CANCELED")) {
+        cancellationStatus = "PENDING_AT_PERIOD_END";
+        cancellationRequestedAt = now;
+        cancellationDate = currentPeriodEndsAt ?? undefined;
+      } else if (mappedStatus === "CANCELED") {
+        cancellationStatus = "CANCELED";
+        if (subscription.ended_at) {
+          cancellationDate = new Date(subscription.ended_at * 1000);
+        }
+      }
+
       await prisma.subscriber.updateMany({
         where: {
           OR: [
@@ -514,9 +626,17 @@ export async function applyStripeEvent(event: Stripe.Event) {
         data: {
           stripeCustomerId: customerId,
           stripeSubscriptionId: subscription.id,
-          subscriptionStatus: mapStripeSubscriptionStatus(subscription),
+          subscriptionStatus: mappedStatus,
           billingCurrency: billingCurrencyFromStripe,
           currentPeriodEndsAt: currentPeriodEndsAt ?? undefined,
+          nextRenewalDate: currentPeriodEndsAt ?? undefined,
+          billingInterval: syncInterval ?? undefined,
+          subscriptionPriceAmount: typeof syncPriceAmount === "number"
+            ? syncPriceAmount
+            : undefined,
+          cancellationStatus,
+          cancellationRequestedAt,
+          cancellationDate,
         },
       });
 
@@ -526,6 +646,18 @@ export async function applyStripeEvent(event: Stripe.Event) {
     case "invoice.payment_failed": {
       const invoice = event.data.object as Stripe.Invoice;
       const customerId = typeof invoice.customer === "string" ? invoice.customer : null;
+      const amountDue = typeof invoice.amount_due === "number" ? invoice.amount_due / 100 : 0;
+      const currency = (invoice.currency ?? "usd").toUpperCase();
+      const attemptCount =
+        typeof invoice.attempt_count === "number" ? invoice.attempt_count : 1;
+      const dueDateLabel = invoice.due_date
+        ? new Date(invoice.due_date * 1000).toLocaleDateString(undefined, {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })
+        : undefined;
 
       await prisma.subscriber.updateMany({
         where: customerId ? { stripeCustomerId: customerId } : { id: "__missing__" },
@@ -533,6 +665,27 @@ export async function applyStripeEvent(event: Stripe.Event) {
           subscriptionStatus: "PAST_DUE",
         },
       });
+
+      if (prisma && customerId) {
+        try {
+          const subscriber = await prisma.subscriber.findFirst({
+            where: { stripeCustomerId: customerId },
+            select: { id: true, email: true, unsubscribedAt: true },
+          });
+          if (subscriber && subscriber.email && !subscriber.unsubscribedAt) {
+            await sendInvoicePaymentFailedEmail({
+              subscriberId: subscriber.id,
+              subscriberEmail: subscriber.email,
+              amountDue,
+              currency,
+              dueDateLabel,
+              attemptCount,
+            }).catch(() => null);
+          }
+        } catch {
+          // best-effort only
+        }
+      }
 
       return { ok: true as const, message: "Invoice failure synced." };
     }

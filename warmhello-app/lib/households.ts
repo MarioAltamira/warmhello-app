@@ -7,7 +7,8 @@ import { getShortLinkForCheckIn } from "@/lib/short-links";
 import { sendSeniorOnboardingSmsSequence } from "@/lib/sms";
 import { getSubscriberPlanSummary } from "@/lib/subscriber-plan";
 import { normalizeTimeZone } from "@/lib/timezones";
-import { sendTrialWelcomeEmail } from "@/lib/trial-emails";
+import { sendTrialWelcomeEmail, sendTrialEndingSoonEmail } from "@/lib/trial-emails";
+import { TOS_VERSION_CURRENT, PRIVACY_VERSION_CURRENT } from "@/lib/constants";
 
 export type ContactInput = {
   fullName: string;
@@ -16,6 +17,15 @@ export type ContactInput = {
 };
 
 export const MAX_CONTACTS = 2;
+
+export type ConsentMetadata = {
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  tosVersion?: string;
+  privacyVersion?: string;
+  seniorOperationalSmsConsent?: boolean;
+  marketingEmailConsent?: boolean;
+};
 
 function normalizePhoneInput(input: CreateHouseholdInput): CreateHouseholdInput {
   const additional = (input.additionalContacts ?? []).map((c) => ({
@@ -60,7 +70,12 @@ export type CreateHouseholdInput = {
   primaryContact: ContactInput;
   additionalContacts?: ContactInput[];
   caregiverAck?: boolean;
+  tosVersion?: string;
+  privacyVersion?: string;
+  seniorOperationalSmsConsent?: boolean;
+  marketingEmailConsent?: boolean;
 };
+
 
 export async function getHouseholdForSubscriber(subscriberId: string) {
   if (!prisma) {
@@ -133,7 +148,10 @@ export async function getHouseholdForSubscriber(subscriberId: string) {
   }
 }
 
-export async function createHousehold(input: CreateHouseholdInput) {
+export async function createHousehold(
+  input: CreateHouseholdInput,
+  consent: ConsentMetadata = {},
+) {
   if (!prisma) {
     return { ok: false as const, message: "Database is not configured yet." };
   }
@@ -159,6 +177,15 @@ export async function createHousehold(input: CreateHouseholdInput) {
       };
     }
 
+    const tosVersion = consent.tosVersion ?? input.tosVersion ?? TOS_VERSION_CURRENT;
+    const privacyVersion = consent.privacyVersion ?? input.privacyVersion ?? PRIVACY_VERSION_CURRENT;
+    const seniorOperationalSmsConsent = Boolean(
+      consent.seniorOperationalSmsConsent ?? input.seniorOperationalSmsConsent,
+    );
+    const marketingEmailConsent = Boolean(
+      consent.marketingEmailConsent ?? input.marketingEmailConsent,
+    );
+
     const result = await prisma.$transaction(async (tx) => {
       const now = new Date();
       const trialEndsAt = new Date(now);
@@ -177,9 +204,19 @@ export async function createHousehold(input: CreateHouseholdInput) {
           subscriptionStatus: "TRIAL",
           billingCurrency,
           currentPeriodEndsAt: trialEndsAt,
+          trialStartedAt: now,
           created: now,
           unsubscribedAt: null,
           caregiverSeniorConsentAckAt: caregiverAck ? now : undefined,
+          tosAcceptedAt: caregiverAck ? now : undefined,
+          tosVersion,
+          privacyPolicyVersion: privacyVersion,
+          privacyAcknowledgedAt: caregiverAck ? now : undefined,
+          operationalSmsConsentGrantedAt: seniorOperationalSmsConsent ? now : undefined,
+          marketingEmailConsent,
+          marketingEmailConsentAt: marketingEmailConsent ? now : null,
+          marketingSmsConsent: false,
+          marketingSmsConsentAt: null,
         },
       });
 
@@ -195,6 +232,8 @@ export async function createHousehold(input: CreateHouseholdInput) {
           secondAttemptHours: normalized.senior.secondAttemptHours,
           active: normalized.senior.active,
           caregiverConsentAckAt: caregiverAck ? now : undefined,
+          operationalSmsConsent: seniorOperationalSmsConsent,
+          operationalSmsConsentAt: seniorOperationalSmsConsent ? now : null,
         },
       });
 
@@ -223,6 +262,74 @@ export async function createHousehold(input: CreateHouseholdInput) {
           }),
         ),
       );
+
+      const auditEvents: Array<{
+        event: any;
+        termsVersion?: string | null;
+        privacyVersion?: string | null;
+        currency?: any;
+        billingInterval?: string | null;
+        priceAmount?: number | null;
+        stripeSessionId?: string | null;
+        seniorPhoneNumber?: string | null;
+        phoneE164?: string | null;
+        metadata?: any;
+      }> = [
+        {
+          event: "TERMS_ACCEPTED",
+          termsVersion: tosVersion,
+          privacyVersion,
+          metadata: { caregiverAck },
+        },
+        {
+          event: "PRIVACY_ACKNOWLEDGED",
+          termsVersion: tosVersion,
+          privacyVersion,
+        },
+        {
+          event: "SENIOR_SMS_AUTHORIZATION",
+          seniorPhoneNumber: senior.phoneNumber,
+          phoneE164: senior.phoneNumber,
+          metadata: { seniorOperationalSmsConsent },
+        },
+      ];
+      if (marketingEmailConsent) {
+        auditEvents.push({
+          event: "MARKETING_EMAIL_OPT_IN",
+          termsVersion: tosVersion,
+          privacyVersion,
+        });
+      }
+      if (seniorOperationalSmsConsent) {
+        auditEvents.push({
+          event: "OPERATIONAL_SMS_OPT_IN",
+          seniorPhoneNumber: senior.phoneNumber,
+          phoneE164: senior.phoneNumber,
+        });
+      }
+
+      const auditsP = tx.legalConsentAudit.createMany({
+        data: auditEvents.map((e) => ({
+          subscriberId: subscriber.id,
+          ipAddress: consent.ipAddress ?? undefined,
+          userAgent: consent.userAgent ?? undefined,
+          termsVersion: e.termsVersion ?? tosVersion,
+          privacyVersion: e.privacyVersion ?? privacyVersion,
+          event: e.event,
+          subscriptionPlan: billingCurrency,
+          currency: billingCurrency,
+          billingInterval: e.billingInterval ?? null,
+          priceAmount: typeof e.priceAmount === "number" ? e.priceAmount : null,
+          stripeSessionId: e.stripeSessionId ?? null,
+          stripeSubscriptionId: null,
+          seniorPhoneNumber: e.seniorPhoneNumber ?? null,
+          phoneE164: e.phoneE164 ?? null,
+          metadata: e.metadata ?? undefined,
+          createdAt: now,
+        })),
+      });
+
+      await auditsP;
 
       return { subscriber, senior, contact, additionalContacts };
     });
@@ -270,6 +377,7 @@ export async function createHousehold(input: CreateHouseholdInput) {
         "sendTrialWelcomeEmail",
         "seniorOnboardingSms",
         "enqueue trial-nudge",
+        "enqueue trial-ending-soon",
         "enqueue trial-final",
         "enqueue trial-expire",
       ][index] ?? `sideEffect[${index}]`;
@@ -277,6 +385,7 @@ export async function createHousehold(input: CreateHouseholdInput) {
       sendTrialWelcomeEmail(result.subscriber.id),
       Promise.resolve(seniorOnboardingSmsOutcome),
       enqueueJsonJob("/api/jobs/trial-nudge", { subscriberId: result.subscriber.id }, 72),
+      enqueueJsonJob("/api/jobs/trial-ending-soon", { subscriberId: result.subscriber.id }, 144),
       enqueueJsonJob("/api/jobs/trial-final", { subscriberId: result.subscriber.id }, 167),
       enqueueJsonJob("/api/jobs/trial-expire", { subscriberId: result.subscriber.id }, 167),
     ]);
@@ -319,7 +428,11 @@ export async function createHousehold(input: CreateHouseholdInput) {
   }
 }
 
-export async function updateHousehold(subscriberId: string, input: CreateHouseholdInput) {
+export async function updateHousehold(
+  subscriberId: string,
+  input: CreateHouseholdInput,
+  consent: ConsentMetadata = {},
+) {
   if (!prisma) {
     return { ok: false as const, message: "Database is not configured yet." };
   }
@@ -363,6 +476,15 @@ export async function updateHousehold(subscriberId: string, input: CreateHouseho
       };
     }
 
+    const tosVersion = consent.tosVersion ?? input.tosVersion ?? TOS_VERSION_CURRENT;
+    const privacyVersion = consent.privacyVersion ?? input.privacyVersion ?? PRIVACY_VERSION_CURRENT;
+    const seniorOperationalSmsConsent = Boolean(
+      consent.seniorOperationalSmsConsent ?? input.seniorOperationalSmsConsent,
+    );
+    const marketingEmailConsent = Boolean(
+      consent.marketingEmailConsent ?? input.marketingEmailConsent,
+    );
+
     const result = await prisma.$transaction(async (tx) => {
       const now = new Date();
       const billingCurrency: BillingCurrency = isBillingCurrency(normalized.subscriber.billingCurrency)
@@ -377,7 +499,13 @@ export async function updateHousehold(subscriberId: string, input: CreateHouseho
           fullName: normalized.subscriber.fullName,
           phoneNumber: normalized.subscriber.phoneNumber,
           billingCurrency,
-          ...(caregiverAck ? { caregiverSeniorConsentAckAt: now } : {}),
+          tosVersion,
+          privacyPolicyVersion: privacyVersion,
+          ...(caregiverAck ? { caregiverSeniorConsentAckAt: now, tosAcceptedAt: now } : {}),
+          marketingEmailConsent,
+          marketingEmailConsentAt: marketingEmailConsent
+            ? now
+            : existingSubscriber.marketingEmailConsentAt ?? null,
         },
       });
 
@@ -394,6 +522,10 @@ export async function updateHousehold(subscriberId: string, input: CreateHouseho
               secondAttemptHours: normalized.senior.secondAttemptHours,
               active: normalized.senior.active,
               ...(caregiverAck ? { caregiverConsentAckAt: now } : {}),
+              operationalSmsConsent: seniorOperationalSmsConsent,
+              operationalSmsConsentAt: seniorOperationalSmsConsent
+                ? now
+                : existingSubscriber.seniors[0].operationalSmsConsentAt ?? null,
             },
           })
         : await tx.senior.create({
@@ -408,6 +540,8 @@ export async function updateHousehold(subscriberId: string, input: CreateHouseho
               secondAttemptHours: normalized.senior.secondAttemptHours,
               active: normalized.senior.active,
               ...(caregiverAck ? { caregiverConsentAckAt: now } : {}),
+              operationalSmsConsent: seniorOperationalSmsConsent,
+              operationalSmsConsentAt: seniorOperationalSmsConsent ? now : null,
             },
           });
 
@@ -476,6 +610,72 @@ export async function updateHousehold(subscriberId: string, input: CreateHouseho
           },
         });
       }
+
+      const auditEvents: Array<{
+        event: any;
+        termsVersion?: string | null;
+        privacyVersion?: string | null;
+        currency?: any;
+        billingInterval?: string | null;
+        priceAmount?: number | null;
+        stripeSessionId?: string | null;
+        seniorPhoneNumber?: string | null;
+        phoneE164?: string | null;
+        metadata?: any;
+      }> = [
+        {
+          event: "TERMS_ACCEPTED",
+          termsVersion: tosVersion,
+          privacyVersion,
+          metadata: { caregiverAck },
+        },
+        {
+          event: "PRIVACY_ACKNOWLEDGED",
+          termsVersion: tosVersion,
+          privacyVersion,
+        },
+        {
+          event: "SENIOR_SMS_AUTHORIZATION",
+          seniorPhoneNumber: senior.phoneNumber,
+          phoneE164: senior.phoneNumber,
+          metadata: { seniorOperationalSmsConsent },
+        },
+      ];
+      if (marketingEmailConsent) {
+        auditEvents.push({
+          event: "MARKETING_EMAIL_OPT_IN",
+          termsVersion: tosVersion,
+          privacyVersion,
+        });
+      }
+      if (seniorOperationalSmsConsent) {
+        auditEvents.push({
+          event: "OPERATIONAL_SMS_OPT_IN",
+          seniorPhoneNumber: senior.phoneNumber,
+          phoneE164: senior.phoneNumber,
+        });
+      }
+
+      await tx.legalConsentAudit.createMany({
+        data: auditEvents.map((e) => ({
+          subscriberId,
+          ipAddress: consent.ipAddress ?? undefined,
+          userAgent: consent.userAgent ?? undefined,
+          termsVersion: e.termsVersion ?? tosVersion,
+          privacyVersion: e.privacyVersion ?? privacyVersion,
+          event: e.event,
+          subscriptionPlan: billingCurrency,
+          currency: billingCurrency,
+          billingInterval: e.billingInterval ?? null,
+          priceAmount: typeof e.priceAmount === "number" ? e.priceAmount : null,
+          stripeSessionId: e.stripeSessionId ?? null,
+          stripeSubscriptionId: null,
+          seniorPhoneNumber: e.seniorPhoneNumber ?? null,
+          phoneE164: e.phoneE164 ?? null,
+          metadata: e.metadata ?? undefined,
+          createdAt: now,
+        })),
+      });
 
       return { subscriber, senior, contact, additionalContacts };
     });

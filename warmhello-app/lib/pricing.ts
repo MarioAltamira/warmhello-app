@@ -66,26 +66,26 @@ const USD: PricingPlan = {
     displayLabel: "USD $144.00 per year (approx. $11.99/month)",
     ctaLabel: "Start Annual Plan — $144/yr",
     buttonLabel: "Start Annual Plan",
-    microCopy: "Works out to ~$0.39 USD/day. 30-day money-back guarantee.",
+    microCopy: "Works out to ~$0.39 USD/day. One flat annual commitment, cancel anytime.",
     annualBadge: "SAVE ~20% · UNDER $0.50/DAY",
     billedAnnuallyLabel: "Billed annually at $144 USD/yr",
   },
   marketing: {
     peaceOfMindAnnual:
-      "Peace of mind for less than $0.50 a day — eliminate the daily \"what-if\" anxiety and know within hours, not days, if something is wrong.",
-    billingFrequencyLabel: "After trial ends",
-    featureBulletStandardSenior: "1 senior + 2 emergency contacts",
+      "Stay connected for less than $0.50 a day — a simple morning check-in routine so you know your loved one started their day.",
+    billingFrequencyLabel: "7-day free trial — no payment required",
+    featureBulletStandardSenior: "1 senior + 2 trusted escalation contacts",
     featureBulletContacts: "Daily automated SMS + escalation chain",
-    featureBulletPeaceOfMind: "Less than $0.50/day for complete daily peace of mind",
+    featureBulletPeaceOfMind: "Less than $0.50/day for a gentle daily check-in routine",
     featureBulletSavings: "Save ~20% compared to monthly billing",
     peaceOfMind:
-      "Peace of mind for less than $0.50 a day — eliminate the daily \"what-if\" anxiety and know within hours, not days, if something is wrong.",
+      "Stay connected for less than $0.50 a day — a simple morning check-in routine so you know your loved one started their day.",
     dailyCard:
       "<strong>$0.39 USD</strong> / day &middot; billed $144 USD/yr (save ~20% vs monthly)",
     yearlyCard:
-      "Yearly equivalent: $144 USD — one flat annual commitment, no extra fees, cancel or pause anytime.",
+      "Yearly equivalent: $144 USD — one flat annual commitment, no extra fees, cancel or pause anytime. Free trial does not auto-convert.",
     monthlyCard:
-      "Monthly: $14.99 USD. Flexible billing. Switch to annual anytime to save.",
+      "Monthly: $14.99 USD. Flexible billing. Switch to annual anytime to save. Free trial does not auto-convert.",
   },
   monthlyLabel: "$14.99 USD per month",
   dailyLabel: "$0.39 USD per day",
@@ -118,26 +118,26 @@ const CAD: PricingPlan = {
     displayLabel: "CAD $180.00 per year (approx. $14.99/month)",
     ctaLabel: "Start Annual Plan — $180/yr",
     buttonLabel: "Start Annual Plan",
-    microCopy: "Works out to ~$0.49 CAD/day. 30-day money-back guarantee.",
+    microCopy: "Works out to ~$0.49 CAD/day. One flat annual commitment, cancel anytime.",
     annualBadge: "SAVE ~20% · UNDER $0.50/DAY",
     billedAnnuallyLabel: "Billed annually at $180 CAD/yr",
   },
   marketing: {
     peaceOfMindAnnual:
-      "Peace of mind for less than $0.50 a day — eliminate the daily \"what-if\" anxiety and know within hours, not days, if something is wrong.",
-    billingFrequencyLabel: "After trial ends",
-    featureBulletStandardSenior: "1 senior + 2 emergency contacts",
+      "Stay connected for less than $0.50 a day — a simple morning check-in routine so you know your loved one started their day.",
+    billingFrequencyLabel: "7-day free trial — no payment required",
+    featureBulletStandardSenior: "1 senior + 2 trusted escalation contacts",
     featureBulletContacts: "Daily automated SMS + escalation chain",
-    featureBulletPeaceOfMind: "Less than $0.50/day for complete daily peace of mind",
+    featureBulletPeaceOfMind: "Less than $0.50/day for a gentle daily check-in routine",
     featureBulletSavings: "Save ~20% compared to monthly billing",
     peaceOfMind:
-      "Peace of mind for less than $0.50 a day — eliminate the daily \"what-if\" anxiety and know within hours, not days, if something is wrong.",
+      "Stay connected for less than $0.50 a day — a simple morning check-in routine so you know your loved one started their day.",
     dailyCard:
       "<strong>$0.49 CAD</strong> / day &middot; billed $180 CAD/yr (save ~20% vs monthly)",
     yearlyCard:
-      "Yearly equivalent: $180 CAD — one flat annual commitment, no extra fees, cancel or pause anytime.",
+      "Yearly equivalent: $180 CAD — one flat annual commitment, no extra fees, cancel or pause anytime. Free trial does not auto-convert.",
     monthlyCard:
-      "Monthly: $19.99 CAD. Flexible billing. Switch to annual anytime to save.",
+      "Monthly: $19.99 CAD. Flexible billing. Switch to annual anytime to save. Free trial does not auto-convert.",
   },
   monthlyLabel: "$19.99 CAD per month",
   dailyLabel: "$0.49 CAD per day",

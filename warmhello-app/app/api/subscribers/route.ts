@@ -4,6 +4,7 @@ import { z } from "zod";
 import { createHousehold, updateHousehold } from "@/lib/households";
 import { getSubscriberSession } from "@/lib/subscriber-session";
 import { parseJsonBody } from "@/lib/zod-parse";
+import { TOS_VERSION_CURRENT, PRIVACY_VERSION_CURRENT } from "@/lib/constants";
 
 const BillingCurrencySchema = z.enum(["USD", "CAD"]);
 
@@ -40,6 +41,10 @@ const bodySchema = z
     primaryContact: contactSchema,
     additionalContacts: z.array(contactSchema).max(Math.max(0, MAX_CONTACTS - 1)).optional(),
     caregiverAck: z.boolean().optional(),
+    tosVersion: z.string().min(1).optional(),
+    privacyVersion: z.string().min(1).optional(),
+    seniorOperationalSmsConsent: z.boolean().optional(),
+    marketingEmailConsent: z.boolean().optional(),
   })
   .refine(
     (data) =>
@@ -50,10 +55,32 @@ const bodySchema = z
     },
   );
 
+function deriveClientMetadata(request: Request): { ipAddress: string | null; userAgent: string | null } {
+  const headers = request.headers;
+  const forwardedFor = headers.get("x-forwarded-for");
+  const ipAddress =
+    (forwardedFor ? forwardedFor.split(",")[0]?.trim() : null) ??
+    headers.get("x-real-ip") ??
+    null;
+  const userAgent = headers.get("user-agent");
+  return { ipAddress, userAgent };
+}
+
 export async function POST(request: Request) {
   const parsed = await parseJsonBody(request, bodySchema);
   if (!parsed.ok) return parsed.response;
-  const result = await createHousehold(parsed.data);
+
+  const md = deriveClientMetadata(request);
+  const tosVersion = parsed.data.tosVersion ?? TOS_VERSION_CURRENT;
+  const privacyVersion = parsed.data.privacyVersion ?? PRIVACY_VERSION_CURRENT;
+  const result = await createHousehold(parsed.data, {
+    ipAddress: md.ipAddress,
+    userAgent: md.userAgent ?? undefined,
+    tosVersion,
+    privacyVersion,
+    seniorOperationalSmsConsent: Boolean(parsed.data.seniorOperationalSmsConsent),
+    marketingEmailConsent: Boolean(parsed.data.marketingEmailConsent),
+  });
 
   if (!result.ok) {
     return NextResponse.json(result, { status: 400 });
@@ -93,7 +120,17 @@ export async function PUT(request: Request) {
     );
   }
 
-  const result = await updateHousehold(parsed.data.subscriberId, parsed.data);
+  const md = deriveClientMetadata(request);
+  const tosVersion = parsed.data.tosVersion ?? TOS_VERSION_CURRENT;
+  const privacyVersion = parsed.data.privacyVersion ?? PRIVACY_VERSION_CURRENT;
+  const result = await updateHousehold(parsed.data.subscriberId, parsed.data, {
+    ipAddress: md.ipAddress,
+    userAgent: md.userAgent ?? undefined,
+    tosVersion,
+    privacyVersion,
+    seniorOperationalSmsConsent: Boolean(parsed.data.seniorOperationalSmsConsent),
+    marketingEmailConsent: Boolean(parsed.data.marketingEmailConsent),
+  });
 
   if (!result.ok) {
     return NextResponse.json(result, { status: 400 });

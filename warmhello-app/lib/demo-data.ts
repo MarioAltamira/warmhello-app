@@ -82,7 +82,7 @@ export const demoDashboard: DashboardSnapshot = {
     },
   ],
   escalationPolicy:
-    "Friendly follow-up after 1 hour, then contact your trusted emergency contacts one hour after that if your loved one still hasn't confirmed they're okay.",
+    "Friendly follow-up after 1 hour, then contact your trusted escalation contacts one hour after that if your loved one still hasn't confirmed they're okay.",
   integrationStatus: {
     database: false,
     stripe: false,

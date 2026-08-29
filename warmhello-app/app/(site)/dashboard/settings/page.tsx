@@ -23,7 +23,14 @@ export default async function DashboardSettingsPage() {
     ? prisma.subscriber
         .findUnique({
           where: { id: subscriberId },
-          select: { unsubscribedAt: true, email: true },
+          select: {
+            unsubscribedAt: true,
+            email: true,
+            billingInterval: true,
+            cancellationStatus: true,
+            cancellationDate: true,
+            currentPeriodEndsAt: true,
+          },
         })
         .catch(() => null)
     : Promise.resolve(null));
@@ -31,6 +38,11 @@ export default async function DashboardSettingsPage() {
     opted: Boolean(subscriberRow?.unsubscribedAt),
     email: subscriberRow?.email ?? snapshot.subscriberEmail ?? "",
   };
+  const billingIntervalRaw = (subscriberRow as any)?.billingInterval ?? null;
+  const cancellationStatusRaw = (subscriberRow as any)?.cancellationStatus ?? null;
+  const currentPeriodEndsAtIso = subscriberRow?.currentPeriodEndsAt
+    ? subscriberRow.currentPeriodEndsAt.toISOString()
+    : null;
 
   return (
     <main className="shell">
@@ -56,6 +68,13 @@ export default async function DashboardSettingsPage() {
         billingCurrency={snapshot.billingCurrency}
         billingPlanLabel={snapshot.billingPlanLabel}
         customerEmail={snapshot.subscriberEmail ?? ""}
+        currentPeriodEndsAtIso={
+          currentPeriodEndsAtIso ?? snapshot.periodEndsAt ?? null
+        }
+        billingInterval={billingIntervalRaw as "MONTHLY" | "ANNUAL" | null}
+        cancellationStatus={
+          cancellationStatusRaw as "NONE" | "PENDING_AT_PERIOD_END" | "CANCELED" | null
+        }
       />
 
       <EmailPreferencesCard initialEmailOptedOut={emailOptedOut.opted} />

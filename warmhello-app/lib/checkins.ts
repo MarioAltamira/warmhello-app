@@ -111,8 +111,8 @@ function buildDashboardSnapshot(
     })),
     escalationPolicy:
       senior.secondAttemptHours === 1
-        ? "Friendly follow-up after 1 hour, then contact your trusted emergency contacts one hour after that if your loved one still hasn't confirmed they're okay."
-        : `Friendly follow-up after ${senior.secondAttemptHours} hours, then contact your trusted emergency contacts after another ${senior.secondAttemptHours} hours if your loved one still hasn't confirmed they're okay.`,
+        ? `Friendly follow-up after 1 hour, then contact your trusted escalation contacts one hour after that if your loved one still hasn't confirmed they're okay.`
+        : `Friendly follow-up after ${senior.secondAttemptHours} hours, then contact your trusted escalation contacts after another ${senior.secondAttemptHours} hours if your loved one still hasn't confirmed they're okay.`,
     integrationStatus: getIntegrationStatus(),
     stripePrice: options?.stripePrice ?? null,
   };
@@ -719,7 +719,7 @@ export async function markEscalationSent(checkInId: string) {
       include: {
         senior: true,
         subscriber: {
-          select: { id: true, subscriptionStatus: true, created: true, currentPeriodEndsAt: true },
+          select: { id: true, email: true, subscriptionStatus: true, created: true, currentPeriodEndsAt: true },
         },
       },
     });
@@ -805,6 +805,32 @@ export async function markEscalationSent(checkInId: string) {
         })),
       }),
     ]);
+
+    if (anyEscalationSmsSent && checkIn.subscriber?.email) {
+      import("@/lib/trial-emails")
+        .then(({ sendEscalationAlertEmail }) =>
+          sendEscalationAlertEmail({
+            subscriberId: checkIn.subscriberId,
+            subscriberEmail: checkIn.subscriber!.email,
+            seniorFirstName: checkIn.senior.firstName,
+            seniorLastName: checkIn.senior.lastName,
+            scheduledForIso: checkIn.scheduledFor.toISOString(),
+            checkInToken: checkIn.token,
+          }),
+        )
+        .then((res) => {
+          if (!res.ok) {
+            console.warn(
+              `[markEscalationSent] escalation email failed for subscriber=${checkIn.subscriberId}: ${res.message}`,
+            );
+          }
+        })
+        .catch((err) => {
+          console.warn(
+            `[markEscalationSent] escalation email threw for subscriber=${checkIn.subscriberId}: ${err instanceof Error ? err.message : String(err)}`,
+          );
+        });
+    }
 
     return { ok: true as const, message: "Escalation processed." };
   } catch {

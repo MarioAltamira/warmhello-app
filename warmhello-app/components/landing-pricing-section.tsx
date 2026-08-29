@@ -17,10 +17,14 @@ type Props = {
 };
 
 const TICK = "✓";
+const FREE_TRIAL_LINE = "7-day free trial. No automatic conversion to a paid subscription.";
+const AUTO_RENEW_LINE =
+  "Paid subscriptions automatically renew unless cancelled before the next renewal date.";
 
 export function LandingPricingSection({ initialCurrency }: Props) {
   const [currency, setCurrency] = useState<BillingCurrency>(initialCurrency);
-  const [interval, setInterval] = useState<BillingInterval>(DEFAULT_INTERVAL);
+  const [billingInterval, setBillingInterval] =
+    useState<BillingInterval>(DEFAULT_INTERVAL);
 
   const plan = useMemo(() => pricingPlanFor(currency), [currency]);
 
@@ -29,35 +33,25 @@ export function LandingPricingSection({ initialCurrency }: Props) {
     setCurrency(next);
   };
 
-  const annualEquiv = plan.annual.equivalentMonthly;
-  const annualTotal = plan.annual.totalPerYear;
-  const annualDaily = plan.annual.dailyAmount;
-  const monthlyAmt = plan.monthly.amount;
-
-  const annualCta = interval === "annual"
-    ? plan.annual.ctaLabel
-    : plan.annual.buttonLabel;
-  const monthlyCta = interval === "monthly"
-    ? plan.monthly.ctaLabel
-    : plan.monthly.buttonLabel;
-
-  const annualSelected = interval === "annual";
-  const monthlySelected = interval === "monthly";
+  const usd = pricingPlanFor("USD");
+  const cad = pricingPlanFor("CAD");
 
   return (
-    <div className="pricing-dual-section">
-      <div className="pricing-dual-toggles" style={{
-        display: "flex",
-        flexWrap: "wrap",
-        gap: 16,
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 28,
-        padding: "14px 22px",
-        borderRadius: 14,
-        background: "var(--surface-elevated)",
-        border: "1px solid var(--border)",
-      }}>
+    <div className="pricing-dual-section" style={{ maxWidth: 780, margin: "0 auto" }}>
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 14,
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 28,
+          padding: "14px 22px",
+          borderRadius: 14,
+          background: "var(--surface-elevated)",
+          border: "1px solid var(--border)",
+        }}
+      >
         <h2
           style={{
             margin: 0,
@@ -70,246 +64,348 @@ export function LandingPricingSection({ initialCurrency }: Props) {
         >
           Select your Plan.
         </h2>
-        <div style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 14,
-          alignItems: "center",
-          justifyContent: "flex-end",
-        }}>
-          <IntervalToggle value={interval} onChange={setInterval} />
-          <div style={{ width: 1, height: 28, background: "var(--border)", margin: "0 6px" }} />
-          <CurrencyToggle initial={currency} compact onChanged={handleCurrencyChange} />
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 14,
+            alignItems: "center",
+            justifyContent: "flex-end",
+          }}
+        >
+          <IntervalToggle value={billingInterval} onChange={setBillingInterval} />
+          <div
+            style={{
+              width: 1,
+              height: 28,
+              background: "var(--border)",
+              margin: "0 6px",
+            }}
+          />
+          <CurrencyToggle
+            initial={currency}
+            compact
+            onChanged={handleCurrencyChange}
+          />
         </div>
       </div>
 
       <div
-        className="pricing-dual-grid"
+        role="table"
+        aria-label="Warm-Hello pricing by country and billing interval"
         style={{
-          display: "grid",
-          gridTemplateColumns: "1fr",
-          gap: 18,
-          alignItems: "stretch",
+          width: "100%",
+          borderCollapse: "separate",
+          borderSpacing: 0,
+          borderRadius: 16,
+          overflow: "hidden",
+          border: "1px solid var(--border)",
+          background: "var(--surface-elevated)",
         }}
       >
-        {/* Card 2: Annual Peace of Mind — highlighted / pre-selected */}
-        <article
-          className={`card pricing-card pricing-card-annual ${annualSelected ? "is-selected" : ""}`}
-          style={{
-            position: "relative",
-            textAlign: "left",
-            padding: 20,
-            border: annualSelected
-              ? "3px solid color-mix(in oklab, #10b981 88%, white 12%)"
-              : "2px solid var(--border)",
-            background: annualSelected
-              ? "color-mix(in oklab, #60a5fa 10%, var(--surface))"
-              : "var(--surface)",
-            order: annualSelected ? -1 : 0,
-            boxShadow: annualSelected
-              ? "0 10px 30px -12px color-mix(in oklab, #10b981 55%, transparent)"
-              : "none",
-            transition: "border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-start",
-              gap: 10,
-              flexWrap: "wrap",
-            }}
-          >
-            <div>
-              <p className="eyebrow" style={{ marginTop: 0, marginBottom: 6 }}>
-                Annual Peace of Mind
-              </p>
-              <h3 style={{ margin: 0 }}>Recommended</h3>
-            </div>
-            <span
-              className="pricing-savings-badge"
+        <div role="rowgroup">
+          <div role="row" style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr 1fr" }}>
+            <div
+              role="columnheader"
               style={{
-                display: "inline-block",
-                padding: "6px 12px",
-                borderRadius: 999,
-                fontSize: 12,
-                fontWeight: 700,
+                padding: "16px 18px",
+                fontWeight: 800,
+                fontSize: 14,
                 letterSpacing: 0.2,
                 textTransform: "uppercase",
-                background: "var(--accent)",
-                color: "var(--accent-contrast)",
-                whiteSpace: "nowrap",
+                color: "var(--muted)",
+                background: "var(--surface)",
+                borderBottom: "1px solid var(--border)",
               }}
             >
-              {plan.annual.annualBadge}
-            </span>
-          </div>
-
-          <div style={{ marginTop: 20 }}>
+              Country
+            </div>
             <div
+              role="columnheader"
               style={{
-                display: "flex",
-                alignItems: "baseline",
-                gap: 6,
-                flexWrap: "wrap",
+                padding: "16px 18px",
+                textAlign: "center",
+                fontWeight: 800,
+                fontSize: 14,
+                letterSpacing: 0.2,
+                textTransform: "uppercase",
+                color: "var(--muted)",
+                background: "var(--surface)",
+                borderBottom: "1px solid var(--border)",
+                borderLeft: "1px solid var(--border)",
               }}
             >
-              <span
+              Monthly
+            </div>
+            <div
+              role="columnheader"
+              style={{
+                padding: "16px 18px",
+                textAlign: "center",
+                fontWeight: 800,
+                fontSize: 14,
+                letterSpacing: 0.2,
+                textTransform: "uppercase",
+                color: "var(--accent)",
+                background: "var(--surface)",
+                borderBottom: "1px solid var(--border)",
+                borderLeft: "1px solid var(--border)",
+              }}
+            >
+              Annual
+              <div
                 style={{
-                  fontSize: 48,
-                  fontWeight: 800,
-                  lineHeight: 1,
-                  letterSpacing: -0.5,
-                  color: "var(--text)",
+                  fontSize: 10,
+                  marginTop: 4,
+                  fontWeight: 700,
+                  letterSpacing: 0.3,
+                  color: "var(--accent)",
                 }}
               >
-                {plan.currencySymbol}{annualEquiv.toFixed(2)}
-              </span>
-              <span style={{ fontSize: 15, fontWeight: 500, color: "var(--muted)" }}>
-                / month
-              </span>
+                RECOMMENDED · SAVE ~20%
+              </div>
             </div>
-            <p style={{ marginTop: 8, fontSize: 14, color: "var(--muted)", marginBottom: 0 }}>
-              {plan.annual.billedAnnuallyLabel}
-            </p>
           </div>
+        </div>
 
-          <ul className="check-list" style={{ marginTop: 20 }}>
-            <li>
-              <span aria-hidden style={{ marginRight: 8, color: "var(--accent)" }}>
-                {TICK}
-              </span>
-              {plan.marketing.featureBulletContacts}
-            </li>
-            <li>
-              <span aria-hidden style={{ marginRight: 8, color: "var(--accent)" }}>
-                {TICK}
-              </span>
-              {plan.marketing.featureBulletStandardSenior}
-            </li>
-            <li>
-              <span aria-hidden style={{ marginRight: 8, color: "var(--accent)" }}>
-                {TICK}
-              </span>
-              {plan.marketing.featureBulletPeaceOfMind}
-            </li>
-            <li>
-              <span aria-hidden style={{ marginRight: 8, color: "var(--accent)" }}>
-                {TICK}
-              </span>
-              {plan.marketing.featureBulletSavings}
-            </li>
-          </ul>
-
-          <div style={{ marginTop: 22 }}>
-            <SmartBuyNowButton
-              className="button primary pricing-cta"
-              label={annualCta}
-            />
-            <p
-              className="pricing-microcopy"
+        <div role="rowgroup">
+          <div role="row" style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr 1fr" }}>
+            <div
+              role="cell"
               style={{
-                marginTop: 10,
-                fontSize: 13,
-                color: "var(--muted)",
-                textAlign: "center",
-                marginBottom: 0,
+                padding: "22px 18px",
+                borderBottom: "1px solid var(--border)",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
               }}
             >
-              {plan.annual.microCopy}
-            </p>
+              <span style={{ fontSize: 28, lineHeight: 1 }} aria-hidden>
+                🇺🇸
+              </span>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 18 }}>United States</div>
+                <div style={{ fontSize: 12, color: "var(--muted)" }}>USD billing</div>
+              </div>
+            </div>
+            <div
+              role="cell"
+              style={{
+                padding: "22px 18px",
+                textAlign: "center",
+                borderBottom: "1px solid var(--border)",
+                borderLeft: "1px solid var(--border)",
+                borderRight: "1px solid var(--border)",
+              }}
+            >
+              <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>
+                {usd.currencySymbol}
+                {usd.monthly.amount.toFixed(2)}
+              </div>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>
+                USD / month
+              </div>
+            </div>
+            <div
+              role="cell"
+              style={{
+                padding: "22px 18px",
+                textAlign: "center",
+                borderBottom: "1px solid var(--border)",
+                background:
+                  "color-mix(in oklab, var(--accent) 7%, var(--surface-elevated))",
+              }}
+            >
+              <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>
+                {usd.currencySymbol}
+                {usd.annual.totalPerYear.toFixed(0)}
+              </div>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>
+                USD / year · {usd.currencySymbol}
+                {usd.annual.equivalentMonthly.toFixed(2)}/mo equiv
+              </div>
+            </div>
           </div>
-        </article>
 
-        {/* Card 1: Monthly Standard */}
-        <article
-          className={`card pricing-card pricing-card-monthly ${monthlySelected ? "is-selected" : ""}`}
+          <div role="row" style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr 1fr" }}>
+            <div
+              role="cell"
+              style={{
+                padding: "22px 18px",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+              }}
+            >
+              <span style={{ fontSize: 28, lineHeight: 1 }} aria-hidden>
+                🇨🇦
+              </span>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 18 }}>Canada</div>
+                <div style={{ fontSize: 12, color: "var(--muted)" }}>CAD billing</div>
+              </div>
+            </div>
+            <div
+              role="cell"
+              style={{
+                padding: "22px 18px",
+                textAlign: "center",
+                borderLeft: "1px solid var(--border)",
+                borderRight: "1px solid var(--border)",
+              }}
+            >
+              <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>
+                {cad.currencySymbol}
+                {cad.monthly.amount.toFixed(2)}
+              </div>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>
+                CAD / month
+              </div>
+            </div>
+            <div
+              role="cell"
+              style={{
+                padding: "22px 18px",
+                textAlign: "center",
+                background:
+                  "color-mix(in oklab, var(--accent) 7%, var(--surface-elevated))",
+              }}
+            >
+              <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>
+                {cad.currencySymbol}
+                {cad.annual.totalPerYear.toFixed(0)}
+              </div>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>
+                CAD / year · {cad.currencySymbol}
+                {cad.annual.equivalentMonthly.toFixed(2)}/mo equiv
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        style={{
+          marginTop: 28,
+          padding: "20px 22px",
+          borderRadius: 14,
+          background: "var(--surface)",
+          border: "1px solid var(--border)",
+          textAlign: "center",
+        }}
+      >
+        <p
           style={{
-            textAlign: "left",
-            padding: 20,
-            border: monthlySelected
-              ? "3px solid color-mix(in oklab, #10b981 88%, white 12%)"
-              : "2px solid var(--border)",
-            background: monthlySelected
-              ? "color-mix(in oklab, #60a5fa 10%, var(--surface))"
-              : "var(--surface)",
-            boxShadow: monthlySelected
-              ? "0 10px 30px -12px color-mix(in oklab, #10b981 55%, transparent)"
-              : "none",
-            transition: "border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease",
+            margin: 0,
+            fontSize: 15,
+            fontWeight: 700,
+            color: "var(--text)",
+            lineHeight: 1.45,
+          }}
+        >
+          {FREE_TRIAL_LINE}
+        </p>
+        <p
+          style={{
+            margin: "10px 0 0",
+            fontSize: 14,
+            color: "var(--muted)",
+            lineHeight: 1.5,
+          }}
+        >
+          {AUTO_RENEW_LINE}
+        </p>
+      </div>
+
+      <div
+        style={{
+          marginTop: 28,
+          padding: "24px 22px",
+          borderRadius: 14,
+          background: "var(--surface-elevated)",
+          border: "1px solid var(--border)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 12,
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 20,
           }}
         >
           <div>
-            <p className="eyebrow" style={{ marginTop: 0, marginBottom: 6 }}>
-              Monthly Standard
-            </p>
-            <h3 style={{ margin: 0 }}>Flexible Billing</h3>
-          </div>
-
-          <div style={{ marginTop: 20 }}>
             <div
               style={{
-                display: "flex",
-                alignItems: "baseline",
-                gap: 6,
-                flexWrap: "wrap",
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 48,
-                  fontWeight: 800,
-                  lineHeight: 1,
-                  letterSpacing: -0.5,
-                  color: "var(--text)",
-                }}
-              >
-                {plan.currencySymbol}{monthlyAmt.toFixed(2)}
-              </span>
-              <span style={{ fontSize: 15, fontWeight: 500, color: "var(--muted)" }}>
-                / month
-              </span>
-            </div>
-            <p style={{ marginTop: 8, fontSize: 14, color: "var(--muted)", marginBottom: 0 }}>
-              Billed monthly. Cancel anytime.
-            </p>
-          </div>
-
-          <ul className="check-list" style={{ marginTop: 20 }}>
-            <li>
-              <span aria-hidden style={{ marginRight: 8, color: "var(--accent)" }}>
-                {TICK}
-              </span>
-              {plan.marketing.featureBulletContacts}
-            </li>
-            <li>
-              <span aria-hidden style={{ marginRight: 8, color: "var(--accent)" }}>
-                {TICK}
-              </span>
-              {plan.marketing.featureBulletStandardSenior}
-            </li>
-          </ul>
-
-          <div style={{ marginTop: 22 }}>
-            <SmartBuyNowButton
-              className="button secondary pricing-cta"
-              label={monthlyCta}
-            />
-            <p
-              className="pricing-microcopy"
-              style={{
-                marginTop: 10,
-                fontSize: 13,
+                fontSize: 12,
+                letterSpacing: 0.4,
+                textTransform: "uppercase",
                 color: "var(--muted)",
-                textAlign: "center",
-                marginBottom: 0,
+                fontWeight: 700,
+                marginBottom: 4,
               }}
             >
-              {plan.monthly.microCopy}
-            </p>
+              Your current selection
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.2 }}>
+              {currency === "USD" ? "🇺🇸 United States" : "🇨🇦 Canada"} ·{" "}
+              {billingInterval === "annual" ? "Annual" : "Monthly"}
+            </div>
+            <div style={{ marginTop: 4, fontSize: 14, color: "var(--muted)" }}>
+              {billingInterval === "annual"
+                ? `${plan.currencySymbol}${plan.annual.totalPerYear.toFixed(0)} ${currency}/year · approx. ${plan.currencySymbol}${plan.annual.equivalentMonthly.toFixed(2)}/month`
+                : `${plan.currencySymbol}${plan.monthly.amount.toFixed(2)} ${currency}/month`}
+            </div>
           </div>
-        </article>
+          <div style={{ minWidth: 240 }}>
+            <SmartBuyNowButton
+              className="button primary pricing-cta"
+              label={
+                billingInterval === "annual"
+                  ? plan.annual.ctaLabel
+                  : plan.monthly.ctaLabel
+              }
+            />
+          </div>
+        </div>
+
+        <ul
+          className="check-list"
+          style={{
+            marginTop: 0,
+            marginBottom: 0,
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: "8px 14px",
+          }}
+        >
+          <li>
+            <span aria-hidden style={{ marginRight: 8, color: "var(--accent)" }}>
+              {TICK}
+            </span>
+            {plan.marketing.featureBulletContacts}
+          </li>
+          <li>
+            <span aria-hidden style={{ marginRight: 8, color: "var(--accent)" }}>
+              {TICK}
+            </span>
+            {plan.marketing.featureBulletStandardSenior}
+          </li>
+          <li>
+            <span aria-hidden style={{ marginRight: 8, color: "var(--accent)" }}>
+              {TICK}
+            </span>
+            {plan.marketing.featureBulletPeaceOfMind}
+          </li>
+          <li>
+            <span aria-hidden style={{ marginRight: 8, color: "var(--accent)" }}>
+              {TICK}
+            </span>
+            {plan.marketing.featureBulletSavings}
+          </li>
+        </ul>
       </div>
 
       <p
@@ -323,23 +419,6 @@ export function LandingPricingSection({ initialCurrency }: Props) {
       >
         {plan.marketing.peaceOfMindAnnual}
       </p>
-
-      <div
-        aria-hidden
-        style={{
-          display: "none",
-          marginTop: 16,
-          justifyContent: "center",
-          fontSize: 12,
-          color: "var(--muted)",
-          gap: 18,
-          flexWrap: "wrap",
-        }}
-      >
-        <span>Annual total: {plan.currencySymbol}{annualTotal.toFixed(2)}</span>
-        <span>Daily equiv.: {plan.currencySymbol}{annualDaily.toFixed(2)}</span>
-        <span>30-day money-back guarantee</span>
-      </div>
     </div>
   );
 }

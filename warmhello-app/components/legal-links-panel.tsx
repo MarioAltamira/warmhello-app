@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { pricingPlanFor } from "@/lib/pricing";
-import { LEGAL_DISCLAIMER_UNIVERSAL } from "@/lib/constants";
+import { LEGAL_DISCLAIMER_UNIVERSAL, NON_EMERGENCY_POSITIONING_LINE } from "@/lib/constants";
+import { YourPrivacyChoicesButton } from "@/components/privacy-choices-modal";
 
-type SectionKey = "privacy" | "terms" | "about" | "contact" | "howto" | "faq";
+type SectionKey = "privacy" | "terms" | "about" | "contact" | "howto" | "faq" | "choices";
 const contactEmail = "sales@warm-hello.com";
 
 const sectionLabels: Record<SectionKey, string> = {
@@ -16,6 +17,7 @@ const sectionLabels: Record<SectionKey, string> = {
   contact: "Contact",
   howto: "HowTo",
   faq: "FAQ",
+  choices: "Your Privacy Choices",
 };
 
 type Props = { initialCurrency?: unknown };
@@ -131,6 +133,13 @@ export function LegalLinksPanel(_props: Props) {
                 </li>
               );
             }
+            if (section === "choices") {
+              return (
+                <li key={section}>
+                  <YourPrivacyChoicesButton />
+                </li>
+              );
+            }
             return (
               <li key={section}>
                 <button
@@ -152,24 +161,33 @@ export function LegalLinksPanel(_props: Props) {
             {activeSection === "privacy" ? (
               <>
                 <p className="section-meta">
-                  <strong>Last Updated:</strong> June 12, 2026
+                  <strong>Last Updated:</strong> August 29, 2026
                 </p>
                 <p>
                   At <strong>Warm-Hello</strong>, we provide automated status check-in
-                  services to ensure your safety and give your loved ones peace of
-                  mind. Because our service relies on checking in on your well-being,
-                  we treat your personal data with the highest level of security,
-                  functional necessity, and confidentiality.
+                  services to help families stay connected with loved ones living
+                  independently. Because our service is a routine daily check-in tool, we
+                  treat your personal data with the highest level of security, functional
+                  necessity, and confidentiality.
                 </p>
+                <blockquote
+                  className="notice-block"
+                  style={{
+                    borderColor: "rgba(255,214,102,0.25)",
+                    background: "rgba(255,214,102,0.06)",
+                  }}
+                >
+                  <strong>{NON_EMERGENCY_POSITIONING_LINE}</strong>
+                </blockquote>
                 <ul className="longform-list">
                   <li>
-                    <strong>Information We Collect:</strong> We only collect the
-                    minimum required data: account information, designated emergency
+                    <strong>Information We Collect:</strong> We only collect the minimum
+                    required data: account information, designated trusted escalation
                     contacts, and automated check-in response logs.
                   </li>
                   <li>
                     <strong>How We Use Your Information:</strong> Your data powers SMS
-                    check-ins, escalation alerts, and secure Stripe billing.
+                    check-ins, escalation notifications, and secure Stripe billing.
                   </li>
                   <li>
                     <strong>Data Retention and Security:</strong> We retain operational
@@ -178,21 +196,30 @@ export function LegalLinksPanel(_props: Props) {
                   </li>
                   <li>
                     <strong>Your Rights:</strong> You can modify your settings, update
-                    contacts, or delete your account data from your dashboard.
+                    contacts, or delete your account data from your dashboard. Depending
+                    on your jurisdiction you may also have rights to access, correct,
+                    delete, port, or opt out of targeted advertising or sale/sharing.
                   </li>
                 </ul>
+                <div style={{ marginTop: 14 }}>
+                  <YourPrivacyChoicesButton variant="button" />
+                  <p className="section-meta" style={{ marginTop: 10, marginBottom: 0 }}>
+                    Use the preference center above to opt in or out of non-essential
+                    categories (Analytics, Targeted Advertising, Sale/Sharing) at any time.
+                  </p>
+                </div>
               </>
             ) : null}
 
             {activeSection === "terms" ? (
               <>
                 <p className="section-meta">
-                  <strong>Effective Date:</strong> June 12, 2026
+                  <strong>Effective Date:</strong> August 29, 2026
                 </p>
                 <blockquote className="notice-block">
                   <strong>IMPORTANT DISCLAIMER:</strong> Warm-Hello is an automated
                   text-message check-in notification tool designed to facilitate
-                  routine monitoring between individuals and their trusted personal contacts.{" "}
+                  routine check-ins between individuals and their trusted personal contacts.{" "}
                   <strong>Warm-Hello is NOT a medical alert system, emergency
                   dispatch line, or a replacement for professional healthcare or 911
                   services.</strong>
@@ -224,17 +251,26 @@ export function LegalLinksPanel(_props: Props) {
             {activeSection === "about" ? (
               <>
                 <p className="section-meta">
-                  <strong>Simple check-ins. Absolute peace of mind.</strong>
+                  <strong>Simple check-ins. Families stay connected.</strong>
                 </p>
                 <p>
-                  Warm-Hello was created to help families make sure loved ones living
-                  independently are okay every day without being intrusive.
+                  Warm-Hello was created to help families stay in touch with loved ones
+                  living independently every day without being intrusive.
                 </p>
                 <p>
-                  We built a quiet, software-driven safety net that uses a quick daily
-                  text response to reduce worry and alert trusted contacts if a check-in
-                  is missed.
+                  We built a quiet, software-driven daily routine that uses a quick SMS
+                  response so families know their loved one started their day, and
+                  notifies trusted escalation contacts if a check-in is missed.
                 </p>
+                <blockquote
+                  className="notice-block"
+                  style={{
+                    borderColor: "rgba(255,214,102,0.25)",
+                    background: "rgba(255,214,102,0.06)",
+                  }}
+                >
+                  <strong>{NON_EMERGENCY_POSITIONING_LINE}</strong>
+                </blockquote>
                 <p>
                   Our goal is to keep families connected with reliable, secure, and
                   affordable technology.
@@ -304,8 +340,8 @@ export function LegalLinksPanel(_props: Props) {
                   and schedule.
                 </li>
                 <li>
-                  <strong>2. Add Emergency Contacts:</strong> Assign trusted people who
-                  should be alerted if you miss a check-in.
+                  <strong>2. Add Trusted Escalation Contacts:</strong> Assign people who
+                  should be notified if the senior misses a check-in.
                 </li>
                 <li>
                   <strong>3. Respond To Daily Texts:</strong> Reply to the SMS or tap
@@ -313,7 +349,7 @@ export function LegalLinksPanel(_props: Props) {
                 </li>
                 <li>
                   <strong>4. Escalation:</strong> If no reply arrives in time, Warm-Hello
-                  notifies your trusted contacts.
+                  notifies your trusted escalation contacts by SMS and email.
                 </li>
               </ul>
             ) : null}
@@ -321,22 +357,25 @@ export function LegalLinksPanel(_props: Props) {
             {activeSection === "faq" ? (
               <ul className="longform-list">
                 <li>
-                  <strong>How does check-in monitoring work?</strong> Warm-Hello sends a
-                  daily SMS and updates your status when you respond. If you miss the
-                  window, alerts go out automatically.
+                  <strong>Is Warm-Hello an emergency service?</strong> No. Warm-Hello is a routine check-in and notification service. It does not contact 911 or emergency services.
                 </li>
                 <li>
-                  <strong>How much does it cost?</strong> Warm-Hello costs{" "}
-                  <strong>$0.20 per day</strong> with secure recurring billing through
-                  Stripe.
+                  <strong>What happens if a check-in is missed?</strong> Warm-Hello may notify the designated contacts according to the account's configuration.
                 </li>
                 <li>
-                  <strong>What devices work?</strong> Any phone capable of sending and
-                  receiving SMS messages can use Warm-Hello.
+                  <strong>Does a missed check-in mean there is an emergency?</strong> No. A missed check-in may happen for many reasons and does not establish that an emergency has occurred.
                 </li>
                 <li>
-                  <strong>What if I forget to reply?</strong> The system allows a grace
-                  period before notifying your trusted contacts.
+                  <strong>Does the free trial automatically become paid?</strong> No. The 7-day free trial does not automatically convert to a paid subscription. You must actively select and purchase a paid subscription to continue.
+                </li>
+                <li>
+                  <strong>Do paid subscriptions renew?</strong> Yes. Paid subscriptions automatically renew at the applicable billing interval unless cancelled before the next renewal date.
+                </li>
+                <li>
+                  <strong>How much does it cost?</strong> United States: $14.99 USD/month or $144 USD/year. Canada: $19.99 CAD/month or $180 CAD/year. Plus applicable taxes.
+                </li>
+                <li>
+                  <strong>What devices work?</strong> Any phone capable of sending and receiving SMS messages can use Warm-Hello.
                 </li>
               </ul>
             ) : null}
@@ -360,7 +399,9 @@ export function LegalLinksPanel(_props: Props) {
           ·{" "}
           <Link href="/privacy" className="inline-link">
             Privacy Policy
-          </Link>
+          </Link>{" "}
+          ·{" "}
+          <YourPrivacyChoicesButton />
           .
         </p>
       </div>

@@ -4,12 +4,12 @@ export const runtime = "edge";
 export const contentType = "image/png";
 export const size = { width: 1200, height: 630 };
 export const alt =
-  "Warm-Hello - Gentle daily SMS check-ins for seniors living alone. Caregiver peace of mind, senior dignity first.";
+  "Warm-Hello - Simple daily SMS check-ins for seniors living alone. A way for families to stay connected, senior dignity first.";
 
 const DEFAULT_TITLE = "Warm-Hello";
 const DEFAULT_SUBTITLE =
-  "Gentle daily SMS check-ins for seniors living alone.";
-const DEFAULT_PRICE = "From $5 USD / month · $0.16 / day";
+  "Simple daily SMS check-ins for seniors living alone.";
+const DEFAULT_PRICE = "From $14.99 USD / month · about $0.39 / day";
 
 function splitTitle(input: string, maxChars: number): string[] {
   if (!input) return [DEFAULT_TITLE, DEFAULT_SUBTITLE];
@@ -46,7 +46,7 @@ export default async function Image(props: Props) {
   const q = props.searchParams ?? {};
   const rawTitle = q.title ?? q.text ?? "";
   const subtitle = q.subtitle ?? DEFAULT_SUBTITLE;
-  const tag = q.tag ?? "Caregiver peace of mind · Dignity for seniors";
+  const tag = q.tag ?? "Stay connected · Dignity for seniors";
 
   let title: string;
   let subtitleLine: string;

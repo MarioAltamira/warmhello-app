@@ -53,6 +53,37 @@ export async function sendSeniorOnboardingSmsSequence(params: {
   return { ok: identity.ok && (checkIn?.ok ?? true), identity, checkIn };
 }
 
+const COMPLIANCE_REPLY_KINDS: ReadonlySet<string> = new Set([
+  "sms_compliance_stop_reply",
+  "sms_compliance_help_reply",
+  "sms_compliance_start_reply",
+]);
+
+async function isPhoneSuppressed(normalizedTo: string, seniorId?: string | null): Promise<{ suppressed: boolean; reason?: string }> {
+  if (!normalizedTo) return { suppressed: false };
+  try {
+    const tombstone = await prisma?.smsConsentTombstone.findUnique({
+      where: { phoneE164: normalizedTo },
+      select: { optOutAt: true },
+    });
+    if (tombstone?.optOutAt) {
+      return { suppressed: true, reason: "SmsConsentTombstone opt-out recorded" };
+    }
+    if (seniorId) {
+      const senior = await prisma?.senior.findUnique({
+        where: { id: seniorId },
+        select: { smsOptedOut: true },
+      });
+      if (senior?.smsOptedOut) {
+        return { suppressed: true, reason: "Senior.smsOptedOut=true (STOP opt-out)" };
+      }
+    }
+  } catch {
+    // ignore — let send attempt proceed if DB is unreachable
+  }
+  return { suppressed: false };
+}
+
 export async function sendSms(
   to: string,
   body: string,
@@ -71,6 +102,35 @@ export async function sendSms(
   }
 
   const normalizedTo = normalizePhone(to);
+
+  const isComplianceReply = typeof meta?.kind === "string" && COMPLIANCE_REPLY_KINDS.has(meta.kind);
+  if (!isComplianceReply) {
+    const sup = await isPhoneSuppressed(normalizedTo, meta?.seniorId ?? null);
+    if (sup.suppressed) {
+      try {
+        await prisma?.smsLog.create({
+          data: {
+            direction: "OUT",
+            status: "FAILED",
+            provider: "telnyx",
+            kind: meta?.kind ?? null,
+            fromNumber: env.TELNYX_FROM_NUMBER,
+            toNumber: normalizedTo,
+            body: `[SUPPRESSED: ${sup.reason ?? "opt-out list"}] ${body}`.slice(0, 10000),
+            subscriberId: meta?.subscriberId ?? null,
+            seniorId: meta?.seniorId ?? null,
+            checkInId: meta?.checkInId ?? null,
+          },
+        });
+      } catch {
+        // ignore
+      }
+      return {
+        ok: false,
+        message: `SMS suppressed (${sup.reason ?? "opt-out list"}). Number: ${normalizedTo}`,
+      };
+    }
+  }
 
   const response = await fetch("https://api.telnyx.com/v2/messages", {
     method: "POST",
@@ -139,3 +199,4 @@ export async function sendSms(
 
   return { ok: true, sid: data.data?.id ?? null };
 }
+

@@ -52,7 +52,7 @@ function buildRows(currency: BillingCurrency): ComparisonRow[] {
     variant: "highlight",
     value: `${planLabel(plan)} · or ${other.currency} ${planLabel(
       other,
-    )} for ${other.currency === "USD" ? "United States" : "Canada"} customers. 30-day money-back guarantee.`,
+    )} for ${other.currency === "USD" ? "United States" : "Canada"} customers.`,
   };
 
   return [
@@ -82,7 +82,7 @@ function buildRows(currency: BillingCurrency): ComparisonRow[] {
         variant: "check",
         value:
           TICK +
-          " - gentle reminder after 1 hour, family alerted by SMS & email after 2 misses",
+          " - gentle reminder after 1 hour, trusted contacts notified by SMS & email after 2 misses",
       },
       pers: {
         value:
