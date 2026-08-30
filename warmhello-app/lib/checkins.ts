@@ -1,6 +1,6 @@
 import { addHours, formatDateTime } from "@/lib/dates";
 import { demoCheckIn, demoDashboard } from "@/lib/demo-data";
-import { getIntegrationStatus } from "@/lib/env";
+import { env, getIntegrationStatus } from "@/lib/env";
 import { isBillingCurrency, expectedMonthlyLabelFor, pricingPlanFor } from "@/lib/pricing";
 import { prisma } from "@/lib/prisma";
 import { getShortLinkForCheckIn } from "@/lib/short-links";
@@ -791,6 +791,7 @@ export async function markEscalationSent(checkInId: string) {
     const alertSubject = `Warm-Hello Alert: ${checkIn.senior.firstName} has not responded to today's check-in.`;
     const alertText = `Warm-Hello alert: ${checkIn.senior.firstName} ${checkIn.senior.lastName} has not responded to today's check-in. Please reach out to ${checkIn.senior.firstName} directly to ensure they are well.`;
     const alertHtml = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto;">
+  <p><img src="${env.APP_URL}/warmhello-logo-b.png" alt="Warm-Hello" width="140" /></p>
   <h2 style="color: #dc2626; margin: 0 0 12px;">Warm-Hello Escalation Alert</h2>
   <p style="font-size: 16px; line-height: 1.5; margin: 0 0 12px;">
     <strong>${checkIn.senior.firstName} ${checkIn.senior.lastName}</strong> has not responded to today's check-in.
