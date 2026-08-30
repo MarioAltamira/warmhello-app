@@ -74,24 +74,12 @@ export async function getSubscriberSessionId() {
 export async function getSubscriberSession() {
   const cookieStore = await cookies();
   const signedSubscriberId = cookieStore.get(subscriberSessionCookieName)?.value ?? null;
-  const signedSessionBootId =
-    cookieStore.get(subscriberSessionBootCookieName)?.value ?? null;
-  const currentBootId = getCurrentSessionBootId();
-
   const subscriberId = verifySigned(signedSubscriberId);
-  const sessionBootId = verifySigned(signedSessionBootId);
 
   if (!subscriberId) {
     return {
       subscriberId: null,
       sessionExpired: false,
-    };
-  }
-
-  if (sessionBootId !== currentBootId) {
-    return {
-      subscriberId: null,
-      sessionExpired: true,
     };
   }
 

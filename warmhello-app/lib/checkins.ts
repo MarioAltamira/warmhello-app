@@ -784,7 +784,65 @@ export async function markEscalationSent(checkInId: string) {
       ),
     );
 
+    const contactsWithEmail = contacts.filter(
+      (c): c is (typeof contacts)[number] & { email: string } =>
+        typeof c.email === "string" && c.email.trim().length > 0,
+    );
+    const alertSubject = `Warm-Hello Alert: ${checkIn.senior.firstName} has not responded to today's check-in.`;
+    const alertText = `Warm-Hello alert: ${checkIn.senior.firstName} ${checkIn.senior.lastName} has not responded to today's check-in. Please reach out to ${checkIn.senior.firstName} directly to ensure they are well.`;
+    const alertHtml = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto;">
+  <h2 style="color: #dc2626; margin: 0 0 12px;">Warm-Hello Escalation Alert</h2>
+  <p style="font-size: 16px; line-height: 1.5; margin: 0 0 12px;">
+    <strong>${checkIn.senior.firstName} ${checkIn.senior.lastName}</strong> has not responded to today's check-in.
+  </p>
+  <p style="font-size: 15px; line-height: 1.5; margin: 0; color: #334155;">
+    Please reach out to ${checkIn.senior.firstName} directly to ensure they are well.
+  </p>
+</div>`;
+    const { sendEmail } = await import("@/lib/email");
+    const emailResults = await Promise.all(
+      contactsWithEmail.map((contact) =>
+        sendEmail({
+          to: contact.email.trim(),
+          subject: alertSubject,
+          text: alertText,
+          html: alertHtml,
+        }),
+      ),
+    );
+    emailResults.forEach((r, i) => {
+      if (!r.ok) {
+        console.warn(
+          `[markEscalationSent] escalation email failed for contact=${contactsWithEmail[i]!.id} to=${contactsWithEmail[i]!.email}: ${r.message}`,
+        );
+      }
+    });
+
     const anyEscalationSmsSent = results.some((r) => r?.ok);
+    type AlertJobRow = {
+      checkInId: string;
+      kind: string;
+      status: "SENT" | "FAILED";
+      providerMessageId: string | null;
+      payload: Record<string, unknown>;
+      runAt: Date;
+    };
+    const smsAlertJobs: AlertJobRow[] = contacts.map((contact, index) => ({
+      checkInId,
+      kind: "escalation_sms",
+      status: results[index]?.ok ? "SENT" : "FAILED",
+      providerMessageId: results[index]?.ok ? results[index].sid : null,
+      payload: { contactId: contact.id, phoneNumber: contact.phoneNumber },
+      runAt: now,
+    }));
+    const emailAlertJobs: AlertJobRow[] = contactsWithEmail.map((contact, index) => ({
+      checkInId,
+      kind: "escalation_email",
+      status: emailResults[index]?.ok ? "SENT" : "FAILED",
+      providerMessageId: emailResults[index]?.ok ? (emailResults[index] as { ok: true; id: string | null }).id : null,
+      payload: { contactId: contact.id, email: contact.email },
+      runAt: now,
+    }));
     await prisma.$transaction([
       prisma.checkIn.update({
         where: { id: checkInId },
@@ -795,14 +853,7 @@ export async function markEscalationSent(checkInId: string) {
         },
       }),
       prisma.alertJob.createMany({
-        data: contacts.map((contact, index) => ({
-          checkInId,
-          kind: "escalation_sms",
-          status: results[index]?.ok ? "SENT" : "FAILED",
-          providerMessageId: results[index]?.ok ? results[index].sid : null,
-          payload: { contactId: contact.id, phoneNumber: contact.phoneNumber },
-          runAt: now,
-        })),
+        data: [...smsAlertJobs, ...emailAlertJobs] as unknown as any[],
       }),
     ]);
 

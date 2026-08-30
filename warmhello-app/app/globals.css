@@ -1148,6 +1148,16 @@ h3 {
   border-color: var(--primary);
 }
 
+.form-grid select {
+  color-scheme: light;
+}
+
+.form-grid select option {
+  background-color: #ffffff;
+  color: #0f172a;
+  font-weight: 500;
+}
+
 .form-grid input::placeholder {
   color: var(--muted);
 }

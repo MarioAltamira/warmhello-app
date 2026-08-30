@@ -100,6 +100,7 @@ type AdditionalContactState = {
   fullName: string;
   relationship: string;
   phone: string;
+  email: string;
 };
 
 const MAX_ADDITIONAL_CONTACTS = 1;
@@ -152,6 +153,7 @@ const initialForm = {
   contactName: "David Johnson",
   contactRelationship: "Son",
   contactPhone: stripNorthAmericanCountryCode("+15551230003"),
+  contactEmail: "primary-contact@example.com",
   additionalContacts: [] as AdditionalContactState[],
   seniorOperationalSmsConsent: false,
   marketingEmailConsent: false,
@@ -172,6 +174,7 @@ const blankDefaultForm = {
   contactName: "",
   contactRelationship: "",
   contactPhone: "",
+  contactEmail: "",
   additionalContacts: [] as AdditionalContactState[],
   seniorOperationalSmsConsent: false,
   marketingEmailConsent: false,
@@ -199,10 +202,12 @@ function buildInitialForm(
       contactName: currentHousehold.contact.fullName,
       contactRelationship: currentHousehold.contact.relationship,
       contactPhone: stripNorthAmericanCountryCode(currentHousehold.contact.phoneNumber),
+      contactEmail: (currentHousehold.contact as { email?: string | null }).email ?? "",
       additionalContacts: (currentHousehold.additionalContacts ?? []).map((c) => ({
         fullName: c.fullName,
         relationship: c.relationship,
         phone: stripNorthAmericanCountryCode(c.phoneNumber),
+        email: (c as { email?: string | null }).email ?? "",
       })),
       seniorOperationalSmsConsent: false,
       marketingEmailConsent: false,
@@ -281,7 +286,7 @@ export function OnboardingForm({
       if (existing.length >= MAX_ADDITIONAL_CONTACTS) return current;
       return {
         ...current,
-        additionalContacts: [...existing, { fullName: "", relationship: "", phone: "" }],
+        additionalContacts: [...existing, { fullName: "", relationship: "", phone: "", email: "" }],
       };
     });
   }
@@ -380,6 +385,7 @@ export function OnboardingForm({
         fullName: c.fullName,
         relationship: c.relationship,
         phoneNumber: c.phone,
+        email: c.email.trim() || null,
       }));
       const payload = {
         subscriberId: currentHousehold?.subscriber.id,
@@ -403,6 +409,7 @@ export function OnboardingForm({
           fullName: form.contactName,
           relationship: form.contactRelationship,
           phoneNumber: form.contactPhone,
+          email: form.contactEmail.trim() || null,
         },
         additionalContacts,
         caregiverAck: true,
@@ -813,6 +820,17 @@ export function OnboardingForm({
             />
           </div>
         </label>
+        <label>
+          Contact email
+          <input
+            type="email"
+            autoComplete="email"
+            placeholder="trusted@example.com"
+            value={form.contactEmail}
+            onChange={(event) => updateField("contactEmail", event.target.value)}
+            onFocus={handleSelectOnFocus}
+          />
+        </label>
         {(form.additionalContacts ?? []).map((additional, index) => (
           <div
             key={index}
@@ -882,6 +900,19 @@ export function OnboardingForm({
                   />
                 </div>
               </label>
+              <label style={{ gridColumn: "1 / -1" }}>
+                Second contact email
+                <input
+                  type="email"
+                  autoComplete="email"
+                  placeholder="trusted@example.com"
+                  value={additional.email}
+                  onChange={(event) =>
+                    updateAdditionalContact(index, "email", event.target.value)
+                  }
+                  onFocus={handleSelectOnFocus}
+                />
+              </label>
             </div>
           </div>
         ))}
@@ -901,7 +932,7 @@ export function OnboardingForm({
                     fontSize: 13,
                   }}
                 >
-                  Up to 2 total trusted escalation contacts (1 primary + 1 additional) will all receive the check-in confirmation and escalation SMS messages.
+                  Up to 2 total trusted escalation contacts (1 primary + 1 additional) will all receive the check-in confirmation and escalation messages (SMS and, if an email address is provided, email).
                 </p>
               </div>
             ) : null}

@@ -36,10 +36,15 @@ function clearPresenceCookie() {
 
 function hasPresenceCookie() {
   if (typeof document === "undefined") return false;
-  return document.cookie
-    .split(";")
-    .map((s) => s.trim())
-    .some((p) => p.startsWith(`${PRESENCE_COOKIE_NAME}=`) && p.endsWith("=1"));
+  const pairs = document.cookie.split(";").map((s) => s.trim());
+  for (const pair of pairs) {
+    const eq = pair.indexOf("=");
+    if (eq < 0) continue;
+    const name = pair.slice(0, eq).trim();
+    const value = pair.slice(eq + 1).trim();
+    if (name === PRESENCE_COOKIE_NAME && value === "1") return true;
+  }
+  return false;
 }
 
 export function SessionExitLogout() {

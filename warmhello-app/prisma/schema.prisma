@@ -141,6 +141,7 @@ model Contact {
   fullName     String
   relationship String
   phoneNumber  String
+  email        String?
   priority     Int        @default(1)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt

@@ -14,6 +14,7 @@ export type ContactInput = {
   fullName: string;
   relationship: string;
   phoneNumber: string;
+  email?: string | null;
 };
 
 export const MAX_CONTACTS = 2;
@@ -244,6 +245,7 @@ export async function createHousehold(
           fullName: normalized.primaryContact.fullName,
           relationship: normalized.primaryContact.relationship,
           phoneNumber: normalized.primaryContact.phoneNumber,
+          email: normalized.primaryContact.email || undefined,
           priority: 1,
         },
       });
@@ -257,6 +259,7 @@ export async function createHousehold(
               fullName: c.fullName,
               relationship: c.relationship,
               phoneNumber: c.phoneNumber,
+              email: c.email || undefined,
               priority: index + 2,
             },
           }),
@@ -423,8 +426,18 @@ export async function createHousehold(
       firstCheckInScheduledFor: firstScheduledFor.toISOString(),
       firstCheckInMessage: "First check-in scheduled tomorrow. Midnight cron will create the daily check-in row at 00:00 ET and enqueue SMS.",
     };
-  } catch {
-    return { ok: false as const, message: "Database is not reachable right now." };
+  } catch (err) {
+    console.error(
+      "[createHousehold] CAUGHT_ERR:",
+      err instanceof Error ? err.constructor.name + " :: " + err.message : String(err),
+    );
+    if (err && typeof err === "object" && "code" in err) {
+      console.error("[createHousehold] CAUGHT_ERR.code:", (err as any).code);
+    }
+    return {
+      ok: false as const,
+      message: userMessageForHouseholdError(err, "createHousehold"),
+    };
   }
 }
 
@@ -554,6 +567,7 @@ export async function updateHousehold(
               fullName: normalized.primaryContact.fullName,
               relationship: normalized.primaryContact.relationship,
               phoneNumber: normalized.primaryContact.phoneNumber,
+              email: normalized.primaryContact.email || undefined,
               seniorId: senior.id,
             },
           })
@@ -564,6 +578,7 @@ export async function updateHousehold(
               fullName: normalized.primaryContact.fullName,
               relationship: normalized.primaryContact.relationship,
               phoneNumber: normalized.primaryContact.phoneNumber,
+              email: normalized.primaryContact.email || undefined,
               priority: 1,
             },
           });
@@ -580,6 +595,7 @@ export async function updateHousehold(
                 fullName: payload.fullName,
                 relationship: payload.relationship,
                 phoneNumber: payload.phoneNumber,
+                email: payload.email || undefined,
                 priority: i + 2,
                 seniorId: senior.id,
               },
@@ -594,6 +610,7 @@ export async function updateHousehold(
                 fullName: payload.fullName,
                 relationship: payload.relationship,
                 phoneNumber: payload.phoneNumber,
+                email: payload.email || undefined,
                 priority: i + 2,
               },
             }),
@@ -685,7 +702,60 @@ export async function updateHousehold(
       household: result,
       message: "Household updated successfully.",
     };
-  } catch {
-    return { ok: false as const, message: "Database is not reachable right now." };
+  } catch (err) {
+    console.error(
+      "[updateHousehold] CAUGHT_ERR:",
+      err instanceof Error ? err.constructor.name + " :: " + err.message : String(err),
+    );
+    if (err && typeof err === "object" && "code" in err) {
+      console.error("[updateHousehold] CAUGHT_ERR.code:", (err as any).code);
+    }
+    return {
+      ok: false as const,
+      message: userMessageForHouseholdError(err, "updateHousehold"),
+    };
   }
+}
+
+function userMessageForHouseholdError(err: unknown, op: "createHousehold" | "updateHousehold"): string {
+  if (
+    err &&
+    typeof err === "object" &&
+    "code" in err &&
+    (err as any).code === "P2002" &&
+    typeof (err as any).message === "string"
+  ) {
+    const msg = String((err as any).message).toLowerCase();
+    if (msg.includes("`email`") || msg.includes("email unique")) {
+      return "This email is already registered. Please log in to your existing account instead of creating a new one.";
+    }
+    if (msg.includes("senior") && msg.includes("phonenumber")) {
+      return "This senior phone number is already registered to another household. Each senior must have a unique phone number across all accounts.";
+    }
+    if (msg.includes("`phonenumber`") || msg.includes("phone")) {
+      return "This phone number is already registered. Please log in to your existing account, or use a different phone number for a new account.";
+    }
+    return "This account information is already in use. Please log in instead of creating a duplicate household.";
+  }
+  if (
+    err &&
+    typeof err === "object" &&
+    "code" in err &&
+    (err as any).code === "P2009" &&
+    typeof (err as any).message === "string"
+  ) {
+    return "Some required fields were missing or invalid. Please review the form and try again.";
+  }
+  if (
+    err &&
+    typeof err === "object" &&
+    "code" in err &&
+    (err as any).code === "P2024"
+  ) {
+    return "We couldn't save your information because of a transient database error. Please wait 10 seconds and try again.";
+  }
+  if (op === "createHousehold") {
+    return "We couldn't create your household right now. Please try again in a moment, or use a different email or phone number if this repeats.";
+  }
+  return "We couldn't save your changes right now. Please wait 10 seconds and try again.";
 }

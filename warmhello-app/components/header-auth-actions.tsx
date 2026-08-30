@@ -11,10 +11,15 @@ function hasSubscriberCookie() {
     return false;
   }
 
-  return document.cookie
-    .split(";")
-    .map((part) => part.trim())
-    .some((part) => part.startsWith(`${PRESENCE_COOKIE_NAME}=`) && part.endsWith("=1"));
+  const pairs = document.cookie.split(";").map((part) => part.trim());
+  for (const pair of pairs) {
+    const eq = pair.indexOf("=");
+    if (eq < 0) continue;
+    const name = pair.slice(0, eq).trim();
+    const value = pair.slice(eq + 1).trim();
+    if (name === PRESENCE_COOKIE_NAME && value === "1") return true;
+  }
+  return false;
 }
 
 function clearAllClientSideCookies() {
