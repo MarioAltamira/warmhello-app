@@ -613,9 +613,11 @@ h3 {
 
 .region-pick-card-active {
   background: var(--card);
-  color: var(--primary);
-  border-color: color-mix(in srgb, var(--primary) 45%, var(--border) 55%);
-  box-shadow: 0 4px 18px -10px color-mix(in srgb, var(--primary) 55%, transparent),
+  color: rgb(22, 163, 74);
+  border-color: rgb(34, 197, 94);
+  border-width: 2px;
+  box-shadow: 0 4px 18px -10px color-mix(in srgb, rgb(34, 197, 94) 65%, transparent),
+    0 0 0 3px color-mix(in srgb, rgb(34, 197, 94) 15%, transparent),
     0 1px 2px rgba(15, 23, 42, 0.05);
 }
 
@@ -648,7 +650,7 @@ h3 {
 }
 
 .region-pick-card-active .region-pick-detail {
-  color: color-mix(in srgb, var(--muted) 65%, var(--primary) 35%);
+  color: color-mix(in srgb, var(--muted) 55%, rgb(34, 197, 94) 45%);
 }
 
 .region-pick-heading-row {

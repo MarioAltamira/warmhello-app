@@ -519,6 +519,15 @@ export function OnboardingForm({
             background: color-mix(in srgb, var(--primary) 14%, transparent) !important;
             border-color: color-mix(in srgb, var(--primary) 30%, var(--border)) !important;
           }
+          .section-card-blue .region-pick-card.region-pick-card-active {
+            background: var(--card) !important;
+            color: rgb(22, 163, 74) !important;
+            border-color: rgb(34, 197, 94) !important;
+            border-width: 2px !important;
+            box-shadow: 0 4px 18px -10px color-mix(in srgb, rgb(34, 197, 94) 65%, transparent),
+              0 0 0 3px color-mix(in srgb, rgb(34, 197, 94) 15%, transparent),
+              0 1px 2px rgba(15, 23, 42, 0.05) !important;
+          }
           .section-card-green input,
           .section-card-green select,
           .section-card-green .phone-input-group {
