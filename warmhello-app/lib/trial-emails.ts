@@ -1065,3 +1065,62 @@ The Warm-Hello Team${footer.text}`,
 ${footer.html}`,
   });
 }
+
+export async function sendMagicLoginLinkEmail(options: {
+  toEmail: string;
+  subscriberFullName: string | null;
+  subscriberId: string;
+  magicLink: string;
+  expiresAtLabel: string;
+  ipAddress: string | null;
+}) {
+  const unsubscribeLink = getUnsubscribeLink(options.subscriberId);
+  const footer = buildEmailFooter({
+    unsubscribeCopy: "To stop account access notification emails,",
+    unsubscribeLink,
+  });
+  const nameGreeting = options.subscriberFullName ? options.subscriberFullName : "there";
+
+  return sendEmail({
+    to: options.toEmail,
+    replyTo: SALES_EMAIL,
+    subject: "Your Warm-Hello log-in link",
+    text: `Hi ${nameGreeting},
+
+We received a request to log in to your Warm-Hello account.
+
+If you requested this, click the link below to log in securely. This link expires ${options.expiresAtLabel} and can only be used once.
+
+${options.magicLink}
+
+If you did NOT request this log-in link, you can safely ignore this email. Your account remains secure.
+
+Request details:
+  Account email: ${options.toEmail}${options.ipAddress ? `\n  Approximate IP: ${options.ipAddress}` : ""}
+
+Warm-Hello is a routine check-in notification service. It does not contact 911 or emergency services and does not offer medical or health monitoring.
+
+Warmly,
+The Warm-Hello Team${footer.text}`,
+    html: `<p><img src="${env.APP_URL}/warmhello-logo-b.png" alt="Warm-Hello" width="140" /></p>
+<p>Hi ${nameGreeting},</p>
+<p>We received a request to log in to your Warm-Hello account.</p>
+<p>If you requested this, click the big button below to log in securely. This link expires <strong>${options.expiresAtLabel}</strong> and can only be used once.</p>
+<p style="text-align:center; margin: 22px 0 8px;">
+  <a href="${options.magicLink}" style="display:inline-block; background: linear-gradient(180deg, #0f766e, #065f46); color: #f8fafc; font-weight: 600; padding: 14px 28px; border-radius: 10px; text-decoration: none; font-size: 16px; box-shadow: 0 6px 16px -10px rgba(6, 95, 70, 0.8);">Log in to Warm-Hello</a>
+</p>
+<p style="text-align:center; color: #59617a; font-size: 13px; word-break: break-all; margin: 4px 0 18px;">
+  <a href="${options.magicLink}" style="color: #59617a; text-decoration: underline;">${options.magicLink}</a>
+</p>
+<p style="border-left:4px solid #fb923c; margin:14px 0; padding:10px 14px; background:rgba(251,146,60,0.08); border-radius:8px;">
+  <strong style="color:#7c2d12;">Not you?</strong> If you did <strong>NOT</strong> request this log-in link, you can safely ignore this email. No action is needed and your account remains secure.
+</p>
+<p style="font-size: 13px; color: #59617a;">
+  <strong>Request details:</strong><br />
+  Account email: <code style="background: #f1f5f9; padding: 2px 6px; border-radius: 6px;">${options.toEmail}</code>${options.ipAddress ? `<br />Approximate IP: <code style="background:#f1f5f9; padding: 2px 6px; border-radius:6px;">${options.ipAddress}</code>` : ""}
+</p>
+<p style="color:#59617a;">Warm-Hello is a routine check-in and notification service only. It does not contact 911 or emergency services, and it does not offer medical or health monitoring.</p>
+<p>Warmly,<br />The Warm-Hello Team</p>
+${footer.html}`,
+  });
+}

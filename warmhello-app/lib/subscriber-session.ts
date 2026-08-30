@@ -22,7 +22,7 @@ function signPayload(payload: string): string {
   return `${COOKIE_VERSION}.${payload}.${mac}`;
 }
 
-function verifySigned(signed: string | null): string | null {
+export function verifySigned(signed: string | null): string | null {
   if (!signed) return null;
   const parts = signed.split(".");
   if (parts.length !== 3) return null;

@@ -66,6 +66,25 @@ enum LegalConsentEvent {
   SENIOR_SMS_AUTHORIZATION
 }
 
+enum SecurityAuditKind {
+  MAGIC_LINK_REQUESTED
+  MAGIC_LINK_SENT
+  MAGIC_LINK_COMPLETED
+  MAGIC_LINK_FAILED_NO_SUBSCRIBER
+  MAGIC_LINK_INVALID_TOKEN
+  MAGIC_LINK_EXPIRED
+  MAGIC_LINK_REUSE_ATTEMPT
+  SESSION_LOGIN_EMAIL_ONLY
+  SESSION_LOGIN_MAGIC_LINK
+  SESSION_LOGOUT
+  ACCOUNT_DELETION_REQUESTED
+  ACCOUNT_DELETION_COMPLETED
+  PASSWORD_RESET_REQUESTED
+  PASSWORD_RESET_COMPLETED
+  PASSWORD_RESET_FAILED
+  SUBSCRIBER_UPDATE_FAILED_DUPLICATE
+}
+
 model Subscriber {
   id                                String             @id @default(cuid())
   email                             String             @unique
@@ -98,6 +117,8 @@ model Subscriber {
   operationalSmsConsentGrantedAt    DateTime?
   subscriptionTermsDisclosureVer    String?
   dashboardDisclaimerDismissedAt    DateTime?
+  magicLinkNonce                    String?            @unique
+  magicLinkNonceRotatedAt           DateTime?
   created                           DateTime           @default(now()) @map("Created")
   createdAt                         DateTime           @default(now())
   updatedAt                         DateTime           @updatedAt
@@ -106,6 +127,7 @@ model Subscriber {
   checkIns                          CheckIn[]
   smsLogs                           SmsLog[]
   consentAudits                     LegalConsentAudit[]
+  securityAudits                    SecurityAudit[]
 }
 
 model Senior {
@@ -266,4 +288,26 @@ model ShortLink {
 
   @@index([createdAt])
   @@index([checkInId])
+}
+
+model SecurityAudit {
+  id              String            @id @default(cuid())
+  subscriberId    String?
+  subscriber      Subscriber?       @relation(fields: [subscriberId], references: [id], onDelete: SetNull)
+  kind            SecurityAuditKind
+  email           String?
+  ipAddress       String?
+  userAgent       String?
+  tokenJti        String?
+  tokenExpiresAt  DateTime?
+  magicLinkNonce  String?
+  redirectTarget  String?
+  detail          Json?
+  createdAt       DateTime          @default(now())
+
+  @@index([subscriberId, createdAt])
+  @@index([kind, createdAt])
+  @@index([email, createdAt])
+  @@index([createdAt])
+  @@index([tokenJti])
 }

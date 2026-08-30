@@ -11,6 +11,12 @@ import {
   subscriberSessionPresenceCookieOptions,
 } from "@/lib/subscriber-session";
 import { parseJsonBody } from "@/lib/zod-parse";
+import {
+  extractIpFromRequest,
+  extractUserAgentFromRequest,
+  recordSecurityAudit,
+} from "@/lib/security-audit";
+import { cookies } from "next/headers";
 
 const bodySchema = z
   .object({
@@ -32,6 +38,9 @@ export async function POST(request: Request) {
   const parsed = await parseJsonBody(request, bodySchema);
   if (!parsed.ok) return parsed.response;
 
+  const ipAddress = extractIpFromRequest(request);
+  const userAgent = extractUserAgentFromRequest(request);
+
   const subscriber = parsed.data.subscriberId
     ? await prisma.subscriber.findUnique({
         where: { id: parsed.data.subscriberId },
@@ -41,6 +50,17 @@ export async function POST(request: Request) {
       });
 
   if (!subscriber) {
+    await recordSecurityAudit({
+      kind: "MAGIC_LINK_FAILED_NO_SUBSCRIBER",
+      email: parsed.data.email ?? undefined,
+      ipAddress,
+      userAgent,
+      detail: {
+        sessionLoginAttempt: true,
+        bySubscriberId: Boolean(parsed.data.subscriberId),
+        byEmail: Boolean(parsed.data.email),
+      },
+    });
     return NextResponse.json(
       {
         ok: false,
@@ -49,6 +69,15 @@ export async function POST(request: Request) {
       { status: 404 },
     );
   }
+
+  await recordSecurityAudit({
+    kind: "SESSION_LOGIN_EMAIL_ONLY",
+    subscriberId: subscriber.id,
+    email: subscriber.email,
+    ipAddress,
+    userAgent,
+    redirectTarget: "/dashboard",
+  });
 
   const response = NextResponse.json({
     ok: true,
@@ -78,7 +107,40 @@ export async function POST(request: Request) {
   return response;
 }
 
-export async function DELETE() {
+export async function DELETE(request: Request) {
+  const ipAddress = extractIpFromRequest(request);
+  const userAgent = extractUserAgentFromRequest(request);
+  let subscriberId: string | null = null;
+
+  try {
+    const jar = await cookies();
+    const signedCookie = jar.get(subscriberSessionCookieName)?.value ?? null;
+    if (signedCookie) {
+      const { verifySigned } = await import("@/lib/subscriber-session");
+      subscriberId = verifySigned(signedCookie);
+    }
+  } catch {
+    subscriberId = null;
+  }
+
+  if (subscriberId) {
+    try {
+      const sub = await prisma?.subscriber.findUnique({
+        where: { id: subscriberId },
+        select: { id: true, email: true },
+      });
+      await recordSecurityAudit({
+        kind: "SESSION_LOGOUT",
+        subscriberId: sub?.id,
+        email: sub?.email ?? undefined,
+        ipAddress,
+        userAgent,
+      });
+    } catch {
+      // ignore audit errors in logout path
+    }
+  }
+
   const response = NextResponse.json({ ok: true });
   response.cookies.set(subscriberSessionCookieName, "", {
     ...subscriberSessionCookieOptions,

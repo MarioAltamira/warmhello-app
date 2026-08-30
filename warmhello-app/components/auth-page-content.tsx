@@ -276,6 +276,19 @@ export function AuthPageContent({ sessionExpired = false }: AuthPageContentProps
             Log In
           </button>
           {loginStatus ? <p className="auth-copy">{loginStatus}</p> : null}
+          <p
+            className="auth-copy"
+            style={{
+              marginTop: 14,
+              fontSize: 13,
+            }}
+          >
+            Can&rsquo;t log in?{" "}
+            <a href="/forgot" style={{ fontWeight: 600 }}>
+              Email me a secure sign-in link
+            </a>
+            .
+          </p>
         </article>
       </section>
     </main>

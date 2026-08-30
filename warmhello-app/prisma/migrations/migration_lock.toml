@@ -1,0 +1,3 @@
+# Prisma Migrations lock file — connector/dialect
+# Required for prisma migrate diff --from-migrations to identify provider
+provider = "postgresql"
