@@ -15,8 +15,8 @@ function buildIdentitySms(): string {
 
 export async function sendSeniorOnboardingSmsSequence(params: {
   to: string;
-  seniorName: string;
-  checkInUrl: string;
+  seniorName?: string;
+  checkInUrl?: string;
   meta?: {
     subscriberId?: string | null;
     seniorId?: string | null;
@@ -28,21 +28,7 @@ export async function sendSeniorOnboardingSmsSequence(params: {
     kind: "onboarding_identity",
   });
 
-  await new Promise((r) => setTimeout(r, 30000));
-
-  let checkIn: SmsResult | null = null;
-  if (identity.ok) {
-    checkIn = await sendSms(
-      params.to,
-      `Hi ${params.seniorName} - it's time for your Warm-Hello check-in.\nTap I'm OK: ${params.checkInUrl}`,
-      {
-        ...params.meta,
-        kind: "onboarding_checkin",
-      },
-    );
-  }
-
-  return { ok: identity.ok && (checkIn?.ok ?? true), identity, checkIn };
+  return { ok: identity.ok, identity, checkIn: null };
 }
 
 const COMPLIANCE_REPLY_KINDS: ReadonlySet<string> = new Set([

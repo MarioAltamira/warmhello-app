@@ -2,17 +2,17 @@
 
 import { FloatingReturnButton } from "@/components/floating-return-button";
 import { useEffect, useRef } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 const PREVIEW_TOKEN = "demo-token";
 
-function isPreviewFlow(pathname: string | null, searchParams: ReturnType<typeof useSearchParams> | null) {
+function isPreviewFlow(pathname: string | null): boolean {
   if (!pathname) return false;
   const match = pathname.match(/^\/checkin\/([^/]+)/);
   const token = match?.[1];
   if (token === PREVIEW_TOKEN) return true;
-  if (!searchParams) return false;
-  const preview = searchParams.get("preview");
+  if (typeof window === "undefined") return false;
+  const preview = new URL(window.location.href).searchParams.get("preview");
   return preview === "1" || preview === "true";
 }
 
@@ -195,8 +195,7 @@ function suppressDashboardRedirectsDuringCheckin() {
 
 export default function CheckInLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const showFloatingReturn = isPreviewFlow(pathname, searchParams);
+  const showFloatingReturn = isPreviewFlow(pathname);
   const restoreRef = useRef<() => void>(() => {});
 
   useEffect(() => {

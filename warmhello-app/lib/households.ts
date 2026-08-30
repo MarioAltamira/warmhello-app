@@ -351,8 +351,6 @@ export async function createHousehold(
       try {
         seniorOnboardingSmsOutcome = await sendSeniorOnboardingSmsSequence({
           to: result.senior.phoneNumber,
-          seniorName: result.senior.firstName,
-          checkInUrl: `${env.APP_URL}/dashboard?first-checkin-tomorrow`,
           meta: {
             subscriberId: result.subscriber.id,
             seniorId: result.senior.id,
