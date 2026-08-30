@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type CheckInCardProps = {
   token: string;
@@ -62,6 +62,56 @@ export function CheckInCard({
   const errorMessage = message.includes("could not") || message.includes("expired");
   const callRequested = confirmed && message.toLowerCase().includes("call");
   const isSmsFlow = !isPreview;
+
+  useEffect(() => {
+    try { document.body.style.paddingTop = "0px"; } catch {}
+    try { document.documentElement.style.scrollPaddingTop = "0px"; } catch {}
+    if (!isSmsFlow) return undefined;
+    function isBlocked(next: string | URL | null | undefined): boolean {
+      if (!next) return false;
+      try {
+        const u = new URL(String(next), window.location.origin);
+        if (u.origin !== window.location.origin) return false;
+        const p = u.pathname;
+        if (p.startsWith("/checkin/") || p.startsWith("/s/") || p.startsWith("/api/") || p === "/") return false;
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    function onPop(e: PopStateEvent) {
+      void e;
+      if (isBlocked(window.location.pathname + window.location.search + window.location.hash)) {
+        try { window.stop?.(); } catch {}
+      }
+    }
+    const origPush = window.history.pushState;
+    const origRepl = window.history.replaceState;
+    try {
+      window.history.pushState = function (a: unknown, b: string, c?: unknown) {
+        if (c != null && isBlocked(c as string | URL | null)) {
+          if (typeof console !== "undefined") console.warn("[checkin] blocked SPA pushState", String(c));
+          return null as unknown as void;
+        }
+        return origPush.call(this, a, b, c as string | URL | null | undefined);
+      };
+    } catch {}
+    try {
+      window.history.replaceState = function (a: unknown, b: string, c?: unknown) {
+        if (c != null && isBlocked(c as string | URL | null)) {
+          if (typeof console !== "undefined") console.warn("[checkin] blocked SPA replaceState", String(c));
+          return null as unknown as void;
+        }
+        return origRepl.call(this, a, b, c as string | URL | null | undefined);
+      };
+    } catch {}
+    window.addEventListener("popstate", onPop, { capture: true });
+    return () => {
+      try { window.history.pushState = origPush; } catch {}
+      try { window.history.replaceState = origRepl; } catch {}
+      window.removeEventListener("popstate", onPop, { capture: true } as AddEventListenerOptions);
+    };
+  }, [isSmsFlow]);
 
   return (
     <section className="card checkin-card">
