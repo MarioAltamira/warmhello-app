@@ -1059,7 +1059,7 @@ export function OnboardingForm({
           <button
             className="button secondary"
             type="submit"
-            disabled={submitting || !caregiverConsentChecked}
+            disabled={submitting || !caregiverConsentChecked || !form.seniorOperationalSmsConsent}
             onClick={() => {
               submitIntent.current = "saveAndTest";
             }}

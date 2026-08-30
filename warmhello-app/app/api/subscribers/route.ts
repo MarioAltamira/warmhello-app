@@ -70,6 +70,27 @@ export async function POST(request: Request) {
   const parsed = await parseJsonBody(request, bodySchema);
   if (!parsed.ok) return parsed.response;
 
+  if (!parsed.data.caregiverAck) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "Please confirm that you are authorized to provide the senior's contact details and acknowledge the non-emergency service disclaimer (Terms of Service · Privacy Policy checkbox required).",
+      },
+      { status: 400 },
+    );
+  }
+  if (!parsed.data.seniorOperationalSmsConsent) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "Senior SMS Check-In Consent must be confirmed before creating the household — you must be authorized to provide the senior's mobile number for check-in SMS.",
+      },
+      { status: 400 },
+    );
+  }
+
   const md = deriveClientMetadata(request);
   const tosVersion = parsed.data.tosVersion ?? TOS_VERSION_CURRENT;
   const privacyVersion = parsed.data.privacyVersion ?? PRIVACY_VERSION_CURRENT;

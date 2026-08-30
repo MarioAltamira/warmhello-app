@@ -19,6 +19,7 @@ function isPreviewFlow(pathname: string | null, searchParams: ReturnType<typeof 
 const BODY_PADDING_TOP_RESTORE_KEY =
   "__warmhello_checkin_body_padding_restore__" as const;
 const NAV_LOCKED_KEY = "__warmhello_checkin_nav_locked__" as const;
+const HISTORY_LOCKED_KEY = "__warmhello_checkin_history_locked__" as const;
 
 function suppressDashboardRedirectsDuringCheckin() {
   if (typeof window === "undefined") return () => {};
@@ -95,6 +96,65 @@ function suppressDashboardRedirectsDuringCheckin() {
     });
   }
 
+  const originalPushState = window.history.pushState.bind(window.history);
+  const originalReplaceState = window.history.replaceState.bind(window.history);
+
+  function guardedHistory(
+    data: unknown,
+    unused: string,
+    url: unknown,
+    original: (data: unknown, unused: string, url?: string | URL | null) => void,
+    method: "pushState" | "replaceState",
+  ) {
+    if (isNavigationAwayFromCheckin(url)) {
+      console.warn(
+        `[checkin] blocked history.${method} to ${String(url)} while user is on a check-in route.`,
+      );
+      return;
+    }
+    try {
+      original(data, unused, url as string | URL | null | undefined);
+    } catch (e) {
+      original(data, unused, url as string | URL | undefined);
+    }
+  }
+
+  let restoreHistory = () => {};
+  if (anyWin[HISTORY_LOCKED_KEY] !== true) {
+    anyWin[HISTORY_LOCKED_KEY] = true;
+    Object.defineProperty(window.history, "pushState", {
+      configurable: true,
+      writable: true,
+      value: (
+        data: unknown,
+        unused: string,
+        url?: string | URL | null,
+      ) => guardedHistory(data, unused, url, originalPushState, "pushState"),
+    });
+    Object.defineProperty(window.history, "replaceState", {
+      configurable: true,
+      writable: true,
+      value: (
+        data: unknown,
+        unused: string,
+        url?: string | URL | null,
+      ) => guardedHistory(data, unused, url, originalReplaceState, "replaceState"),
+    });
+    restoreHistory = () => {
+      Object.defineProperty(window.history, "pushState", {
+        configurable: true,
+        writable: true,
+        value: originalPushState,
+      });
+      Object.defineProperty(window.history, "replaceState", {
+        configurable: true,
+        writable: true,
+        value: originalReplaceState,
+      });
+      delete anyWin[HISTORY_LOCKED_KEY];
+    };
+  }
+
   const winOnBeforeUnload = (event: BeforeUnloadEvent) => {
     // Only guard: do not prompt — just gives us a hook; real guard is above.
     void event;
@@ -126,6 +186,7 @@ function suppressDashboardRedirectsDuringCheckin() {
         set: originalHrefSetter.bind(window.location),
       });
     }
+    restoreHistory();
     window.removeEventListener("beforeunload", winOnBeforeUnload);
     window.removeEventListener("popstate", winOnPopstate);
     delete anyWin[NAV_LOCKED_KEY];
