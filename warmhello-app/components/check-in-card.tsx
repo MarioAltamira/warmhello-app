@@ -65,7 +65,7 @@ export function CheckInCard({
 
   return (
     <section className="card checkin-card">
-      <div style={{ marginBottom: 8 }}>
+      <div style={{ marginBottom: 18 }}>
         <Image
           src="/warmhello-logo-b.png"
           alt="Warm-Hello"
@@ -75,44 +75,34 @@ export function CheckInCard({
           className="checkin-card-logo"
         />
       </div>
-      <p className="eyebrow">Secure Daily Check-In</p>
-      <h1>Hi {seniorName}</h1>
-      <p>
+      <p className="checkin-eyebrow">Secure Daily Check-In</p>
+      <h1 className="checkin-hi">Hi {seniorName}</h1>
+      <p className="checkin-scheduled">
         Your scheduled check-in window is <strong>{scheduledLabel}</strong>.
       </p>
-      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginTop: 8 }}>
-        <button className="button primary" disabled={disabledOkay} onClick={() => handleConfirm("okay")}>
+      <div className="checkin-actions">
+        <button
+          className="checkin-btn checkin-btn-okay"
+          disabled={disabledOkay}
+          onClick={() => handleConfirm("okay")}
+        >
           {submittingOkay ? "Confirming..." : "I am okay"}
         </button>
         <button
-          className="button"
+          className="checkin-btn checkin-btn-call"
           disabled={disabledCall}
           onClick={() => handleConfirm("call_me")}
-          style={{
-            backgroundColor: "rgb(34, 197, 94)",
-            color: "white",
-            border: "1px solid rgb(22, 163, 74)",
-          }}
         >
           {submittingCall ? "Requesting call..." : "Call me"}
         </button>
       </div>
       <p
-        className={`checkin-status ${errorMessage ? "error" : "success"}`}
-        style={{
-          marginTop: 16,
-          color: callRequested ? "rgb(22, 163, 74)" : undefined,
-          fontWeight: callRequested ? 600 : undefined,
-        }}
+        className={`checkin-status ${errorMessage ? "error" : "success"} ${callRequested ? "callRequested" : ""}`}
       >
         {message}
       </p>
       {isSmsFlow ? (
-        <a
-          className="button secondary"
-          href={RETURN_TO_MESSAGES_HREF}
-          style={{ marginTop: 24 }}
-        >
+        <a className="checkin-return" href={RETURN_TO_MESSAGES_HREF}>
           Return to Messages
         </a>
       ) : null}

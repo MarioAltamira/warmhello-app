@@ -19,7 +19,9 @@ export default async function CheckInPage({ params, searchParams }: CheckInPageP
 
   return (
     <main className="shell" data-checkin-preview={isPreview ? "1" : undefined}>
-      <CheckInCard {...data} isPreview={isPreview} />
+      <div className="checkin-shell-frame">
+        <CheckInCard {...data} isPreview={isPreview} />
+      </div>
     </main>
   );
 }
