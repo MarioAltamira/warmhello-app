@@ -81,8 +81,53 @@ export async function POST(
   try {
     const subscriber = await prisma?.subscriber.findUnique({
       where: { id: subscriberId },
-      select: { billingCurrency: true },
+      select: {
+        billingCurrency: true,
+        subscriptionStatus: true,
+        stripeSubscriptionId: true,
+        currentPeriodEndsAt: true,
+      },
     });
+
+    if (subscriber?.subscriptionStatus === "ACTIVE") {
+      return NextResponse.json(
+        {
+          ok: false,
+          alreadySubscribed: true,
+          message:
+            "You are already subscribed and billing is active. To change your plan, reach out to sales@warm-hello.com or visit Settings → Subscription.",
+        },
+        { status: 409 },
+      );
+    }
+    if (
+      subscriber?.subscriptionStatus === "CANCELED" &&
+      subscriber?.currentPeriodEndsAt &&
+      subscriber.currentPeriodEndsAt.getTime() > Date.now() &&
+      subscriber.stripeSubscriptionId
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          alreadySubscribed: true,
+          message:
+            "Your subscription is still active through the end of the current paid period. No new payment is needed right now.",
+        },
+        { status: 409 },
+      );
+    }
+    if (subscriber?.subscriptionStatus === "PAST_DUE") {
+      return NextResponse.json(
+        {
+          ok: false,
+          alreadySubscribed: true,
+          message:
+            "Your account currently shows an unpaid invoice. Please contact sales@warm-hello.com to resolve this before starting a new subscription so you are not double-billed.",
+        },
+        { status: 409 },
+      );
+    }
+
     const currency = subscriber?.billingCurrency ?? "USD";
     const plan = pricingPlanFor(currency);
     const priceAmount =

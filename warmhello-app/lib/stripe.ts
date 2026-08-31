@@ -63,12 +63,50 @@ export async function createCheckoutSession(input: {
 
   const subscriber = await prisma.subscriber.findUnique({
     where: { id: input.subscriberId },
-    select: { id: true, email: true, billingCurrency: true, stripeCustomerId: true },
+    select: {
+      id: true,
+      email: true,
+      billingCurrency: true,
+      stripeCustomerId: true,
+      subscriptionStatus: true,
+      stripeSubscriptionId: true,
+      currentPeriodEndsAt: true,
+    },
   });
   if (!subscriber) {
     return {
       ok: false as const,
       message: "Subscriber was not found.",
+    };
+  }
+
+  if (subscriber.subscriptionStatus === "ACTIVE") {
+    return {
+      ok: false as const,
+      alreadySubscribed: true as const,
+      message:
+        "You are already subscribed and billing is active. To change your plan, reach out to sales@warm-hello.com or visit Settings → Subscription.",
+    };
+  }
+  if (
+    subscriber.subscriptionStatus === "CANCELED" &&
+    subscriber.currentPeriodEndsAt &&
+    subscriber.currentPeriodEndsAt.getTime() > Date.now() &&
+    subscriber.stripeSubscriptionId
+  ) {
+    return {
+      ok: false as const,
+      alreadySubscribed: true as const,
+      message:
+        "Your subscription is still active through the end of the current paid period. No new payment is needed right now. You can reactivate in Settings → Subscription once your paid period ends.",
+    };
+  }
+  if (subscriber.subscriptionStatus === "PAST_DUE") {
+    return {
+      ok: false as const,
+      alreadySubscribed: true as const,
+      message:
+        "Your account currently shows an unpaid invoice. Please reach out to sales@warm-hello.com to resolve this before starting a new subscription so you are not double-billed.",
     };
   }
 

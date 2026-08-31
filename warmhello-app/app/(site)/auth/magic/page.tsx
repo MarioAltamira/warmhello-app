@@ -29,18 +29,33 @@ function MagicPageInner() {
         setMessage("This log-in link is missing its security token. Please request a new link.");
         return;
       }
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
       try {
         const response = await fetch("/api/auth/magic", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token }),
+          signal: controller.signal,
         });
-        const data = (await response.json()) as {
+        clearTimeout(timeoutId);
+        let data: {
           ok?: boolean;
           status?: MagicStatus;
           message?: string;
           redirect?: string;
-        };
+        } = {};
+        try {
+          data = (await response.json()) as typeof data;
+        } catch {
+          data = {
+            ok: false,
+            status: response.ok ? "invalid" : "error",
+            message: response.ok
+              ? "This log-in link is no longer valid. Please request a new one."
+              : "Something went wrong while verifying your link. Please try again.",
+          };
+        }
         if (cancelled) return;
         const next = data.status;
         if (data.ok && next === "ok") {
@@ -63,10 +78,33 @@ function MagicPageInner() {
           );
           return;
         }
+        if (next === "invalid") {
+          setStatus("invalid");
+          setMessage(data.message ?? "This log-in link is no longer valid. Please request a new one.");
+          return;
+        }
+        if (!response.ok || response.status >= 500 || next === "error") {
+          setStatus("error");
+          setMessage(
+            data.message ?? "Something went wrong while verifying your link. Please try again in a moment.",
+          );
+          return;
+        }
         setStatus("invalid");
         setMessage(data.message ?? "This log-in link is no longer valid. Please request a new one.");
-      } catch {
+      } catch (err) {
+        clearTimeout(timeoutId);
         if (cancelled) return;
+        const isAbort =
+          (typeof DOMException !== "undefined" && err instanceof DOMException && err.name === "AbortError") ||
+          (err instanceof Error && err.name === "AbortError");
+        if (isAbort) {
+          setStatus("error");
+          setMessage(
+            "Your log-in link verification is taking too long. Check your connection and try again, or request a new link.",
+          );
+          return;
+        }
         setStatus("error");
         setMessage("Something went wrong while verifying your link. Please try again.");
       }

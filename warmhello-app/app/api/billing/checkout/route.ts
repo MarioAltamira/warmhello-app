@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createCheckoutSession } from "@/lib/stripe";
+import { prisma } from "@/lib/prisma";
 import { getSubscriberSession } from "@/lib/subscriber-session";
 import { parseJsonBody } from "@/lib/zod-parse";
 import { coerceInterval } from "@/lib/visitor-currency";
@@ -27,6 +28,54 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { ok: false, message: "You are not authorized to create a checkout for this subscriber." },
       { status: 403 },
+    );
+  }
+
+  const subscriber = await prisma?.subscriber.findUnique({
+    where: { id: parsed.data.subscriberId },
+    select: {
+      subscriptionStatus: true,
+      stripeSubscriptionId: true,
+      currentPeriodEndsAt: true,
+    },
+  });
+
+  if (subscriber?.subscriptionStatus === "ACTIVE") {
+    return NextResponse.json(
+      {
+        ok: false,
+        alreadySubscribed: true,
+        message:
+          "You are already subscribed and billing is active. To change your plan, reach out to sales@warm-hello.com or visit Settings → Subscription.",
+      },
+      { status: 409 },
+    );
+  }
+  if (
+    subscriber?.subscriptionStatus === "CANCELED" &&
+    subscriber?.currentPeriodEndsAt &&
+    subscriber.currentPeriodEndsAt.getTime() > Date.now() &&
+    subscriber.stripeSubscriptionId
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        alreadySubscribed: true,
+        message:
+          "Your subscription is still active through the end of the current paid period. No new payment is needed right now.",
+      },
+      { status: 409 },
+    );
+  }
+  if (subscriber?.subscriptionStatus === "PAST_DUE") {
+    return NextResponse.json(
+      {
+        ok: false,
+        alreadySubscribed: true,
+        message:
+          "Your account currently shows an unpaid invoice. Please contact sales@warm-hello.com to resolve this before starting a new subscription so you are not double-billed.",
+      },
+      { status: 409 },
     );
   }
 
