@@ -1286,8 +1286,9 @@ a.checkin-return:active {
     min-height: 100dvh;
     max-height: 100dvh;
     overflow: hidden;
-    padding: 10px 10px;
+    padding: 8px 10px 0;
     margin: 0;
+    align-items: flex-start;
   }
 
   main.shell:has(.checkin-card) {
@@ -1298,16 +1299,16 @@ a.checkin-return:active {
 
   .checkin-shell-frame {
     border-radius: 32px;
-    padding: 16px 14px 18px;
+    padding: 14px 14px 16px;
     max-width: 520px;
     display: flex;
     flex-direction: column;
-    justify-content: space-around;
+    justify-content: flex-start;
     align-items: stretch;
-    gap: 0.4rem;
-    height: calc(100dvh - 20px);
-    min-height: calc(100dvh - 20px);
-    max-height: calc(100dvh - 20px);
+    gap: 0.5rem;
+    height: calc(100dvh - 10px);
+    min-height: calc(100dvh - 10px);
+    max-height: calc(100dvh - 10px);
     overflow: hidden;
     margin: 0 auto;
   }
@@ -1315,8 +1316,8 @@ a.checkin-return:active {
   .checkin-card {
     border-radius: 24px;
     padding: 14px 14px 12px;
-    gap: 0.28rem;
-    flex: 1 1 auto;
+    gap: 0.3rem;
+    flex: 0 0 auto;
     min-height: 0;
     height: auto;
     max-height: 100%;
