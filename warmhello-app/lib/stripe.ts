@@ -153,6 +153,8 @@ export async function createCheckoutSession(input: {
       ? { customer: subscriber.stripeCustomerId! }
       : { customer_email: subscriber.email }),
     client_reference_id: subscriber.id,
+    payment_method_types: ["card"],
+    payment_method_collection: "always" as const,
     adaptive_pricing: {
       enabled: false,
     },
