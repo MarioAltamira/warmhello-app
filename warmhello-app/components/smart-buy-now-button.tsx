@@ -117,6 +117,24 @@ export function SmartBuyNowButton({ className, label }: SmartBuyNowButtonProps) 
     );
   }
 
+  if (
+    plan.allowNavigation &&
+    plan.subscribeHref &&
+    plan.buyNowIntent !== "POPUP_ALREADY_SUBSCRIBED"
+  ) {
+    return (
+      <button
+        type="button"
+        className={className ?? "button buy-now-button"}
+        onClick={() => {
+          window.location.href = plan.subscribeHref as unknown as string;
+        }}
+      >
+        {label ?? "Buy Now"}
+      </button>
+    );
+  }
+
   return (
     <BuyNowButton
       subscriberId={plan.subscriberId}

@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 type BuyNowIntent =
@@ -17,7 +16,6 @@ type BuyNowButtonProps = {
 };
 
 export function BuyNowButton(props: BuyNowButtonProps) {
-  const router = useRouter();
   const [showPopup, setShowPopup] = useState(false);
   const [popupTitle, setPopupTitle] = useState("");
   const [popupBody, setPopupBody] = useState("");
@@ -37,8 +35,6 @@ export function BuyNowButton(props: BuyNowButtonProps) {
   }, [showPopup]);
 
   function handleClick() {
-    // Intentionally disabled popup for "has time remaining on canceled plan" or "buy now" / trial users
-    // Only show popup for PAID ACTIVE subscribers to prevent double-charging.
     if (props.intent === "POPUP_ALREADY_SUBSCRIBED") {
       setPopupTitle("You are already subscribed");
       setPopupBody(
@@ -48,7 +44,7 @@ export function BuyNowButton(props: BuyNowButtonProps) {
       return;
     }
 
-    router.push(`/subscribe/${encodeURIComponent(props.subscriberId)}`);
+    window.location.href = `/subscribe/${encodeURIComponent(props.subscriberId)}`;
   }
 
   return (
