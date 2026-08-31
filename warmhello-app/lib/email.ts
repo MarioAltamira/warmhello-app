@@ -135,7 +135,22 @@ async function sendSmtpMail(input: EmailInput) {
 
     const hostName = env.APP_URL.replace(/^https?:\/\//, "").replace(/\/.*$/, "") || "localhost";
     const localMessageId = `<warmhello-contact-${Date.now()}@warm-hello.com>`;
-    const htmlBody = input.html.replace(/\r?\n/g, "");
+    const htmlBodyOneLine = input.html.replace(/\r?\n/g, "");
+    const splitAt = Math.max(100, 700);
+    function wrapLines(body: string): string {
+      if (!body) return "";
+      const parts: string[] = [];
+      for (let i = 0; i < body.length; i += splitAt) {
+        parts.push(body.slice(i, i + splitAt));
+      }
+      return parts.join("\r\n");
+    }
+    const plainBody = wrapLines(input.text);
+    const htmlBody = wrapLines(htmlBodyOneLine);
+    const recipientsList = input.to
+      .split(",")
+      .map((addr) => addr.trim())
+      .filter(Boolean);
     const message = [
       `From: Warm-Hello <${env.EMAIL_FROM_ADDRESS}>`,
       `To: ${input.to}`,
@@ -149,7 +164,7 @@ async function sendSmtpMail(input: EmailInput) {
       'Content-Type: text/plain; charset="UTF-8"',
       "Content-Transfer-Encoding: 8bit",
       "",
-      input.text,
+      plainBody,
       "",
       "--warmhello-boundary",
       'Content-Type: text/html; charset="UTF-8"',
@@ -176,7 +191,9 @@ async function sendSmtpMail(input: EmailInput) {
     await sendSmtpCommand(socket, authUser, [334]);
     await sendSmtpCommand(socket, authPass, [235]);
     await sendSmtpCommand(socket, `MAIL FROM:<${env.EMAIL_FROM_ADDRESS}>`, [250]);
-    await sendSmtpCommand(socket, `RCPT TO:<${input.to}>`, [250, 251]);
+    for (const rcpt of recipientsList) {
+      await sendSmtpCommand(socket, `RCPT TO:<${rcpt}>`, [250, 251]);
+    }
     await sendSmtpCommand(socket, "DATA", [354]);
 
     const dataResponse = await sendSmtpCommand(socket, `${message}\r\n.`, [250]);
