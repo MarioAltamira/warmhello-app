@@ -37,24 +37,50 @@ export function SmartBuyNowButton({ className, label }: SmartBuyNowButtonProps) 
 
   useEffect(() => {
     let mounted = true;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
 
-    fetch("/api/plan/me")
+    fetch("/api/plan/me", { signal: controller.signal })
       .then(async (res) => {
-        if (!res.ok) return;
-        return (await res.json()) as PlanResponse;
+        if (!res.ok) {
+          return { ok: true, loggedIn: false, loginHref: protectAuthHref } as PlanResponse;
+        }
+        try {
+          return (await res.json()) as PlanResponse;
+        } catch {
+          return { ok: true, loggedIn: false, loginHref: protectAuthHref } as PlanResponse;
+        }
       })
       .then((data) => {
-        if (!mounted || !data) return;
+        clearTimeout(timeoutId);
+        if (!mounted) return;
+        if (!data || !data.ok) {
+          setPlan({ ok: true, loggedIn: false, loginHref: protectAuthHref });
+          return;
+        }
         setPlan(data);
       })
-      .catch(() => {
-        // Fallback to a safe baseline: treat as guest.
+      .catch((err) => {
+        clearTimeout(timeoutId);
         if (!mounted) return;
+        const isAbort =
+          typeof DOMException !== "undefined" &&
+          err instanceof DOMException &&
+          err.name === "AbortError";
+        if (isAbort) {
+          console.warn("[SmartBuyNowButton] /api/plan/me timed out after 12s; treating as guest.");
+        }
         setPlan({ ok: true, loggedIn: false, loginHref: protectAuthHref });
       });
 
     return () => {
       mounted = false;
+      clearTimeout(timeoutId);
+      try {
+        controller.abort();
+      } catch {
+        /* noop */
+      }
     };
   }, []);
 

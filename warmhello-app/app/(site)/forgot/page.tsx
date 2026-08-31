@@ -27,18 +27,47 @@ function ForgotForm() {
     }
     setSubmitting(true);
     setMessage("");
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
     try {
       const response = await fetch("/api/auth/forgot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({ email: trimmed, redirect }),
       });
-      const data = (await response.json()) as { ok?: boolean; message?: string };
+      clearTimeout(timeoutId);
+      let data: { ok?: boolean; message?: string } = {};
+      try {
+        data = (await response.json()) as typeof data;
+      } catch {
+        data = {};
+      }
+      if (!response.ok && response.status >= 500) {
+        setMessage(
+          data.message ??
+            "Our email service is temporarily busy. Please wait 60 seconds and try again.",
+        );
+        setIsSent(false);
+        return;
+      }
       setMessage(data.message ?? "If that email is registered, check your inbox for a secure link.");
       setIsSent(true);
-    } catch {
-      setMessage("We could not send a request right now. Please try again in a moment.");
+    } catch (err) {
+      clearTimeout(timeoutId);
+      const isAbort =
+        (typeof DOMException !== "undefined" && err instanceof DOMException && err.name === "AbortError") ||
+        (err instanceof Error && err.name === "AbortError");
+      if (isAbort) {
+        setMessage(
+          "Your request is taking longer than usual. Please check your connection and try again, or email sales@warm-hello.com for help.",
+        );
+      } else {
+        setMessage("We could not send a request right now. Please try again in a moment.");
+      }
+      setIsSent(false);
     } finally {
+      clearTimeout(timeoutId);
       setSubmitting(false);
     }
   }

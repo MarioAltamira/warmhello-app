@@ -61,10 +61,13 @@ export function SubscribeClient({
     const interval = isBillingInterval(billingInterval)
       ? billingInterval
       : DEFAULT_INTERVAL;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
     try {
       const res = await fetch(`/api/subscribe/${subscriberId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           tos_version: TOS_VERSION_CURRENT,
           privacy_version: PRIVACY_VERSION_CURRENT,
@@ -72,21 +75,53 @@ export function SubscribeClient({
           billing_interval: interval,
         }),
       });
-      const body = await res.json().catch(() => ({}));
+      clearTimeout(timeoutId);
+      let body: {
+        ok?: boolean;
+        alreadySubscribed?: boolean;
+        checkoutUrl?: string;
+        url?: string;
+        message?: string;
+      } = {};
+      try {
+        body = (await res.json()) as typeof body;
+      } catch {
+        body = {};
+      }
+      if (body.alreadySubscribed) {
+        setError(
+          body.message ??
+            "You already have an active paid subscription. No new payment is needed. To manage your billing, visit Settings → Subscription or email sales@warm-hello.com.",
+        );
+        return;
+      }
       if (!res.ok || !body.ok || !(body.checkoutUrl || body.url)) {
         const message =
-          body.message ??
-          "Something went wrong while preparing checkout. Please try again in a moment.";
+          body.message && typeof body.message === "string"
+            ? body.message
+            : res.status >= 500
+              ? "Our payment provider is temporarily unavailable. Please try again in 60 seconds."
+              : "Something went wrong while preparing checkout. Please try again in a moment.";
         setError(message);
         return;
       }
       window.location.href = (body.checkoutUrl as string) ?? (body.url as string);
     } catch (err) {
-      console.error(err);
-      setError(
-        "Unable to reach the billing service. Please check your connection and try again.",
-      );
+      const isAbort =
+        (typeof DOMException !== "undefined" && err instanceof DOMException && err.name === "AbortError") ||
+        (err instanceof Error && err.name === "AbortError");
+      if (isAbort) {
+        setError(
+          "Preparing checkout is taking longer than usual. Please check your connection and try again, or email sales@warm-hello.com for help.",
+        );
+      } else {
+        console.error(err);
+        setError(
+          "Unable to reach the billing service. Please check your connection and try again.",
+        );
+      }
     } finally {
+      clearTimeout(timeoutId);
       setLoading(false);
     }
   }
