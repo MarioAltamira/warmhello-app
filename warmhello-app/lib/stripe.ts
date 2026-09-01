@@ -158,7 +158,6 @@ export async function createCheckoutSession(input: {
     saved_payment_method_options: {
       payment_method_save: "disabled" as const,
     },
-    payment_method_configuration: null as unknown as undefined,
     adaptive_pricing: {
       enabled: false,
     },
