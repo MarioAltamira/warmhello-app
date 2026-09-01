@@ -1,4 +1,5 @@
 import { CheckInCard } from "@/components/check-in-card";
+import { FloatingReturnButton } from "@/components/floating-return-button";
 import { getCheckInPageData } from "@/lib/checkins";
 
 type CheckInPageProps = {
@@ -25,6 +26,7 @@ export default async function CheckInPage({ params, searchParams }: CheckInPageP
       <div className="checkin-shell-frame">
         <CheckInCard {...data} isPreview={isPreview} />
       </div>
+      {isPreview ? <FloatingReturnButton /> : null}
     </main>
   );
 }
