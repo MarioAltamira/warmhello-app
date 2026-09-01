@@ -1,22 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { useEffect, useState } from "react";
 
-function ForgotFormInner() {
-  const searchParams = useSearchParams();
-  const redirect = (() => {
-    const raw = searchParams.get("redirect");
-    if (!raw) return "/dashboard";
-    if (raw.startsWith("/dashboard") || raw === "/onboard") return raw;
+function sanitizeRedirect(raw: string | null | undefined): string {
+  if (!raw) return "/dashboard";
+  if (raw.startsWith("/dashboard") || raw === "/onboard") return raw;
+  return "/dashboard";
+}
+
+function parseRedirectFromHref(href: string): string {
+  try {
+    const u = new URL(href);
+    return sanitizeRedirect(u.searchParams.get("redirect"));
+  } catch {
     return "/dashboard";
-  })();
+  }
+}
 
+export default function ForgotPage() {
+  const [mounted, setMounted] = useState(false);
+  const [redirect, setRedirect] = useState<string>("/dashboard");
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string>("");
   const [isSent, setIsSent] = useState(false);
+
+  useEffect(() => {
+    setRedirect(parseRedirectFromHref(typeof window !== "undefined" ? window.location.href : ""));
+    setMounted(true);
+  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -75,6 +88,17 @@ function ForgotFormInner() {
       clearTimeout(timeoutId);
       setSubmitting(false);
     }
+  }
+
+  if (!mounted) {
+    return (
+      <main className="shell">
+        <section className="card auth-hero">
+          <p className="eyebrow">Loading...</p>
+          <h1>One moment while the page loads.</h1>
+        </section>
+      </main>
+    );
   }
 
   return (
@@ -144,22 +168,5 @@ function ForgotFormInner() {
         </article>
       </section>
     </main>
-  );
-}
-
-export default function ForgotPage() {
-  return (
-    <Suspense
-      fallback={
-        <main className="shell">
-          <section className="card auth-hero">
-            <p className="eyebrow">Loading...</p>
-            <h1>Preparing your secure log-in link request...</h1>
-          </section>
-        </main>
-      }
-    >
-      <ForgotFormInner />
-    </Suspense>
   );
 }
