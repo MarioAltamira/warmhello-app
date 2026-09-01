@@ -12,6 +12,12 @@ const contactSchema = z.object({
   fullName: z.string().min(2),
   relationship: z.string().min(2),
   phoneNumber: z.string().min(7),
+  email: z
+    .string()
+    .nullish()
+    .or(z.literal(""))
+    .transform((v) => (typeof v === "string" ? v.trim().toLowerCase() || null : typeof v === "undefined" ? undefined : v))
+    .pipe(z.string().email().nullish().optional()),
 });
 
 const bodySchema = z
@@ -19,7 +25,7 @@ const bodySchema = z
     subscriberId: z.string().min(1).optional(),
     subscriber: z.object({
       fullName: z.string().min(2),
-      email: z.string().email(),
+      email: z.string().trim().toLowerCase().email(),
       phoneNumber: z.string().min(7),
       billingCurrency: BillingCurrencySchema,
     }),

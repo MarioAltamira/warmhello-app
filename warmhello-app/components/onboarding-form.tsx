@@ -267,9 +267,18 @@ export function OnboardingForm({
   );
 
   function updateField(name: keyof typeof initialForm, value: string | AdditionalContactState[]) {
+    let cleaned: string | AdditionalContactState[] = value;
+    if (typeof cleaned === "string") {
+      cleaned = cleaned;
+      if (name === "subscriberEmail" || name === "contactEmail") {
+        cleaned = cleaned.trim();
+      }
+    } else if (Array.isArray(cleaned) && name === "additionalContacts") {
+      cleaned = cleaned.map((c) => ({ ...c, email: (c.email ?? "").trim() }));
+    }
     setForm((current) => ({
       ...current,
-      [name]: value,
+      [name]: cleaned,
     }));
   }
 
@@ -368,6 +377,36 @@ export function OnboardingForm({
       return;
     }
 
+    const subscriberEmail = (form.subscriberEmail ?? "").trim();
+    const contactEmail = (form.contactEmail ?? "").trim();
+    const additionalContacts = (form.additionalContacts ?? []).map((c) => ({
+      ...c,
+      email: (c.email ?? "").trim(),
+    }));
+    const validEmail = (s: string) => s.length > 0 && s.includes("@") && s.split("@")[1]?.includes(".");
+
+    if (!validEmail(subscriberEmail)) {
+      setStatusMessage(
+        `Caregiver email is invalid: "${subscriberEmail}" is missing an @ sign or domain name. Please re-type the full email address (e.g. name@example.com) and try again.`,
+      );
+      return;
+    }
+    if (contactEmail && !validEmail(contactEmail)) {
+      setStatusMessage(
+        `Primary contact email is invalid: "${contactEmail}" is missing an @ sign or domain name. Please re-type the full email address (e.g. name@example.com) and try again.`,
+      );
+      return;
+    }
+    for (let i = 0; i < additionalContacts.length; i++) {
+      const c = additionalContacts[i];
+      if (c.email && !validEmail(c.email)) {
+        setStatusMessage(
+          `Additional contact #${i + 1} email is invalid: "${c.email}" is missing an @ sign or domain name. Please re-type the full email address (e.g. name@example.com) and try again.`,
+        );
+        return;
+      }
+    }
+
     setSubmitting(true);
     setSavedHousehold(undefined);
     setFirstCheckIn(undefined);
@@ -381,17 +420,17 @@ export function OnboardingForm({
       const totalMinutes = Number(form.checkInTime);
       const checkInHour = Math.floor(totalMinutes / 60);
       const checkInMinute = totalMinutes % 60;
-      const additionalContacts = (form.additionalContacts ?? []).map((c) => ({
+      const additionalContactsCleaned = additionalContacts.map((c) => ({
         fullName: c.fullName,
         relationship: c.relationship,
         phoneNumber: c.phone,
-        email: c.email.trim() || null,
+        email: c.email || null,
       }));
       const payload = {
         subscriberId: currentHousehold?.subscriber.id,
         subscriber: {
           fullName: form.subscriberName,
-          email: form.subscriberEmail,
+          email: subscriberEmail,
           phoneNumber: form.subscriberPhone,
           billingCurrency: form.billingCurrency,
         },
@@ -409,9 +448,9 @@ export function OnboardingForm({
           fullName: form.contactName,
           relationship: form.contactRelationship,
           phoneNumber: form.contactPhone,
-          email: form.contactEmail.trim() || null,
+          email: contactEmail || null,
         },
-        additionalContacts,
+        additionalContacts: additionalContactsCleaned,
         caregiverAck: true,
         tosVersion: TOS_VERSION_CURRENT,
         privacyVersion: PRIVACY_VERSION_CURRENT,
@@ -510,7 +549,7 @@ export function OnboardingForm({
           For best sign up experience use a laptop or a desktop computer.
         </p>
       ) : null}
-      <form className="form-grid" onSubmit={handleSubmit}>
+      <form className="form-grid" onSubmit={handleSubmit} noValidate>
         <style>{`
           .section-card-blue input,
           .section-card-blue select,
