@@ -6,7 +6,6 @@ import {
 } from "@/lib/routes";
 import { HeaderAuthActions } from "@/components/header-auth-actions";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { SmartBuyNowButton } from "@/components/smart-buy-now-button";
 import { ShareAppButton } from "@/components/share-app-modal";
 
 export async function SiteHeader() {
@@ -28,7 +27,6 @@ export async function SiteHeader() {
           <Link href="/" className="button secondary site-header-button">
             Home
           </Link>
-          <SmartBuyNowButton className="button buy-now-button site-header-button" />
           <Link href={trialAuthHref} className="button primary site-header-button">
             Start Free Trial
           </Link>

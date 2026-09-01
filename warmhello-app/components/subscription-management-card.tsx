@@ -7,7 +7,6 @@ import {
   FREE_TRIAL_DOES_NOT_AUTO_CONVERT,
   NON_EMERGENCY_POSITIONING_LINE,
 } from "@/lib/constants";
-
 type SubscriptionManagementCardProps = {
   subscriberId: string;
   subscriptionStatus: string;
@@ -187,6 +186,13 @@ export function SubscriptionManagementCard({
         </p>
       </div>
 
+      <UpgradeToAnnualCard
+        subscriberId={subscriberId}
+        isActive={normalizedStatus === "ACTIVE"}
+        isMonthly={billingInterval ? billingInterval.toUpperCase() === "MONTHLY" : false}
+        billingCurrency={billingCurrency}
+      />
+
       <div className="actions" style={{ marginTop: 20, flexWrap: "wrap" }}>
         {subscriberId ? (
           <BuyNowButton
@@ -287,6 +293,234 @@ export function SubscriptionManagementCard({
       ) : null}
 
       {status ? <p style={{ marginTop: 14 }}>{status}</p> : null}
+    </section>
+  );
+}
+
+type UpgradeToAnnualCardProps = {
+  subscriberId: string;
+  isActive: boolean;
+  isMonthly: boolean;
+  billingCurrency?: "USD" | "CAD";
+};
+
+type UpgradeResponse = {
+  ok: boolean;
+  message?: string;
+  changed?: string;
+  requiresPayment?: boolean;
+  amountDue?: {
+    currency: "USD" | "CAD";
+    amountCents: number;
+    amountDisplay: string;
+  };
+  pricing?: {
+    perYearDisplay: string;
+    equivalentMonthlyDisplay: string;
+    savingsPercent: number;
+  };
+  hostedInvoicePayUrl?: string | null;
+  invoicePdfUrl?: string | null;
+};
+
+function UpgradeToAnnualCard({
+  subscriberId,
+  isActive,
+  isMonthly,
+  billingCurrency,
+}: UpgradeToAnnualCardProps) {
+  const [step, setStep] = useState<1 | 2>(1);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [response, setResponse] = useState<UpgradeResponse | null>(null);
+
+  if (!isActive || !isMonthly) return null;
+
+  const currencySymbol = billingCurrency === "USD" ? "$" : "CA$";
+  const perYear = billingCurrency === "USD" ? "144.00" : "180.00";
+  const equivMonthly = billingCurrency === "USD" ? "11.99" : "15.00";
+  const currentMonthly = billingCurrency === "USD" ? "14.99" : "19.99";
+  const savings = "20";
+
+  async function handleUpgrade() {
+    if (step === 1) {
+      setStep(2);
+      setMessage(
+        "Click again to confirm. Your card will be charged immediately for the prorated annual balance (annual fee minus credit for the unused portion of your current monthly term). Check-ins continue uninterrupted.",
+      );
+      return;
+    }
+
+    setBusy(true);
+    setMessage("Preparing annual upgrade…");
+    const ctrl = new AbortController();
+    const to = setTimeout(() => ctrl.abort(), 15000);
+    try {
+      const res = await fetch("/api/billing/upgrade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subscriberId, toInterval: "annual" }),
+        signal: ctrl.signal,
+      });
+      clearTimeout(to);
+      const data = (await res.json()) as UpgradeResponse;
+      setResponse(data);
+      if (!res.ok || !data.ok) {
+        setMessage(
+          data.message ??
+            "We couldn't start your annual upgrade right now. Please try again in 60 seconds or contact sales@warm-hello.com.",
+        );
+        return;
+      }
+      if (data.requiresPayment && data.hostedInvoicePayUrl) {
+        setMessage(
+          `Your upgrade is ready. ${data.message ?? "Open the Stripe invoice page below to complete payment."}`,
+        );
+        try {
+          window.open(data.hostedInvoicePayUrl, "_blank", "noopener,noreferrer");
+        } catch {
+          /* ignore popup blockers */
+        }
+      } else {
+        setMessage(
+          data.message ??
+            "Your annual upgrade has been applied. Your plan will refresh here in a few moments.",
+        );
+      }
+    } catch {
+      setMessage(
+        "We couldn't complete your annual upgrade right now. Please try again in 60 seconds or contact sales@warm-hello.com.",
+      );
+    } finally {
+      clearTimeout(to);
+      setBusy(false);
+      setStep(1);
+    }
+  }
+
+  return (
+    <section
+      style={{
+        marginTop: 20,
+        padding: "18px 20px",
+        border: "1px solid rgba(34, 197, 94, 0.35)",
+        borderRadius: 14,
+        background:
+          "linear-gradient(180deg, rgba(34,197,94,0.08) 0%, rgba(34,197,94,0.02) 100%)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 16,
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ flex: "1 1 320px", minWidth: 280 }}>
+          <p
+            className="eyebrow"
+            style={{ color: "rgb(34, 197, 94)", margin: 0, marginBottom: 4 }}
+          >
+            Save ~{savings}%
+          </p>
+          <h3 style={{ margin: 0, fontSize: 20 }}>Upgrade to Annual Billing</h3>
+          <p className="lede" style={{ margin: "6px 0 12px 0" }}>
+            From <strong>{currencySymbol}{currentMonthly}/month</strong> to{" "}
+            <strong>{currencySymbol}{perYear}/year</strong> — works out to{" "}
+            <strong>{currencySymbol}{equivMonthly}/month</strong> with no change to your check-ins or escalation contacts.
+          </p>
+          <ul
+            className="longform-list"
+            style={{ margin: 0, paddingInlineStart: 18, fontSize: 13, lineHeight: 1.7 }}
+          >
+            <li>Prorated credit for unused days already paid on this month</li>
+            <li>One simple annual charge; no partial refunds (Ontario CPA cancellation policy applies).</li>
+            <li>Check-ins, SMS, and family contacts continue without interruption.</li>
+            <li>Auto-renewal stays ON for the new annual term unless you turn it off.</li>
+          </ul>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "stretch",
+            gap: 10,
+            minWidth: 260,
+          }}
+        >
+          <button
+            type="button"
+            className="button"
+            onClick={() => void handleUpgrade()}
+            disabled={busy}
+            style={{
+              background: "rgb(22, 163, 74)",
+              border: "1px solid rgba(22,163,74,0.55)",
+              color: "white",
+            }}
+          >
+            {busy
+              ? "Preparing upgrade…"
+              : step === 1
+                ? `Upgrade to Annual — ${currencySymbol}${perYear}/yr`
+                : "Confirm: Charge prorated annual balance now"}
+          </button>
+          {response?.amountDue?.amountDisplay ? (
+            <p style={{ margin: 0, fontSize: 13, textAlign: "center" }}>
+              Amount due today: <strong>{response.amountDue.amountDisplay}</strong>
+            </p>
+          ) : null}
+          {response?.hostedInvoicePayUrl ? (
+            <a
+              href={response.hostedInvoicePayUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="button secondary"
+              style={{ textAlign: "center" }}
+            >
+              Pay prorated amount on Stripe (new tab)
+            </a>
+          ) : null}
+          {response?.invoicePdfUrl ? (
+            <a
+              href={response.invoicePdfUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="button tertiary"
+              style={{ textAlign: "center" }}
+            >
+              View invoice PDF
+            </a>
+          ) : null}
+          {step === 2 && !busy ? (
+            <button
+              type="button"
+              className="button tertiary"
+              onClick={() => {
+                setStep(1);
+                setMessage(null);
+              }}
+            >
+              Cancel — keep monthly billing
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      {message ? (
+        <p
+          style={{
+            marginTop: 14,
+            marginBottom: 0,
+            fontSize: 13,
+            lineHeight: 1.6,
+          }}
+        >
+          {message}
+        </p>
+      ) : null}
     </section>
   );
 }

@@ -46,7 +46,7 @@ export async function POST(request: Request) {
         ok: false,
         alreadySubscribed: true,
         message:
-          "You are already subscribed and billing is active. To change your plan, reach out to sales@warm-hello.com or visit Settings → Subscription.",
+          "You are already subscribed and billing is active. Monthly paid users can upgrade to Annual billing by going to Settings → Subscription → Upgrade to Annual. Other billing changes: contact sales@warm-hello.com.",
       },
       { status: 409 },
     );
