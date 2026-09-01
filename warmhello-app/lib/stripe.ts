@@ -155,6 +155,13 @@ export async function createCheckoutSession(input: {
     client_reference_id: subscriber.id,
     payment_method_types: ["card"],
     payment_method_collection: "always" as const,
+    saved_payment_method_options: {
+      payment_method_save: "disabled" as const,
+    },
+    payment_intent_data: {
+      setup_future_usage: null as unknown as undefined,
+    },
+    payment_method_configuration: null as unknown as undefined,
     adaptive_pricing: {
       enabled: false,
     },
