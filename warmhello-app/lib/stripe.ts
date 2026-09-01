@@ -158,9 +158,6 @@ export async function createCheckoutSession(input: {
     saved_payment_method_options: {
       payment_method_save: "disabled" as const,
     },
-    payment_intent_data: {
-      setup_future_usage: null as unknown as undefined,
-    },
     payment_method_configuration: null as unknown as undefined,
     adaptive_pricing: {
       enabled: false,
@@ -219,6 +216,7 @@ export async function createCheckoutSession(input: {
       },
       payment_settings: {
         payment_method_types: [],
+        save_default_payment_method: "off" as const,
       },
     },
     metadata: {
@@ -253,12 +251,18 @@ export async function createCheckoutSession(input: {
       tax_id_collection: _omitTaxId,
       customer_update: _omitCustomerUpdate,
       invoice_settings: _omitInvoiceSettings,
+      saved_payment_method_options: _omitSavedPMOptions,
+      payment_method_configuration: _omitPMConfig,
+      subscription_data: _omitSubscriptionData,
       ...fallbackParamsAny
     } = baseParamsAny;
     void _omitTax;
     void _omitTaxId;
     void _omitCustomerUpdate;
     void _omitInvoiceSettings;
+    void _omitSavedPMOptions;
+    void _omitPMConfig;
+    void _omitSubscriptionData;
     const fallbackParams = fallbackParamsAny as Stripe.Checkout.SessionCreateParams;
     fallbackParams.metadata = {
       ...(fallbackParams.metadata ?? {}),
@@ -267,7 +271,7 @@ export async function createCheckoutSession(input: {
     };
     if (typeof (console as ConsoleWithWarn).warn === "function") {
       (console as ConsoleWithWarn).warn(
-        "[createCheckoutSession] first attempt failed; retrying without automatic_tax / tax_id_collection / customer_update. original error:",
+        "[createCheckoutSession] first attempt failed; retrying without automatic_tax / tax_id_collection / customer_update / saved_payment_method_options / payment_method_configuration / subscription_data. original error:",
         msg,
       );
     }
