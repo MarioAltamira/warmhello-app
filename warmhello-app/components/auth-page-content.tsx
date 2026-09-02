@@ -48,7 +48,6 @@ export function AuthPageContent({ sessionExpired = false }: AuthPageContentProps
   const [signupForm, setSignupForm] = useState({
     fullName: "",
     email: "",
-    password: "",
   });
   const [loginForm, setLoginForm] = useState({
     email: "",
@@ -82,7 +81,6 @@ export function AuthPageContent({ sessionExpired = false }: AuthPageContentProps
     setSignupForm({
       fullName: "",
       email: "",
-      password: "",
     });
   }
 
@@ -105,37 +103,63 @@ export function AuthPageContent({ sessionExpired = false }: AuthPageContentProps
 
   async function handleLogin() {
     const trimmedEmail = loginForm.email.trim();
+    const passwordRaw = String(loginForm.password ?? "");
 
     if (!trimmedEmail) {
       setLoginStatus("Enter the subscriber email you used when creating the household.");
       return;
     }
+    if (passwordRaw.length === 0) {
+      setLoginStatus("Enter your password. If you haven't set one yet, click 'Email me a secure sign-in link' below.");
+      return;
+    }
 
     setSubmitting("login");
     setLoginStatus("Logging in...");
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort("Request timed out."), 20000);
 
     try {
-      const response = await fetch("/api/session", {
+      const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email: trimmedEmail,
+          password: passwordRaw,
         }),
+        signal: controller.signal,
       });
 
-      const data = (await response.json()) as { ok?: boolean; message?: string };
+      const data = (await response.json()) as {
+        ok?: boolean;
+        message?: string;
+        redirect?: string;
+      };
 
       if (!response.ok || !data.ok) {
-        setLoginStatus(data.message ?? "We could not log you in right now.");
+        setLoginStatus(
+          data.message ?? "We could not log you in right now.",
+        );
         return;
       }
 
-      router.push(redirectPath === "/dashboard" ? "/dashboard" : redirectPath);
-    } catch {
-      setLoginStatus("We could not log you in right now.");
+      router.push(
+        data.redirect && allowedRedirects.has(data.redirect as Route)
+          ? (data.redirect as Route)
+          : redirectPath === "/dashboard"
+            ? "/dashboard"
+            : redirectPath,
+      );
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") {
+        setLoginStatus("Login request timed out. Please try again.");
+      } else {
+        setLoginStatus("We could not log you in right now.");
+      }
     } finally {
+      clearTimeout(timeoutId);
       setSubmitting(null);
     }
   }
@@ -196,18 +220,6 @@ export function AuthPageContent({ sessionExpired = false }: AuthPageContentProps
                 placeholder="jordan@example.com"
                 value={signupForm.email}
                 onChange={(event) => updateSignupField("email", event.target.value)}
-              />
-            </label>
-            <label>
-              Password
-              <input
-                form="signupForm"
-                type="password"
-                name="signupPassword"
-                autoComplete="new-password"
-                placeholder="Create a password"
-                value={signupForm.password}
-                onChange={(event) => updateSignupField("password", event.target.value)}
               />
             </label>
           </form>

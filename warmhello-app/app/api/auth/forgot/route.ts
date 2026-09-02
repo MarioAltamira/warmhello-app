@@ -11,6 +11,10 @@ import {
 } from "@/lib/security-audit";
 import { sendMagicLoginLinkEmail } from "@/lib/trial-emails";
 import { env } from "@/lib/env";
+import {
+  checkRateLimit,
+  formatRetrySeconds,
+} from "@/lib/rate-limit";
 
 const MAGIC_LINK_EXPIRES_MINUTES = 30;
 
@@ -51,6 +55,56 @@ export async function POST(request: Request) {
   const email = parsed.data.email.trim().toLowerCase();
   const ipAddress = extractIpFromRequest(request);
   const userAgent = extractUserAgentFromRequest(request);
+
+  const perEmailLimit = checkRateLimit(
+    `forgot:email:${email}`,
+    15 * 60_000,
+    5,
+  );
+  if (!perEmailLimit.allowed) {
+    await recordSecurityAudit({
+      kind: "MAGIC_LINK_RATE_LIMITED",
+      subscriberId: null,
+      email,
+      ipAddress,
+      userAgent,
+      detail: { per: "email" },
+    });
+    return NextResponse.json(
+      {
+        ok: false,
+        message: `Too many recent requests for this email. Please wait ${formatRetrySeconds(
+          perEmailLimit.retryAfterMs,
+        )} and try again.`,
+      },
+      { status: 429 },
+    );
+  }
+
+  const perIpLimit = checkRateLimit(
+    `forgot:ip:${ipAddress ?? "unknown"}`,
+    15 * 60_000,
+    10,
+  );
+  if (!perIpLimit.allowed) {
+    await recordSecurityAudit({
+      kind: "MAGIC_LINK_RATE_LIMITED",
+      subscriberId: null,
+      email,
+      ipAddress,
+      userAgent,
+      detail: { per: "ip" },
+    });
+    return NextResponse.json(
+      {
+        ok: false,
+        message: `Too many recent requests from this location. Please wait ${formatRetrySeconds(
+          perIpLimit.retryAfterMs,
+        )} and try again.`,
+      },
+      { status: 429 },
+    );
+  }
 
   const subscriber = await prisma.subscriber.findUnique({
     where: { email },
@@ -105,7 +159,7 @@ export async function POST(request: Request) {
     exp: expSec,
   });
 
-  const magicLink = `${env.APP_URL}/auth/magic?token=${encodeURIComponent(token)}`;
+  const magicLink = `${env.APP_URL}/reset-password?token=${encodeURIComponent(token)}`;
 
   await recordSecurityAudit({
     kind: "MAGIC_LINK_SENT",

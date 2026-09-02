@@ -157,6 +157,8 @@ const initialForm = {
   additionalContacts: [] as AdditionalContactState[],
   seniorOperationalSmsConsent: false,
   marketingEmailConsent: false,
+  password: "",
+  confirmPassword: "",
 };
 
 const blankDefaultForm = {
@@ -178,6 +180,8 @@ const blankDefaultForm = {
   additionalContacts: [] as AdditionalContactState[],
   seniorOperationalSmsConsent: false,
   marketingEmailConsent: false,
+  password: "",
+  confirmPassword: "",
 };
 
 function buildInitialForm(
@@ -211,6 +215,8 @@ function buildInitialForm(
       })),
       seniorOperationalSmsConsent: false,
       marketingEmailConsent: false,
+      password: "",
+      confirmPassword: "",
     };
   }
 
@@ -218,6 +224,8 @@ function buildInitialForm(
     ...initialForm,
     subscriberName: signupDefaults?.subscriberName?.trim() || initialForm.subscriberName,
     subscriberEmail: signupDefaults?.subscriberEmail?.trim() || initialForm.subscriberEmail,
+    password: "",
+    confirmPassword: "",
   };
 }
 function formatScheduledFor(value?: string, timeZone?: string) {
@@ -237,6 +245,48 @@ function formatScheduledFor(value?: string, timeZone?: string) {
     timeStyle: "short",
     ...(resolvedTimeZone ? { timeZone: resolvedTimeZone } : {}),
   }).format(parsed);
+}
+
+const MAX_PASSWORD_BYTES = 128;
+const HAS_UPPERCASE = /[A-Z]/;
+const HAS_LOWERCASE = /[a-z]/;
+const HAS_DIGIT = /[0-9]/;
+const HAS_SYMBOL = /[^A-Za-z0-9]/;
+
+function validatePasswordStrengthClient(plaintext: string): {
+  valid: boolean;
+  error?: string;
+} {
+  if (!plaintext || typeof plaintext !== "string") {
+    return { valid: false, error: "Password is required." };
+  }
+  const byteCount = new TextEncoder().encode(plaintext).length;
+  if (byteCount < 8) {
+    return {
+      valid: false,
+      error: "Use a password at least 8 characters long.",
+    };
+  }
+  if (byteCount > MAX_PASSWORD_BYTES) {
+    return {
+      valid: false,
+      error: `Password must be ${MAX_PASSWORD_BYTES} characters or fewer.`,
+    };
+  }
+  const classes = [
+    HAS_UPPERCASE.test(plaintext) ? 1 : 0,
+    HAS_LOWERCASE.test(plaintext) ? 1 : 0,
+    HAS_DIGIT.test(plaintext) ? 1 : 0,
+    HAS_SYMBOL.test(plaintext) ? 1 : 0,
+  ].reduce((sum, n) => sum + n, 0);
+  if (classes < 2) {
+    return {
+      valid: false,
+      error:
+        "Use a password with at least two different character types: uppercase letters, lowercase letters, numbers, or symbols.",
+    };
+  }
+  return { valid: true };
 }
 
 export function OnboardingForm({
@@ -407,6 +457,28 @@ export function OnboardingForm({
       }
     }
 
+    if (!editMode) {
+      const pwd = String(form.password ?? "");
+      const confirmPwd = String(form.confirmPassword ?? "");
+      if (pwd.length === 0) {
+        setStatusMessage("Create a password for your Warm Hello account to log in with.");
+        return;
+      }
+      if (confirmPwd.length === 0) {
+        setStatusMessage("Confirm your password by entering it a second time.");
+        return;
+      }
+      if (pwd !== confirmPwd) {
+        setStatusMessage("Passwords do not match — please re-type both fields to make sure they are identical.");
+        return;
+      }
+      const strength = validatePasswordStrengthClient(pwd);
+      if (!strength.valid) {
+        setStatusMessage(strength.error ?? "Invalid password.");
+        return;
+      }
+    }
+
     setSubmitting(true);
     setSavedHousehold(undefined);
     setFirstCheckIn(undefined);
@@ -456,6 +528,7 @@ export function OnboardingForm({
         privacyVersion: PRIVACY_VERSION_CURRENT,
         seniorOperationalSmsConsent: Boolean(form.seniorOperationalSmsConsent),
         marketingEmailConsent: Boolean(form.marketingEmailConsent),
+        ...(editMode ? {} : { password: String(form.password ?? "") }),
       };
 
       const response = await fetch("/api/subscribers", {
@@ -1064,6 +1137,45 @@ export function OnboardingForm({
             <div style={{ whiteSpace: "pre-line" }}>{CLICKWRAP_MARKETING_EMAIL_LABEL}</div>
           </div>
         </label>
+        {!editMode ? (
+          <>
+            <label className="form-grid-wide" htmlFor="password">
+              <span>
+                Create a password
+                <span style={{ color: "var(--danger)", marginLeft: 6 }}>*</span>
+              </span>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <input
+                  id="password"
+                  autoComplete="new-password"
+                  type="password"
+                  placeholder="At least 8 characters with letters, numbers, or symbols"
+                  value={String(form.password ?? "")}
+                  onChange={(event) => updateField("password", event.target.value)}
+                  disabled={submitting}
+                />
+                <small style={{ color: "var(--muted)", fontSize: 12, lineHeight: 1.5 }}>
+                  At least 8 characters. Use at least two different types: uppercase, lowercase, numbers, or symbols.
+                </small>
+              </div>
+            </label>
+            <label className="form-grid-wide" htmlFor="confirmPassword">
+              <span>
+                Confirm password
+                <span style={{ color: "var(--danger)", marginLeft: 6 }}>*</span>
+              </span>
+              <input
+                id="confirmPassword"
+                autoComplete="new-password"
+                type="password"
+                placeholder="Re-type your password"
+                value={String(form.confirmPassword ?? "")}
+                onChange={(event) => updateField("confirmPassword", event.target.value)}
+                disabled={submitting}
+              />
+            </label>
+          </>
+        ) : null}
         <p
           className="form-grid-wide"
           style={{

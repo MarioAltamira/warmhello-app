@@ -1,4 +1,4 @@
-import { MagicForm } from "./magic-form";
+import { redirect } from "next/navigation";
 
 type AuthMagicPageProps = {
   searchParams?: Promise<{
@@ -8,17 +8,18 @@ type AuthMagicPageProps = {
   }>;
 };
 
-function sanitizeDestination(raw: string | null | undefined): string {
-  if (!raw) return "/dashboard";
-  if (raw.startsWith("/dashboard") || raw === "/onboard") return raw;
-  return "/dashboard";
-}
-
-export default async function AuthMagicPage({ searchParams }: AuthMagicPageProps) {
+export default async function AuthMagicPage({
+  searchParams,
+}: AuthMagicPageProps) {
   const resolved = (await searchParams) ?? {};
-  const token = resolved.token?.trim() ?? null;
-  const destination = sanitizeDestination(
-    resolved.redirect ?? resolved.destination ?? "/dashboard",
-  );
-  return <MagicForm token={token} destination={destination} />;
+  const token = resolved.token?.trim() ?? "";
+  const destination =
+    resolved.redirect?.trim() || resolved.destination?.trim() || "";
+  const params = new URLSearchParams();
+  if (token) params.set("token", token);
+  if (destination) params.set("redirect", destination);
+  const target = params.toString()
+    ? `/reset-password?${params.toString()}`
+    : "/reset-password";
+  redirect(target as any, "replace");
 }

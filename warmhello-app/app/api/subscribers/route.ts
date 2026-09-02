@@ -5,6 +5,8 @@ import { createHousehold, updateHousehold } from "@/lib/households";
 import { getSubscriberSession } from "@/lib/subscriber-session";
 import { parseJsonBody } from "@/lib/zod-parse";
 import { TOS_VERSION_CURRENT, PRIVACY_VERSION_CURRENT } from "@/lib/constants";
+import { hashPassword, validatePasswordStrength } from "@/lib/password";
+import { prisma } from "@/lib/prisma";
 
 const BillingCurrencySchema = z.enum(["USD", "CAD"]);
 
@@ -51,6 +53,7 @@ const bodySchema = z
     privacyVersion: z.string().min(1).optional(),
     seniorOperationalSmsConsent: z.boolean().optional(),
     marketingEmailConsent: z.boolean().optional(),
+    password: z.string().max(128).optional(),
   })
   .refine(
     (data) =>
@@ -111,6 +114,46 @@ export async function POST(request: Request) {
 
   if (!result.ok) {
     return NextResponse.json(result, { status: 400 });
+  }
+
+  const passwordRaw = parsed.data.password;
+  let passwordHash: string | null = null;
+  if (passwordRaw && typeof passwordRaw === "string" && passwordRaw.length > 0) {
+    const strength = validatePasswordStrength(passwordRaw);
+    if (!strength.valid) {
+      return NextResponse.json(
+        {
+          ok: false,
+          field: "password",
+          message: strength.error ?? "Invalid password.",
+        },
+        { status: 400 },
+      );
+    }
+    try {
+      passwordHash = await hashPassword(passwordRaw);
+    } catch (err) {
+      return NextResponse.json(
+        {
+          ok: false,
+          field: "password",
+          message:
+            err instanceof Error && err.message
+              ? err.message
+              : "Invalid password.",
+        },
+        { status: 400 },
+      );
+    }
+    try {
+      await (prisma as any).subscriber.update({
+        where: { id: result.household.subscriber.id },
+        data: { passwordHash },
+        select: { id: true },
+      });
+    } catch {
+      /* swallow: household is created; user can set password later via Settings or forgot flow */
+    }
   }
 
   return NextResponse.json({

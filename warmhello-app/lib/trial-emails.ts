@@ -1084,16 +1084,16 @@ export async function sendMagicLoginLinkEmail(options: {
   return sendEmail({
     to: options.toEmail,
     replyTo: SALES_EMAIL,
-    subject: "Your Warm-Hello log-in link",
+    subject: "Set or reset your Warm-Hello password",
     text: `Hi ${nameGreeting},
 
-We received a request to log in to your Warm-Hello account.
+We received a request to set or reset the password for your Warm-Hello account.
 
-If you requested this, click the link below to log in securely. This link expires ${options.expiresAtLabel} and can only be used once.
+If you requested this, click the link below to set a new password and log in securely. This link expires ${options.expiresAtLabel} and can only be used once.
 
 ${options.magicLink}
 
-If you did NOT request this log-in link, you can safely ignore this email. Your account remains secure.
+If you did NOT request this, you can safely ignore this email. Your account remains secure.
 
 Request details:
   Account email: ${options.toEmail}${options.ipAddress ? `\n  Approximate IP: ${options.ipAddress}` : ""}
@@ -1104,22 +1104,158 @@ Warmly,
 The Warm-Hello Team${footer.text}`,
     html: `<p><img src="${env.APP_URL}/warmhello-logo-b.png" alt="Warm-Hello" width="140" /></p>
 <p>Hi ${nameGreeting},</p>
-<p>We received a request to log in to your Warm-Hello account.</p>
-<p>If you requested this, click the big button below to log in securely. This link expires <strong>${options.expiresAtLabel}</strong> and can only be used once.</p>
+<p>We received a request to set or reset the password for your Warm-Hello account.</p>
+<p>If you requested this, click the big button below to set a new password and log in securely. This link expires <strong>${options.expiresAtLabel}</strong> and can only be used once.</p>
 <p style="text-align:center; margin: 22px 0 8px;">
-  <a href="${options.magicLink}" style="display:inline-block; background: linear-gradient(180deg, #0f766e, #065f46); color: #f8fafc; font-weight: 600; padding: 14px 28px; border-radius: 10px; text-decoration: none; font-size: 16px; box-shadow: 0 6px 16px -10px rgba(6, 95, 70, 0.8);">Log in to Warm-Hello</a>
+  <a href="${options.magicLink}" style="display:inline-block; background: linear-gradient(180deg, #0f766e, #065f46); color: #f8fafc; font-weight: 600; padding: 14px 28px; border-radius: 10px; text-decoration: none; font-size: 16px; box-shadow: 0 6px 16px -10px rgba(6, 95, 70, 0.8);">Set password and log in</a>
 </p>
 <p style="text-align:center; color: #59617a; font-size: 13px; word-break: break-all; margin: 4px 0 18px;">
   <a href="${options.magicLink}" style="color: #59617a; text-decoration: underline;">${options.magicLink}</a>
 </p>
 <p style="border-left:4px solid #fb923c; margin:14px 0; padding:10px 14px; background:rgba(251,146,60,0.08); border-radius:8px;">
-  <strong style="color:#7c2d12;">Not you?</strong> If you did <strong>NOT</strong> request this log-in link, you can safely ignore this email. No action is needed and your account remains secure.
+  <strong style="color:#7c2d12;">Not you?</strong> If you did <strong>NOT</strong> request this, you can safely ignore this email. No action is needed and your account remains secure.
 </p>
 <p style="font-size: 13px; color: #59617a;">
   <strong>Request details:</strong><br />
   Account email: <code style="background: #f1f5f9; padding: 2px 6px; border-radius: 6px;">${options.toEmail}</code>${options.ipAddress ? `<br />Approximate IP: <code style="background:#f1f5f9; padding: 2px 6px; border-radius:6px;">${options.ipAddress}</code>` : ""}
 </p>
 <p style="color:#59617a;">Warm-Hello is a routine check-in and notification service only. It does not contact 911 or emergency services, and it does not offer medical or health monitoring.</p>
+<p>Warmly,<br />The Warm-Hello Team</p>
+${footer.html}`,
+  });
+}
+
+function formatAuditWhenLabel(date: Date): string {
+  try {
+    return date.toLocaleString(undefined, {
+      weekday: "short",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      timeZoneName: "shortGeneric",
+    }) + " local time";
+  } catch {
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())} local time`;
+  }
+}
+
+export async function sendPasswordSetResetAuditEmail(options: {
+  toEmail: string;
+  subscriberFullName: string | null;
+  subscriberId: string;
+  ipAddress: string | null;
+  whenLabel: Date;
+}) {
+  const unsubscribeLink = getUnsubscribeLink(options.subscriberId);
+  const footer = buildEmailFooter({
+    unsubscribeCopy: "To stop account security notification emails,",
+    unsubscribeLink,
+  });
+  const settingsLink = getSettingsLink();
+  const name = options.subscriberFullName?.trim() || "there";
+  const whenLabel = formatAuditWhenLabel(options.whenLabel);
+
+  return sendEmail({
+    to: options.toEmail,
+    replyTo: SALES_EMAIL,
+    subject: "Your Warm-Hello password has been set",
+    text: `Hi ${name},
+
+Your Warm-Hello account password was set on ${whenLabel}.
+
+You can now log in with your email address and this new password at:
+${env.APP_URL}/auth?mode=login
+
+If you did NOT set or reset your password recently (for example, via "Email me a secure sign-in link"), please:
+1. Change your password right away from the dashboard Settings page:
+   ${settingsLink}
+2. Or reply to this email to let us know.
+
+Activity details:
+  Account email: ${options.toEmail}${options.ipAddress ? `\n  Approximate IP: ${options.ipAddress}` : ""}
+  When: ${whenLabel}
+
+If this was you, no action is required. This is just a security confirmation.
+
+Warmly,
+The Warm-Hello Team${footer.text}`,
+    html: `<p><img src="${env.APP_URL}/warmhello-logo-b.png" alt="Warm-Hello" width="140" /></p>
+<p>Hi ${name},</p>
+<p>Your Warm-Hello account password was <strong>set</strong> on <strong>${whenLabel}</strong>.</p>
+<p>You can now log in with your email address and this new password:</p>
+<p style="text-align:center; margin: 22px 0 8px;">
+  <a href="${env.APP_URL}/auth?mode=login" style="display:inline-block; background: linear-gradient(180deg, #0f766e, #065f46); color: #f8fafc; font-weight: 600; padding: 14px 28px; border-radius: 10px; text-decoration: none; font-size: 16px; box-shadow: 0 6px 16px -10px rgba(6, 95, 70, 0.8);">Log in to Warm-Hello</a>
+</p>
+<p style="border-left:4px solid #fb923c; margin:14px 0; padding:10px 14px; background:rgba(251,146,60,0.08); border-radius:8px;">
+  <strong style="color:#7c2d12;">Not you?</strong> If you did NOT set or reset your password recently, <strong>change your password right now</strong> from the dashboard <a href="${settingsLink}">Settings page</a>, or reply to this email for help.
+</p>
+<p style="font-size: 13px; color: #59617a;">
+  <strong>Activity details:</strong><br />
+  Account email: <code style="background: #f1f5f9; padding: 2px 6px; border-radius: 6px;">${options.toEmail}</code>${options.ipAddress ? `<br />Approximate IP: <code style="background:#f1f5f9; padding: 2px 6px; border-radius:6px;">${options.ipAddress}</code>` : ""}<br />
+  When: <code style="background:#f1f5f9; padding: 2px 6px; border-radius:6px;">${whenLabel}</code>
+</p>
+<p style="color:#59617a;">If this was you, no further action is needed.</p>
+<p>Warmly,<br />The Warm-Hello Team</p>
+${footer.html}`,
+  });
+}
+
+export async function sendPasswordChangedAuditEmail(options: {
+  toEmail: string;
+  subscriberFullName: string | null;
+  subscriberId: string;
+  ipAddress: string | null;
+  whenLabel: Date;
+}) {
+  const unsubscribeLink = getUnsubscribeLink(options.subscriberId);
+  const footer = buildEmailFooter({
+    unsubscribeCopy: "To stop account security notification emails,",
+    unsubscribeLink,
+  });
+  const settingsLink = getSettingsLink();
+  const name = options.subscriberFullName?.trim() || "there";
+  const whenLabel = formatAuditWhenLabel(options.whenLabel);
+
+  return sendEmail({
+    to: options.toEmail,
+    replyTo: SALES_EMAIL,
+    subject: "Your Warm-Hello password has been changed",
+    text: `Hi ${name},
+
+Your Warm-Hello account password was changed on ${whenLabel}.
+
+The next time you log in, use your new password.
+
+If you did NOT change your password from the dashboard Settings page, your account may be compromised. Please:
+1. Reset your password immediately using the secure link flow from the Log In page.
+2. Visit Settings to confirm everything else:
+   ${settingsLink}
+3. Reply to this email to alert us if you keep seeing strange activity.
+
+Activity details:
+  Account email: ${options.toEmail}${options.ipAddress ? `\n  Approximate IP: ${options.ipAddress}` : ""}
+  When: ${whenLabel}
+
+If this was you, no action is required — enjoy the rest of your day.
+
+Warmly,
+The Warm-Hello Team${footer.text}`,
+    html: `<p><img src="${env.APP_URL}/warmhello-logo-b.png" alt="Warm-Hello" width="140" /></p>
+<p>Hi ${name},</p>
+<p>Your Warm-Hello account password was <strong>changed</strong> on <strong>${whenLabel}</strong>.</p>
+<p>The next time you log in, use your new password.</p>
+<p style="border-left:4px solid #fb923c; margin:14px 0; padding:10px 14px; background:rgba(251,146,60,0.08); border-radius:8px;">
+  <strong style="color:#7c2d12;">Not you?</strong> If you did NOT change your password from the dashboard Settings page, your account may be compromised. <strong>Reset your password immediately</strong> using the secure sign-in link flow from the Log In page, then review your <a href="${settingsLink}">Settings</a> and reply to this email if something still looks wrong.
+</p>
+<p style="font-size: 13px; color: #59617a;">
+  <strong>Activity details:</strong><br />
+  Account email: <code style="background: #f1f5f9; padding: 2px 6px; border-radius: 6px;">${options.toEmail}</code>${options.ipAddress ? `<br />Approximate IP: <code style="background:#f1f5f9; padding: 2px 6px; border-radius:6px;">${options.ipAddress}</code>` : ""}<br />
+  When: <code style="background:#f1f5f9; padding: 2px 6px; border-radius:6px;">${whenLabel}</code>
+</p>
+<p style="color:#59617a;">If this was you, no further action is needed.</p>
 <p>Warmly,<br />The Warm-Hello Team</p>
 ${footer.html}`,
   });

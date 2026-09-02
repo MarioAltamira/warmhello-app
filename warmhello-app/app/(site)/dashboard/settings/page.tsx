@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AccountPrivacyCard } from "@/components/account-privacy-card";
+import { ChangePasswordCard } from "@/components/change-password-card";
 import { EmailPreferencesCard } from "@/components/email-preferences-card";
 import { SubscriptionManagementCard } from "@/components/subscription-management-card";
 import { getDashboardSnapshot } from "@/lib/checkins";
@@ -30,6 +31,7 @@ export default async function DashboardSettingsPage() {
             cancellationStatus: true,
             cancellationDate: true,
             currentPeriodEndsAt: true,
+            passwordHash: true,
           },
         })
         .catch(() => null)
@@ -43,6 +45,7 @@ export default async function DashboardSettingsPage() {
   const currentPeriodEndsAtIso = subscriberRow?.currentPeriodEndsAt
     ? subscriberRow.currentPeriodEndsAt.toISOString()
     : null;
+  const hasPassword = Boolean(subscriberRow?.passwordHash);
 
   return (
     <main className="shell">
@@ -50,7 +53,7 @@ export default async function DashboardSettingsPage() {
         <p className="eyebrow">Subscriber Dashboard</p>
         <h1>Settings</h1>
         <p className="lede">
-          Manage your subscription, billing, and email notification preferences.
+          Manage your subscription, billing, password, and email notification preferences.
         </p>
         <div className="actions" style={{ marginTop: 16 }}>
           <Link href="/dashboard" className="button secondary">
@@ -76,6 +79,8 @@ export default async function DashboardSettingsPage() {
           cancellationStatusRaw as "NONE" | "PENDING_AT_PERIOD_END" | "CANCELED" | null
         }
       />
+
+      <ChangePasswordCard hasPassword={hasPassword} />
 
       <EmailPreferencesCard initialEmailOptedOut={emailOptedOut.opted} />
 

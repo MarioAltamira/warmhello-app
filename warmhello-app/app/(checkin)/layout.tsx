@@ -1,4 +1,4 @@
-const PREVIEW_TOKEN = "demo-token";
+const PREVIEW_TOKEN_INTERNAL = "demo-token";
 
 export default function CheckInLayout({ children }: { children: React.ReactNode }) {
   const safeGuard = `
@@ -69,5 +69,3 @@ export default function CheckInLayout({ children }: { children: React.ReactNode 
     </>
   );
 }
-
-export { PREVIEW_TOKEN };
