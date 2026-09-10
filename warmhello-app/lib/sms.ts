@@ -80,6 +80,9 @@ export async function sendSms(
   }
 
   const normalizedTo = normalizePhone(to);
+  if (!normalizedTo) {
+    return { ok: false, message: "Invalid destination phone number." };
+  }
 
   const isComplianceReply = typeof meta?.kind === "string" && COMPLIANCE_REPLY_KINDS.has(meta.kind);
   if (!isComplianceReply) {

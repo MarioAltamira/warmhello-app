@@ -43,7 +43,7 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: Request) {
-  if (!verifyJobSecret(request) && process.env.NODE_ENV === "production") {
+  if (!verifyJobSecret(request)) {
     return NextResponse.json(
       { ok: false, message: "Unauthorized job request." },
       { status: 401 },

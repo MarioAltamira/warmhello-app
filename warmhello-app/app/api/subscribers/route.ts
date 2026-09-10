@@ -2,11 +2,20 @@ import { MAX_CONTACTS } from "@/lib/households";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createHousehold, updateHousehold } from "@/lib/households";
-import { getSubscriberSession } from "@/lib/subscriber-session";
+import { getSubscriberSession, signOnboardGrant } from "@/lib/subscriber-session";
 import { parseJsonBody } from "@/lib/zod-parse";
 import { TOS_VERSION_CURRENT, PRIVACY_VERSION_CURRENT } from "@/lib/constants";
 import { hashPassword, validatePasswordStrength } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
+import {
+  extractIpFromRequest,
+  extractUserAgentFromRequest,
+  recordSecurityAudit,
+} from "@/lib/security-audit";
+import {
+  checkRateLimit,
+  formatRetrySeconds,
+} from "@/lib/rate-limit";
 
 const BillingCurrencySchema = z.enum(["USD", "CAD"]);
 
@@ -78,6 +87,59 @@ function deriveClientMetadata(request: Request): { ipAddress: string | null; use
 export async function POST(request: Request) {
   const parsed = await parseJsonBody(request, bodySchema);
   if (!parsed.ok) return parsed.response;
+
+  const ipAddress = extractIpFromRequest(request);
+  const userAgent = extractUserAgentFromRequest(request);
+
+  const perEmailLimit = checkRateLimit(
+    `subscribers:email:${parsed.data.subscriber.email}`,
+    15 * 60_000,
+    5,
+  );
+  if (!perEmailLimit.allowed) {
+    await recordSecurityAudit({
+      kind: "MAGIC_LINK_RATE_LIMITED",
+      subscriberId: null,
+      email: parsed.data.subscriber.email,
+      ipAddress,
+      userAgent,
+      detail: { route: "subscribers", per: "email" },
+    });
+    return NextResponse.json(
+      {
+        ok: false,
+        message: `Too many household sign-ups for this email. Please wait ${formatRetrySeconds(
+          perEmailLimit.retryAfterMs,
+        )} and try again.`,
+      },
+      { status: 429 },
+    );
+  }
+
+  const perIpLimit = checkRateLimit(
+    `subscribers:ip:${ipAddress ?? "unknown"}`,
+    5 * 60_000,
+    3,
+  );
+  if (!perIpLimit.allowed) {
+    await recordSecurityAudit({
+      kind: "MAGIC_LINK_RATE_LIMITED",
+      subscriberId: null,
+      email: parsed.data.subscriber?.email ?? null,
+      ipAddress,
+      userAgent,
+      detail: { route: "subscribers", per: "ip" },
+    });
+    return NextResponse.json(
+      {
+        ok: false,
+        message: `Too many household sign-ups from this location. Please wait ${formatRetrySeconds(
+          perIpLimit.retryAfterMs,
+        )} and try again.`,
+      },
+      { status: 429 },
+    );
+  }
 
   if (!parsed.data.caregiverAck) {
     return NextResponse.json(
@@ -161,6 +223,7 @@ export async function POST(request: Request) {
     household: result.household,
     firstCheckInScheduledFor: result.firstCheckInScheduledFor,
     firstCheckInMessage: result.firstCheckInMessage,
+    onboardSessionToken: signOnboardGrant(result.household.subscriber.id),
   });
 }
 

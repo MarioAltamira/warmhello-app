@@ -115,10 +115,4 @@ export function BuyNowButton(props: BuyNowButtonProps) {
   );
 }
 
-function formatPopupEndsAt(_isoOrDate?: string | Date | null) {
-  return null;
-}
-const _unused = formatPopupEndsAt;
-void _unused;
-
 export default BuyNowButton;

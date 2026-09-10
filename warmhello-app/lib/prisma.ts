@@ -46,3 +46,9 @@ export const prisma = process.env.DATABASE_URL
 if (prisma) {
   globalThis.__warmhello_prisma__ = prisma;
 }
+
+// True when no DATABASE_URL is configured at all, meaning demo/fallback data
+// is an intentional, expected behavior (e.g. local preview without a DB).
+// False when a DATABASE_URL IS configured, so `prisma` being unavailable at
+// runtime (or a query throwing) indicates a genuine outage, not a demo mode.
+export const isDemoModeIntentional = !process.env.DATABASE_URL;

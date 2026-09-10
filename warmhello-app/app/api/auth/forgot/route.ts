@@ -175,18 +175,19 @@ export async function POST(request: Request) {
     },
   });
 
-  try {
-    await sendMagicLoginLinkEmail({
-      toEmail: subscriber.email,
-      subscriberFullName: subscriber.fullName || null,
-      subscriberId: subscriber.id,
-      magicLink,
-      expiresAtLabel,
-      ipAddress,
-    });
-  } catch (err) {
+  // Fire-and-forget: do not await the SMTP round-trip before responding, so
+  // this path takes comparable time to the "subscriber not found" path
+  // above and does not leak account existence via response timing.
+  sendMagicLoginLinkEmail({
+    toEmail: subscriber.email,
+    subscriberFullName: subscriber.fullName || null,
+    subscriberId: subscriber.id,
+    magicLink,
+    expiresAtLabel,
+    ipAddress,
+  }).catch((err) => {
     console.error("[api/auth/forgot] sendMagicLoginLinkEmail failed:", err);
-  }
+  });
 
   return NextResponse.json({
     ok: true,

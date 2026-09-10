@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { getSubscriberSession } from "@/lib/subscriber-session";
 import { parseJsonBody } from "@/lib/zod-parse";
 import { coerceInterval } from "@/lib/visitor-currency";
+import { checkRateLimit, formatRetrySeconds } from "@/lib/rate-limit";
+import { extractIpFromRequest } from "@/lib/security-audit";
 
 const bodySchema = z.object({
   customerEmail: z.string().email(),
@@ -18,6 +20,24 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { ok: false, message: "Your session expired. Please log in again." },
       { status: 401 },
+    );
+  }
+
+  const ip = extractIpFromRequest(request) ?? "unknown";
+  if (sessionSubscriberId) {
+    const subRl = checkRateLimit(`billing:checkout:sub:${sessionSubscriberId}`, 15 * 60 * 1000, 10);
+    if (!subRl.allowed) {
+      return NextResponse.json(
+        { ok: false, message: `Too many checkout attempts. Please try again in ${formatRetrySeconds(subRl.retryAfterMs)}.` },
+        { status: 429 },
+      );
+    }
+  }
+  const ipRl = checkRateLimit(`billing:checkout:ip:${ip}`, 15 * 60 * 1000, 20);
+  if (!ipRl.allowed) {
+    return NextResponse.json(
+      { ok: false, message: `Too many checkout attempts from this location. Please try again in ${formatRetrySeconds(ipRl.retryAfterMs)}.` },
+      { status: 429 },
     );
   }
 

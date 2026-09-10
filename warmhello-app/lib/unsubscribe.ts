@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from "crypto";
-import { env } from "@/lib/env";
+import { deriveSigningKey } from "@/lib/env";
 
 type UnsubscribePayload = {
   subscriberId: string;
@@ -15,13 +15,21 @@ function decodeJson<T>(value: string) {
 }
 
 function sign(value: string) {
-  return createHmac("sha256", env.JOB_SIGNING_SECRET).update(value).digest("base64url");
+  return createHmac("sha256", deriveSigningKey("unsubscribe")).update(value).digest("base64url");
 }
 
 export function createUnsubscribeToken(input: { subscriberId: string; expiresInDays?: number }) {
   const expiresInDays = input.expiresInDays ?? 365;
   const exp = Date.now() + expiresInDays * 24 * 60 * 60 * 1000;
   const payload: UnsubscribePayload = { subscriberId: input.subscriberId, exp };
+  const encoded = encodeJson(payload);
+  const signature = sign(encoded);
+  return `${encoded}.${signature}`;
+}
+
+export function signUnsubscribeToken(subscriberId: string, ttlMs: number = 60 * 60 * 1000) {
+  const exp = Date.now() + ttlMs;
+  const payload: UnsubscribePayload = { subscriberId, exp };
   const encoded = encodeJson(payload);
   const signature = sign(encoded);
   return `${encoded}.${signature}`;

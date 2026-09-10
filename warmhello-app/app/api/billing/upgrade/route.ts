@@ -1,30 +1,22 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { z } from "zod";
-import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import {
   isBillingCurrency,
   pricingPlanFor,
 } from "@/lib/pricing";
+import { getStripeClient } from "@/lib/stripe";
 import { getStripePriceIdFor } from "@/lib/visitor-currency";
 import { getSubscriberSession } from "@/lib/subscriber-session";
+import { checkRateLimit, formatRetrySeconds } from "@/lib/rate-limit";
+import { extractIpFromRequest } from "@/lib/security-audit";
+import { parseJsonBody } from "@/lib/zod-parse";
 
 const bodySchema = z.object({
   subscriberId: z.string().min(1),
   toInterval: z.literal("annual"),
 });
-
-let stripeCache: Stripe | null = null;
-function getStripe(): Stripe | null {
-  if (!env.STRIPE_SECRET_KEY) return null;
-  if (!stripeCache) {
-    stripeCache = new Stripe(env.STRIPE_SECRET_KEY, {
-      apiVersion: "2025-08-27.basil" as any,
-    });
-  }
-  return stripeCache;
-}
 
 export async function POST(request: Request) {
   const { subscriberId: sessionSubscriberId } = await getSubscriberSession();
@@ -35,13 +27,24 @@ export async function POST(request: Request) {
     );
   }
 
-  const parsed = bodySchema.safeParse(await request.json());
-  if (!parsed.success) {
+  const ip = extractIpFromRequest(request) ?? "unknown";
+  const subRl = checkRateLimit(`billing:upgrade:sub:${sessionSubscriberId}`, 15 * 60 * 1000, 10);
+  if (!subRl.allowed) {
     return NextResponse.json(
-      { ok: false, message: "Invalid request payload." },
-      { status: 400 },
+      { ok: false, message: `Too many upgrade attempts. Please try again in ${formatRetrySeconds(subRl.retryAfterMs)}.` },
+      { status: 429 },
     );
   }
+  const ipRl = checkRateLimit(`billing:upgrade:ip:${ip}`, 15 * 60 * 1000, 20);
+  if (!ipRl.allowed) {
+    return NextResponse.json(
+      { ok: false, message: `Too many upgrade attempts from this location. Please try again in ${formatRetrySeconds(ipRl.retryAfterMs)}.` },
+      { status: 429 },
+    );
+  }
+
+  const parsed = await parseJsonBody(request, bodySchema);
+  if (!parsed.ok) return parsed.response;
 
   if (parsed.data.subscriberId !== sessionSubscriberId) {
     return NextResponse.json(
@@ -135,7 +138,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const stripe = getStripe();
+  const stripe = getStripeClient();
   if (!stripe) {
     return NextResponse.json(
       {

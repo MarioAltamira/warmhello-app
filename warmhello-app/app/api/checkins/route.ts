@@ -4,6 +4,8 @@ import { createCheckInSession } from "@/lib/checkins";
 import { getSubscriberSession } from "@/lib/subscriber-session";
 import { prisma } from "@/lib/prisma";
 import { parseJsonBody } from "@/lib/zod-parse";
+import { checkRateLimit, formatRetrySeconds } from "@/lib/rate-limit";
+import { extractIpFromRequest } from "@/lib/security-audit";
 
 const bodySchema = z.object({
   subscriberId: z.string().min(1),
@@ -17,6 +19,24 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { ok: false, message: "Your session expired. Please log in again." },
       { status: 401 },
+    );
+  }
+
+  const ip = extractIpFromRequest(request) ?? "unknown";
+  if (sessionSubscriberId) {
+    const subRl = checkRateLimit(`checkins:create:sub:${sessionSubscriberId}`, 15 * 60 * 1000, 30);
+    if (!subRl.allowed) {
+      return NextResponse.json(
+        { ok: false, message: `Too many check-in creations. Please try again in ${formatRetrySeconds(subRl.retryAfterMs)}.` },
+        { status: 429 },
+      );
+    }
+  }
+  const ipRl = checkRateLimit(`checkins:create:ip:${ip}`, 15 * 60 * 1000, 60);
+  if (!ipRl.allowed) {
+    return NextResponse.json(
+      { ok: false, message: `Too many check-in creations from this location. Please try again in ${formatRetrySeconds(ipRl.retryAfterMs)}.` },
+      { status: 429 },
     );
   }
 

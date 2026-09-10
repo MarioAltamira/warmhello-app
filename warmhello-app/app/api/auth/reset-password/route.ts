@@ -14,6 +14,10 @@ import {
   hashPassword,
 } from "@/lib/password";
 import { sendPasswordSetResetAuditEmail } from "@/lib/trial-emails";
+import {
+  checkRateLimit,
+  formatRetrySeconds,
+} from "@/lib/rate-limit";
 
 const bodySchema = z
   .object({
@@ -42,6 +46,81 @@ export async function POST(request: Request) {
   const { token, password } = parsed.data;
   const ipAddress = extractIpFromRequest(request);
   const userAgent = extractUserAgentFromRequest(request);
+
+  const globalLimit = checkRateLimit(
+    `reset-password:global`,
+    60_000,
+    20,
+  );
+  if (!globalLimit.allowed) {
+    await recordSecurityAudit({
+      kind: "MAGIC_LINK_RATE_LIMITED",
+      subscriberId: null,
+      email: null,
+      ipAddress,
+      userAgent,
+      detail: { route: "reset-password", per: "global" },
+    });
+    return NextResponse.json(
+      {
+        ok: false,
+        message: `Too many password reset attempts system-wide. Please wait ${formatRetrySeconds(
+          globalLimit.retryAfterMs,
+        )} and try again.`,
+      },
+      { status: 429 },
+    );
+  }
+
+  const perIpLimit = checkRateLimit(
+    `reset-password:ip:${ipAddress ?? "unknown"}`,
+    15 * 60_000,
+    15,
+  );
+  if (!perIpLimit.allowed) {
+    await recordSecurityAudit({
+      kind: "MAGIC_LINK_RATE_LIMITED",
+      subscriberId: null,
+      email: null,
+      ipAddress,
+      userAgent,
+      detail: { route: "reset-password", per: "ip" },
+    });
+    return NextResponse.json(
+      {
+        ok: false,
+        message: `Too many password reset attempts from this location. Please wait ${formatRetrySeconds(
+          perIpLimit.retryAfterMs,
+        )} and try again.`,
+      },
+      { status: 429 },
+    );
+  }
+
+  const perTokenLimit = checkRateLimit(
+    `reset-password:token:${token}`,
+    15 * 60_000,
+    5,
+  );
+  if (!perTokenLimit.allowed) {
+    await recordSecurityAudit({
+      kind: "MAGIC_LINK_RATE_LIMITED",
+      subscriberId: null,
+      email: null,
+      ipAddress,
+      userAgent,
+      detail: { route: "reset-password", per: "token" },
+    });
+    return NextResponse.json(
+      {
+        ok: false,
+        message: `Too many attempts with this reset link. Please wait ${formatRetrySeconds(
+          perTokenLimit.retryAfterMs,
+        )} and try again.`,
+      },
+      { status: 429 },
+    );
+  }
 
   const verify = verifyMagicLinkToken(token);
   if (!verify.ok) {

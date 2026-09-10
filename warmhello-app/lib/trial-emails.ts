@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import type Stripe from "stripe";
 import { sendEmail } from "@/lib/email";
 import { env } from "@/lib/env";
+import { escapeHtml } from "@/lib/html-escape";
 import { LEGAL_ENTITY_PLACEHOLDERS } from "@/lib/legal-placeholders";
 import { createUnsubscribeToken } from "@/lib/unsubscribe";
 import { pricingPlanFor, type BillingCurrency } from "@/lib/pricing";
@@ -555,15 +556,15 @@ The Warm-Hello Team${footer.text}`,
   </tr>
   <tr>
     <td width="32%" valign="top" style="background:#f4f7ff; border-bottom:1px solid #e5e7eb; color:#59617a; font-weight:600;">Seniors covered</td>
-    <td valign="top" style="border-bottom:1px solid #e5e7eb;">${seniorsCoveredText}</td>
+    <td valign="top" style="border-bottom:1px solid #e5e7eb;">${escapeHtml(seniorsCoveredText)}</td>
   </tr>
   <tr>
     <td width="32%" valign="top" style="background:#f4f7ff; border-bottom:1px solid #e5e7eb; color:#59617a; font-weight:600;">Trusted escalation contacts</td>
-    <td valign="top" style="border-bottom:1px solid #e5e7eb;">${contactsText}</td>
+    <td valign="top" style="border-bottom:1px solid #e5e7eb;">${escapeHtml(contactsText)}</td>
   </tr>
   <tr>
     <td width="32%" valign="top" style="background:#f4f7ff; border-bottom:1px solid #e5e7eb; color:#59617a; font-weight:600;">Daily check-in time</td>
-    <td valign="top" style="border-bottom:1px solid #e5e7eb;">${checkInTimesText}</td>
+    <td valign="top" style="border-bottom:1px solid #e5e7eb;">${escapeHtml(checkInTimesText)}</td>
   </tr>
   <tr>
     <td width="32%" valign="top" style="background:#f4f7ff; color:#59617a; font-weight:600;">Receipt</td>
@@ -834,10 +835,10 @@ The Warm-Hello Team${footer.text}`,
     html: `<p><img src="${env.APP_URL}/warmhello-logo-b.png" alt="Warm-Hello" width="140" /></p>
 <p>Hi there,</p>
 <p style="margin:18px 0 6px;"><strong style="font-size:15px; color:#991b1b;">⚠ Escalation alert</strong></p>
-<p style="margin:0 0 10px;">${seniorFullName} has <strong>not responded</strong> to today's daily check-in, scheduled for <strong>${dateLabel} at ${timeLabel}</strong>. We sent the initial SMS and one friendly follow-up; after two unanswered attempts we have now alerted the trusted escalation contacts you configured by SMS.</p>
+<p style="margin:0 0 10px;">${escapeHtml(seniorFullName)} has <strong>not responded</strong> to today's daily check-in, scheduled for <strong>${dateLabel} at ${timeLabel}</strong>. We sent the initial SMS and one friendly follow-up; after two unanswered attempts we have now alerted the trusted escalation contacts you configured by SMS.</p>
 <p><strong>What you can do right now:</strong></p>
 <ul style="margin:0 0 8px 20px; padding:0; line-height:1.7;">
-  <li>Call ${seniorFullName} directly to check in by phone</li>
+  <li>Call ${escapeHtml(seniorFullName)} directly to check in by phone</li>
   <li>Review the check-in status and take action from your <a href="${dashboardLink}">Dashboard</a></li>
   <li>Open the <a href="${checkInLink}">check-in page directly</a> if you need to mark it resolved</li>
 </ul>
@@ -943,7 +944,7 @@ Warm-Hello is a routine check-in notification service only. It does not provide 
 Warmly,
 The Warm-Hello Team${footer.text}`,
     html: `<p><img src="${env.APP_URL}/warmhello-logo-b.png" alt="Warm-Hello" width="140" /></p>
-<p>Hi ${nameLine ? `${nameLine},` : `there,`}</p>
+<p>Hi ${nameLine ? `${escapeHtml(nameLine)},` : `there,`}</p>
 <p style="margin:18px 0 6px;"><strong style="font-size:15px; color:#111827;">✅ Account deletion confirmed</strong></p>
 <p style="margin:0 0 10px;">This email confirms that the Warm-Hello account associated with <strong>${to}</strong> has been deleted, effective <strong>${options.effectiveDateLabel}</strong>.</p>
 <p>Household data, check-in history, designated trusted escalation contacts, and related operational check-in records have been removed or anonymized per the data retention policy.</p>
@@ -999,7 +1000,7 @@ The Warm-Hello Team${footer.text}`,
     html: `<p><img src="${env.APP_URL}/warmhello-logo-b.png" alt="Warm-Hello" width="140" /></p>
 <p>Hi there,</p>
 <p style="margin:18px 0 6px;"><strong style="font-size:15px; color:#7c2d12;">📵 SMS opt-out recorded</strong></p>
-<p style="margin:0 0 10px;">A <strong>STOP (opt-out)</strong> keyword reply was received from the phone number ending in <strong>${options.seniorPhoneLast4}</strong> associated with <strong>${options.seniorFullName}</strong> at <strong>${options.optedOutAtLabel}</strong>.</p>
+<p style="margin:0 0 10px;">A <strong>STOP (opt-out)</strong> keyword reply was received from the phone number ending in <strong>${escapeHtml(options.seniorPhoneLast4)}</strong> associated with <strong>${escapeHtml(options.seniorFullName)}</strong> at <strong>${options.optedOutAtLabel}</strong>.</p>
 <p><strong>What this means right now:</strong></p>
 <ul style="margin:0 0 8px 20px; padding:0; line-height:1.7;">
   <li>No further Warm-Hello operational SMS check-in messages or SMS escalation alerts will be sent to this number going forward.</li>
@@ -1052,7 +1053,7 @@ The Warm-Hello Team${footer.text}`,
     html: `<p><img src="${env.APP_URL}/warmhello-logo-b.png" alt="Warm-Hello" width="140" /></p>
 <p>Hi there,</p>
 <p style="margin:18px 0 6px;"><strong style="font-size:15px; color:#065f46;">✅ SMS communications re-enabled</strong></p>
-<p style="margin:0 0 10px;">A <strong>START (opt-in)</strong> keyword was received from the phone number ending in <strong>${options.seniorPhoneLast4}</strong> associated with <strong>${options.seniorFullName}</strong> at <strong>${options.optedInAtLabel}</strong>.</p>
+<p style="margin:0 0 10px;">A <strong>START (opt-in)</strong> keyword was received from the phone number ending in <strong>${escapeHtml(options.seniorPhoneLast4)}</strong> associated with <strong>${escapeHtml(options.seniorFullName)}</strong> at <strong>${options.optedInAtLabel}</strong>.</p>
 <p><strong>What this means right now:</strong></p>
 <ul style="margin:0 0 8px 20px; padding:0; line-height:1.7;">
   <li>Warm-Hello operational SMS check-in messages will resume to this number according to your configured schedule.</li>
@@ -1103,7 +1104,7 @@ Warm-Hello is a routine check-in notification service. It does not contact 911 o
 Warmly,
 The Warm-Hello Team${footer.text}`,
     html: `<p><img src="${env.APP_URL}/warmhello-logo-b.png" alt="Warm-Hello" width="140" /></p>
-<p>Hi ${nameGreeting},</p>
+<p>Hi ${escapeHtml(nameGreeting)},</p>
 <p>We received a request to set or reset the password for your Warm-Hello account.</p>
 <p>If you requested this, click the big button below to set a new password and log in securely. This link expires <strong>${options.expiresAtLabel}</strong> and can only be used once.</p>
 <p style="text-align:center; margin: 22px 0 8px;">
@@ -1183,7 +1184,7 @@ If this was you, no action is required. This is just a security confirmation.
 Warmly,
 The Warm-Hello Team${footer.text}`,
     html: `<p><img src="${env.APP_URL}/warmhello-logo-b.png" alt="Warm-Hello" width="140" /></p>
-<p>Hi ${name},</p>
+<p>Hi ${escapeHtml(name)},</p>
 <p>Your Warm-Hello account password was <strong>set</strong> on <strong>${whenLabel}</strong>.</p>
 <p>You can now log in with your email address and this new password:</p>
 <p style="text-align:center; margin: 22px 0 8px;">
@@ -1244,7 +1245,7 @@ If this was you, no action is required — enjoy the rest of your day.
 Warmly,
 The Warm-Hello Team${footer.text}`,
     html: `<p><img src="${env.APP_URL}/warmhello-logo-b.png" alt="Warm-Hello" width="140" /></p>
-<p>Hi ${name},</p>
+<p>Hi ${escapeHtml(name)},</p>
 <p>Your Warm-Hello account password was <strong>changed</strong> on <strong>${whenLabel}</strong>.</p>
 <p>The next time you log in, use your new password.</p>
 <p style="border-left:4px solid #fb923c; margin:14px 0; padding:10px 14px; background:rgba(251,146,60,0.08); border-radius:8px;">

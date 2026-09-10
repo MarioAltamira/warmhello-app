@@ -9,6 +9,7 @@ import {
   subscriberSessionCookieOptions,
   subscriberSessionPresenceCookieName,
   subscriberSessionPresenceCookieOptions,
+  verifyOnboardGrant,
 } from "@/lib/subscriber-session";
 import { parseJsonBody } from "@/lib/zod-parse";
 import {
@@ -63,6 +64,22 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { ok: false, message: "subscriberId is required." },
       { status: 400 },
+    );
+  }
+
+  const onboardGrant = request.headers.get("x-onboard-session-token") ?? null;
+  const grantSubscriberId = verifyOnboardGrant(onboardGrant);
+  if (!grantSubscriberId || grantSubscriberId !== subscriberId) {
+    await recordSecurityAudit({
+      kind: "SESSION_LOGIN_BLOCKED_UNSUBSCRIBED",
+      subscriberId,
+      ipAddress,
+      userAgent,
+      detail: { onboardGrantMissingOrInvalid: true },
+    });
+    return NextResponse.json(
+      { ok: false, message: "Invalid onboarding session grant. Please start onboarding again from sign up." },
+      { status: 401 },
     );
   }
 

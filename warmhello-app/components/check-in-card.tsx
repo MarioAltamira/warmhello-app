@@ -79,12 +79,29 @@ export function CheckInCard({
         return false;
       }
     }
+    function onBeforeUnload(e: BeforeUnloadEvent) {
+      // Gives iOS a hook to pause unload navigation; no text prompt shown.
+      try { e.preventDefault(); } catch {}
+    }
+    function onClick(e: MouseEvent) {
+      const target = e.target as HTMLElement | null;
+      const a = target?.closest ? (target.closest("a[href]") as HTMLAnchorElement | null) : null;
+      if (!a || !a.href) return;
+      if (a.target && a.target !== "_self") return;
+      if (isBlocked(a.getAttribute("href"))) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (typeof console !== "undefined") console.warn("[checkin] blocked anchor navigation to " + a.href);
+      }
+    }
     function onPop(e: PopStateEvent) {
       void e;
       if (isBlocked(window.location.pathname + window.location.search + window.location.hash)) {
         try { window.stop?.(); } catch {}
       }
     }
+    window.addEventListener("beforeunload", onBeforeUnload, { capture: true });
+    window.addEventListener("click", onClick, { capture: true });
     const origPush = window.history.pushState;
     const origRepl = window.history.replaceState;
     try {
@@ -107,6 +124,8 @@ export function CheckInCard({
     } catch {}
     window.addEventListener("popstate", onPop, { capture: true });
     return () => {
+      window.removeEventListener("beforeunload", onBeforeUnload, { capture: true } as AddEventListenerOptions);
+      window.removeEventListener("click", onClick, { capture: true } as AddEventListenerOptions);
       try { window.history.pushState = origPush; } catch {}
       try { window.history.replaceState = origRepl; } catch {}
       window.removeEventListener("popstate", onPop, { capture: true } as AddEventListenerOptions);

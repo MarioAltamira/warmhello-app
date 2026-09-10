@@ -4,6 +4,9 @@ import { cancelSubscriptionAtPeriodEnd } from "@/lib/stripe";
 import { getSubscriberSession } from "@/lib/subscriber-session";
 import { prisma } from "@/lib/prisma";
 import { sendSubscriptionCancelledAtPeriodEndEmail } from "@/lib/trial-emails";
+import { checkRateLimit, formatRetrySeconds } from "@/lib/rate-limit";
+import { extractIpFromRequest } from "@/lib/security-audit";
+import { parseJsonBody } from "@/lib/zod-parse";
 
 const bodySchema = z.object({
   subscriberId: z.string().min(1),
@@ -18,10 +21,24 @@ export async function POST(request: Request) {
     );
   }
 
-  const parsed = bodySchema.safeParse(await request.json());
-  if (!parsed.success) {
-    return NextResponse.json({ ok: false, message: "Invalid request." }, { status: 400 });
+  const ip = extractIpFromRequest(request) ?? "unknown";
+  const subRl = checkRateLimit(`billing:cancel:sub:${subscriberId}`, 15 * 60 * 1000, 10);
+  if (!subRl.allowed) {
+    return NextResponse.json(
+      { ok: false, message: `Too many cancellation attempts. Please try again in ${formatRetrySeconds(subRl.retryAfterMs)}.` },
+      { status: 429 },
+    );
   }
+  const ipRl = checkRateLimit(`billing:cancel:ip:${ip}`, 15 * 60 * 1000, 20);
+  if (!ipRl.allowed) {
+    return NextResponse.json(
+      { ok: false, message: `Too many cancellation attempts from this location. Please try again in ${formatRetrySeconds(ipRl.retryAfterMs)}.` },
+      { status: 429 },
+    );
+  }
+
+  const parsed = await parseJsonBody(request, bodySchema);
+  if (!parsed.ok) return parsed.response;
 
   if (parsed.data.subscriberId !== subscriberId) {
     return NextResponse.json(
@@ -58,12 +75,18 @@ export async function POST(request: Request) {
               cancellationDate,
             },
           })
-          .catch(() => null);
-        await sendSubscriptionCancelledAtPeriodEndEmail(subscriber.id).catch(() => null);
+          .catch((err) => {
+            console.error("[billing/cancel] Failed to update subscriber cancellation status:", err);
+            return null;
+          });
+        await sendSubscriptionCancelledAtPeriodEndEmail(subscriber.id).catch((err) => {
+          console.error("[billing/cancel] Failed to send cancellation email:", err);
+          return null;
+        });
       }
     }
-  } catch {
-    // ignore email send failure
+  } catch (err) {
+    console.warn("[billing/cancel] Unexpected error while recording cancellation follow-up:", err);
   }
 
   return NextResponse.json({

@@ -60,6 +60,22 @@ export async function GET() {
           where: { subscriberId },
           orderBy: { scheduledFor: "desc" },
           take: 2000,
+          select: {
+            id: true,
+            seniorId: true,
+            status: true,
+            scheduledFor: true,
+            reminderAt: true,
+            escalationAt: true,
+            confirmedAt: true,
+            firstSmsSentAt: true,
+            secondSmsSentAt: true,
+            firstAlertUnresponsiveAt: true,
+            secondAlertUnresponsiveAt: true,
+            primaryContactSmsSentAt: true,
+            createdAt: true,
+            updatedAt: true,
+          },
         })
         .catch(() => []),
       prisma.smsLog
@@ -75,6 +91,7 @@ export async function GET() {
             kind: true,
             fromNumber: true,
             toNumber: true,
+            body: true,
             providerMessageId: true,
             createdAt: true,
           },
@@ -156,7 +173,8 @@ export async function GET() {
         "Cache-Control": "private, no-store, no-cache, must-revalidate",
       },
     });
-  } catch {
+  } catch (error) {
+    console.error("[account/export] Failed to export account data:", error);
     return NextResponse.json(
       { ok: false, message: "Could not export data right now." },
       { status: 500 },

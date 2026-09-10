@@ -1,7 +1,9 @@
-import { compareSync, hashSync } from "bcryptjs";
+import { compare, hash } from "bcryptjs";
 
-const BCRYPT_WORK_FACTOR = 10;
+const BCRYPT_WORK_FACTOR = 12;
+const MIN_PASSWORD_BYTES = 12;
 const MAX_PASSWORD_BYTES = 128;
+const MIN_PASSWORD_CLASSES = 3;
 
 const HAS_UPPERCASE = /[A-Z]/;
 const HAS_LOWERCASE = /[a-z]/;
@@ -15,10 +17,10 @@ export function validatePasswordStrength(
     return { valid: false, error: "Password is required." };
   }
   const byteCount = new TextEncoder().encode(plaintext).length;
-  if (byteCount < 8) {
+  if (byteCount < MIN_PASSWORD_BYTES) {
     return {
       valid: false,
-      error: "Use a password at least 8 characters long.",
+      error: `Use a password at least ${MIN_PASSWORD_BYTES} characters long.`,
     };
   }
   if (byteCount > MAX_PASSWORD_BYTES) {
@@ -33,11 +35,11 @@ export function validatePasswordStrength(
     HAS_DIGIT.test(plaintext) ? 1 : 0,
     HAS_SYMBOL.test(plaintext) ? 1 : 0,
   ].reduce((sum, n) => sum + n, 0);
-  if (classes < 2) {
+  if (classes < MIN_PASSWORD_CLASSES) {
     return {
       valid: false,
       error:
-        "Use a password with at least two different character types: uppercase letters, lowercase letters, numbers, or symbols.",
+        "Use a password with at least three different character types: uppercase letters, lowercase letters, numbers, or symbols.",
     };
   }
   return { valid: true };
@@ -48,8 +50,7 @@ export async function hashPassword(plaintext: string): Promise<string> {
   if (!strength.valid) {
     throw new Error(strength.error ?? "Invalid password.");
   }
-  await new Promise<void>((resolve) => setImmediate(resolve));
-  const hashed = hashSync(plaintext, BCRYPT_WORK_FACTOR);
+  const hashed = await hash(plaintext, BCRYPT_WORK_FACTOR);
   if (!hashed || typeof hashed !== "string" || hashed.length < 50) {
     throw new Error("Password hashing failed.");
   }
@@ -60,13 +61,15 @@ export async function verifyPassword(
   plaintext: string | null | undefined,
   storedHash: string | null | undefined,
 ): Promise<boolean> {
-  await new Promise<void>((resolve) => setImmediate(resolve));
   if (!plaintext || typeof plaintext !== "string") return false;
   if (!storedHash || typeof storedHash !== "string") {
     try {
-      compareSync(
+      // Dummy hash must use the same cost factor as real hashes
+      // (BCRYPT_WORK_FACTOR) so the "no such account" path takes the same
+      // amount of time as the "wrong password" path, closing the timing oracle.
+      await compare(
         "dummy-empty-hash-check",
-        "$2b$10$CwTycUXWue0Thq9StjUM0uJ8b7mzH.0VZ0XQ.GgKpHKbRXMlL8YHa",
+        "$2b$12$kvVYqneVI1NIwsqx9THon.1kRy0uWsmVSitGgVjhHjGXcXiYpsFC.",
       );
     } catch {
       /* constant-time dummy compare for null-hash accounts */
@@ -74,7 +77,7 @@ export async function verifyPassword(
     return false;
   }
   try {
-    return Boolean(compareSync(plaintext, storedHash));
+    return Boolean(await compare(plaintext, storedHash));
   } catch {
     return false;
   }

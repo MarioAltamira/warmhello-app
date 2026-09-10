@@ -5,6 +5,7 @@ import { useMemo, useRef, useState } from "react";
 import { BuyNowButton } from "@/components/buy-now-button";
 import { BillingCurrency } from "@/lib/pricing";
 import { normalizeTimeZone, timeZoneOptions } from "@/lib/timezones";
+import { validatePasswordStrength } from "@/lib/password";
 import {
   CLICKWRAP_SENIOR_ADD_LABEL,
   CLICKWRAP_SENIOR_SMS_OPERATIONAL_LABEL,
@@ -20,6 +21,7 @@ import {
 type HouseholdResponse = {
   ok: boolean;
   message?: string;
+  onboardSessionToken?: string;
   firstCheckIn?: {
     token: string;
     scheduledFor: string;
@@ -247,48 +249,6 @@ function formatScheduledFor(value?: string, timeZone?: string) {
   }).format(parsed);
 }
 
-const MAX_PASSWORD_BYTES = 128;
-const HAS_UPPERCASE = /[A-Z]/;
-const HAS_LOWERCASE = /[a-z]/;
-const HAS_DIGIT = /[0-9]/;
-const HAS_SYMBOL = /[^A-Za-z0-9]/;
-
-function validatePasswordStrengthClient(plaintext: string): {
-  valid: boolean;
-  error?: string;
-} {
-  if (!plaintext || typeof plaintext !== "string") {
-    return { valid: false, error: "Password is required." };
-  }
-  const byteCount = new TextEncoder().encode(plaintext).length;
-  if (byteCount < 8) {
-    return {
-      valid: false,
-      error: "Use a password at least 8 characters long.",
-    };
-  }
-  if (byteCount > MAX_PASSWORD_BYTES) {
-    return {
-      valid: false,
-      error: `Password must be ${MAX_PASSWORD_BYTES} characters or fewer.`,
-    };
-  }
-  const classes = [
-    HAS_UPPERCASE.test(plaintext) ? 1 : 0,
-    HAS_LOWERCASE.test(plaintext) ? 1 : 0,
-    HAS_DIGIT.test(plaintext) ? 1 : 0,
-    HAS_SYMBOL.test(plaintext) ? 1 : 0,
-  ].reduce((sum, n) => sum + n, 0);
-  if (classes < 2) {
-    return {
-      valid: false,
-      error:
-        "Use a password with at least two different character types: uppercase letters, lowercase letters, numbers, or symbols.",
-    };
-  }
-  return { valid: true };
-}
-
 export function OnboardingForm({
   editMode = false,
   currentHousehold,
@@ -316,15 +276,17 @@ export function OnboardingForm({
     savedHousehold?.senior.timezone ?? form.timezone,
   );
 
-  function updateField(name: keyof typeof initialForm, value: string | AdditionalContactState[]) {
-    let cleaned: string | AdditionalContactState[] = value;
+  function updateField<K extends keyof typeof initialForm>(
+    name: K,
+    value: (typeof initialForm)[K],
+  ) {
+    let cleaned = value;
     if (typeof cleaned === "string") {
-      cleaned = cleaned;
       if (name === "subscriberEmail" || name === "contactEmail") {
-        cleaned = cleaned.trim();
+        cleaned = cleaned.trim() as (typeof initialForm)[K];
       }
     } else if (Array.isArray(cleaned) && name === "additionalContacts") {
-      cleaned = cleaned.map((c) => ({ ...c, email: (c.email ?? "").trim() }));
+      cleaned = cleaned.map((c) => ({ ...c, email: (c.email ?? "").trim() })) as (typeof initialForm)[K];
     }
     setForm((current) => ({
       ...current,
@@ -472,7 +434,7 @@ export function OnboardingForm({
         setStatusMessage("Passwords do not match — please re-type both fields to make sure they are identical.");
         return;
       }
-      const strength = validatePasswordStrengthClient(pwd);
+      const strength = validatePasswordStrength(pwd);
       if (!strength.valid) {
         setStatusMessage(strength.error ?? "Invalid password.");
         return;
@@ -551,10 +513,14 @@ export function OnboardingForm({
       setFirstCheckInScheduledFor(data.firstCheckInScheduledFor);
       setFirstCheckInMessage(data.firstCheckInMessage);
       if (data.household?.subscriber.id) {
+        const onboardToken = data.onboardSessionToken;
         await fetch("/api/session", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            ...(typeof onboardToken === "string" && onboardToken.length > 0
+              ? { "X-Onboard-Session-Token": onboardToken }
+              : {}),
           },
           body: JSON.stringify({
             subscriberId: data.household.subscriber.id,
@@ -1130,7 +1096,7 @@ export function OnboardingForm({
             type="checkbox"
             checked={Boolean(form.marketingEmailConsent)}
             onChange={(event) =>
-              updateField("marketingEmailConsent", event.target.checked as any)
+              updateField("marketingEmailConsent", event.target.checked)
             }
           />
           <div style={{ fontSize: 14, lineHeight: 1.55 }}>
@@ -1149,13 +1115,13 @@ export function OnboardingForm({
                   id="password"
                   autoComplete="new-password"
                   type="password"
-                  placeholder="At least 8 characters with letters, numbers, or symbols"
+                  placeholder="At least 12 characters, using at least 3 of: uppercase, lowercase, numbers, symbols"
                   value={String(form.password ?? "")}
                   onChange={(event) => updateField("password", event.target.value)}
                   disabled={submitting}
                 />
                 <small style={{ color: "var(--muted)", fontSize: 12, lineHeight: 1.5 }}>
-                  At least 8 characters. Use at least two different types: uppercase, lowercase, numbers, or symbols.
+                  At least 12 characters. Use at least three different types: uppercase, lowercase, numbers, or symbols.
                 </small>
               </div>
             </label>

@@ -95,20 +95,22 @@ export function SessionExitLogout() {
       void syncPresenceWithServer();
     }
 
-    window.addEventListener("pagehide", handlePageHide);
-    window.addEventListener("pageshow", handleRevive);
-    window.addEventListener("focus", handleRevive);
-    document.addEventListener("visibilitychange", () => {
+    function handleVisibilityChange() {
       if (document.visibilityState === "visible") {
         void syncPresenceWithServer();
       }
-    });
+    }
+
+    window.addEventListener("pagehide", handlePageHide);
+    window.addEventListener("pageshow", handleRevive);
+    window.addEventListener("focus", handleRevive);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       window.removeEventListener("pagehide", handlePageHide);
       window.removeEventListener("pageshow", handleRevive);
       window.removeEventListener("focus", handleRevive);
-      document.removeEventListener("visibilitychange", handleRevive);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
 
