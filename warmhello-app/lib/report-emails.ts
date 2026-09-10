@@ -3,6 +3,7 @@ import { sendEmail } from "@/lib/email";
 import type { DailySummary, MonthlySummary } from "@/lib/reports";
 import { currencyLabel } from "@/lib/reports";
 import { LEGAL_ENTITY_PLACEHOLDERS } from "@/lib/legal-placeholders";
+import { escapeHtml } from "@/lib/html-escape";
 
 const RECAP_DIRECT_DELIVERY = "warm.hello4s@gmail.com";
 const SALES_EMAIL_DISPLAY = "sales@warm-hello.com";
@@ -33,7 +34,7 @@ function kpiRow(label: string, value: string | number, highlight?: string) {
 }
 
 function trRow(cells: string[]) {
-  return `<tr>${cells.map((c) => `<td style="padding:8px 10px; border-bottom:1px solid #e2e8f0; font-size:13px; color:#0f172a;">${c}</td>`).join("")}</tr>`;
+  return `<tr>${cells.map((c) => `<td style="padding:8px 10px; border-bottom:1px solid #e2e8f0; font-size:13px; color:#0f172a;">${escapeHtml(c)}</td>`).join("")}</tr>`;
 }
 
 function table(headers: string[], rows: string[][]) {

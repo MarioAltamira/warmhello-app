@@ -2,7 +2,7 @@ import { addHours, formatDateTime } from "@/lib/dates";
 import { demoCheckIn, demoDashboard } from "@/lib/demo-data";
 import { env, getIntegrationStatus } from "@/lib/env";
 import { isBillingCurrency, expectedMonthlyLabelFor, pricingPlanFor } from "@/lib/pricing";
-import { prisma } from "@/lib/prisma";
+import { isDemoModeIntentional, prisma } from "@/lib/prisma";
 import { getShortLinkForCheckIn } from "@/lib/short-links";
 import { getPriceInfo } from "@/lib/stripe";
 import { getStripePriceIdFor, resolveCurrencyForCurrentVisitor } from "@/lib/visitor-currency";
@@ -17,6 +17,12 @@ const CHECKIN_SMS_PROMO_REGEX =
 type AssertNoPromo<S extends string> = Lowercase<S> extends `${string}${"%25off" | "% off" | "refer" | "share" | "discount" | "promo" | "free month" | "coupon"}${string}`
   ? never
   : S;
+
+function maskEmail(email: string): string {
+  const atIndex = email.indexOf("@");
+  if (atIndex <= 0) return "***";
+  return `${email.slice(0, 2)}***@${email.slice(atIndex + 1)}`;
+}
 
 function formatEnumLabel(status: string) {
   return status
@@ -120,6 +126,9 @@ function buildDashboardSnapshot(
 
 export async function getDashboardSnapshot(subscriberId?: string | null) {
   if (!prisma) {
+    if (!isDemoModeIntentional) {
+      throw new Error("Database is configured but unavailable right now.");
+    }
     return {
       ...demoDashboard,
       integrationStatus: getIntegrationStatus(),
@@ -182,7 +191,10 @@ export async function getDashboardSnapshot(subscriberId?: string | null) {
       : null;
 
     return buildDashboardSnapshot({ ...subscriber, billingCurrency }, { stripePrice });
-  } catch {
+  } catch (err) {
+    if (!isDemoModeIntentional) {
+      throw err instanceof Error ? err : new Error("Database is unreachable right now.");
+    }
     return {
       ...demoDashboard,
       integrationStatus: getIntegrationStatus(),
@@ -192,6 +204,9 @@ export async function getDashboardSnapshot(subscriberId?: string | null) {
 
 export async function getCheckInPageData(token: string) {
   if (!prisma) {
+    if (!isDemoModeIntentional) {
+      throw new Error("Database is configured but unavailable right now.");
+    }
     if (token === demoCheckIn.token) {
       return demoCheckIn;
     }
@@ -234,7 +249,10 @@ export async function getCheckInPageData(token: string) {
         ? formatDateTime(checkIn.confirmedAt, timeZone)
         : undefined,
     };
-  } catch {
+  } catch (err) {
+    if (!isDemoModeIntentional) {
+      throw err instanceof Error ? err : new Error("Database is unreachable right now.");
+    }
     if (token === demoCheckIn.token) {
       return demoCheckIn;
     }
@@ -250,6 +268,9 @@ export async function getCheckInPageData(token: string) {
 
 export async function confirmCheckInToken(token: string, mode: "okay" | "call_me" = "okay") {
   if (!prisma) {
+    if (!isDemoModeIntentional) {
+      return { ok: false as const, message: "Database is not reachable right now." };
+    }
     if (token === demoCheckIn.token) {
       return { ok: true as const, message: mode === "call_me" ? "Demo check-in confirmed. Call request noted." : "Demo check-in confirmed." };
     }
@@ -814,7 +835,7 @@ export async function markEscalationSent(checkInId: string) {
     emailResults.forEach((r, i) => {
       if (!r.ok) {
         console.warn(
-          `[markEscalationSent] escalation email failed for contact=${contactsWithEmail[i]!.id} to=${contactsWithEmail[i]!.email}: ${r.message}`,
+          `[markEscalationSent] escalation email failed for contact=${contactsWithEmail[i]!.id} to=${maskEmail(contactsWithEmail[i]!.email)}: ${r.message}`,
         );
       }
     });

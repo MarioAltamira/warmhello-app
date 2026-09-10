@@ -2,6 +2,17 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { sendEmail } from "@/lib/email";
 import { env } from "@/lib/env";
+import { escapeHtml } from "@/lib/html-escape";
+import { parseJsonBody } from "@/lib/zod-parse";
+import {
+  extractIpFromRequest,
+  extractUserAgentFromRequest,
+  recordSecurityAudit,
+} from "@/lib/security-audit";
+import {
+  checkRateLimit,
+  formatRetrySeconds,
+} from "@/lib/rate-limit";
 
 const bodySchema = z.object({
   name: z.string().trim().min(2),
@@ -10,26 +21,71 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: Request) {
-  let parsed: z.infer<typeof bodySchema>;
+  const parsed = await parseJsonBody(request, bodySchema);
+  if (!parsed.ok) return parsed.response;
 
-  try {
-    parsed = bodySchema.parse(await request.json());
-  } catch {
+  const ipAddress = extractIpFromRequest(request);
+  const userAgent = extractUserAgentFromRequest(request);
+  const { email } = parsed.data;
+
+  const perEmailLimit = checkRateLimit(
+    `contact:email:${email}`,
+    15 * 60_000,
+    5,
+  );
+  if (!perEmailLimit.allowed) {
+    await recordSecurityAudit({
+      kind: "MAGIC_LINK_RATE_LIMITED",
+      subscriberId: null,
+      email,
+      ipAddress,
+      userAgent,
+      detail: { route: "contact", per: "email" },
+    });
     return NextResponse.json(
       {
         ok: false,
-        message: "Please enter your name, a valid email, and a message with at least 10 characters.",
+        message: `Too many contact form submissions for this email. Please wait ${formatRetrySeconds(
+          perEmailLimit.retryAfterMs,
+        )} and try again.`,
       },
-      { status: 400 },
+      { status: 429 },
     );
   }
 
+  const perIpLimit = checkRateLimit(
+    `contact:ip:${ipAddress ?? "unknown"}`,
+    15 * 60_000,
+    10,
+  );
+  if (!perIpLimit.allowed) {
+    await recordSecurityAudit({
+      kind: "MAGIC_LINK_RATE_LIMITED",
+      subscriberId: null,
+      email,
+      ipAddress,
+      userAgent,
+      detail: { route: "contact", per: "ip" },
+    });
+    return NextResponse.json(
+      {
+        ok: false,
+        message: `Too many contact form submissions from this location. Please wait ${formatRetrySeconds(
+          perIpLimit.retryAfterMs,
+        )} and try again.`,
+      },
+      { status: 429 },
+    );
+  }
+
+  const { name, message } = parsed.data;
+
   const result = await sendEmail({
     to: "warm.hello4s@gmail.com",
-    replyTo: parsed.email,
-    subject: `Warm-Hello contact form: ${parsed.name}`,
-    text: `Name: ${parsed.name}\nEmail: ${parsed.email}\n\nMessage:\n${parsed.message}`,
-    html: `<p><img src="${env.APP_URL}/warmhello-logo-b.png" alt="Warm-Hello" width="140" /></p><p><strong>Name:</strong> ${parsed.name}</p><p><strong>Email:</strong> ${parsed.email}</p><p><strong>Message:</strong></p><p>${parsed.message.replace(/\n/g, "<br />")}</p>`,
+    replyTo: email,
+    subject: `Warm-Hello contact form: ${name}`,
+    text: `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
+    html: `<p><img src="${env.APP_URL}/warmhello-logo-b.png" alt="Warm-Hello" width="140" /></p><p><strong>Name:</strong> ${escapeHtml(name)}</p><p><strong>Email:</strong> ${escapeHtml(email)}</p><p><strong>Message:</strong></p><p>${escapeHtml(message).replace(/\n/g, "<br />")}</p>`,
   });
 
   if (!result.ok) {

@@ -18,6 +18,10 @@ function encodeHeader(value: string) {
   return `=?UTF-8?B?${Buffer.from(value, "utf8").toString("base64")}?=`;
 }
 
+function stripCrlf(value: string): string {
+  return value.replace(/[\r\n\0]/g, "").trim();
+}
+
 const SMTP_TIMEOUT_MS = 30_000;
 
 function readSmtpResponse(socket: tls.TLSSocket) {
@@ -100,6 +104,9 @@ async function sendSmtpMail(input: EmailInput) {
     };
   }
 
+  const sanitizedTo = stripCrlf(input.to);
+  const sanitizedReplyTo = input.replyTo ? stripCrlf(input.replyTo) : undefined;
+
   let socket: tls.TLSSocket | null = null;
   let responseTimeout: NodeJS.Timeout | null = null;
 
@@ -147,14 +154,14 @@ async function sendSmtpMail(input: EmailInput) {
     }
     const plainBody = wrapLines(input.text);
     const htmlBody = wrapLines(htmlBodyOneLine);
-    const recipientsList = input.to
+    const recipientsList = sanitizedTo
       .split(",")
       .map((addr) => addr.trim())
       .filter(Boolean);
     const message = [
       `From: Warm-Hello <${env.EMAIL_FROM_ADDRESS}>`,
-      `To: ${input.to}`,
-      input.replyTo ? `Reply-To: ${input.replyTo}` : null,
+      `To: ${sanitizedTo}`,
+      sanitizedReplyTo ? `Reply-To: ${sanitizedReplyTo}` : null,
       `Subject: ${encodeHeader(input.subject)}`,
       "MIME-Version: 1.0",
       'Content-Type: multipart/alternative; boundary="warmhello-boundary"',

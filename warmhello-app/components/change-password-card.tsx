@@ -1,52 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { validatePasswordStrength } from "@/lib/password";
 
 type ChangePasswordCardProps = {
   hasPassword: boolean;
 };
-
-const MAX_PASSWORD_BYTES = 128;
-const HAS_UPPERCASE = /[A-Z]/;
-const HAS_LOWERCASE = /[a-z]/;
-const HAS_DIGIT = /[0-9]/;
-const HAS_SYMBOL = /[^A-Za-z0-9]/;
-
-function validatePasswordStrengthClient(plaintext: string): {
-  valid: boolean;
-  error?: string;
-} {
-  if (!plaintext || typeof plaintext !== "string") {
-    return { valid: false, error: "Password is required." };
-  }
-  const byteCount = new TextEncoder().encode(plaintext).length;
-  if (byteCount < 8) {
-    return {
-      valid: false,
-      error: "Use a password at least 8 characters long.",
-    };
-  }
-  if (byteCount > MAX_PASSWORD_BYTES) {
-    return {
-      valid: false,
-      error: `Password must be ${MAX_PASSWORD_BYTES} characters or fewer.`,
-    };
-  }
-  const classes = [
-    HAS_UPPERCASE.test(plaintext) ? 1 : 0,
-    HAS_LOWERCASE.test(plaintext) ? 1 : 0,
-    HAS_DIGIT.test(plaintext) ? 1 : 0,
-    HAS_SYMBOL.test(plaintext) ? 1 : 0,
-  ].reduce((sum, n) => sum + n, 0);
-  if (classes < 2) {
-    return {
-      valid: false,
-      error:
-        "Use a password with at least two different character types: uppercase letters, lowercase letters, numbers, or symbols.",
-    };
-  }
-  return { valid: true };
-}
 
 export function ChangePasswordCard({ hasPassword }: ChangePasswordCardProps) {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -78,7 +37,7 @@ export function ChangePasswordCard({ hasPassword }: ChangePasswordCardProps) {
         );
         return;
       }
-      const strength = validatePasswordStrengthClient(newPassword);
+      const strength = validatePasswordStrength(newPassword);
       if (!strength.valid) {
         setStatusTone("error");
         setStatus(strength.error ?? "Invalid password.");
@@ -114,7 +73,7 @@ export function ChangePasswordCard({ hasPassword }: ChangePasswordCardProps) {
         );
         return;
       }
-      const strength = validatePasswordStrengthClient(newPassword);
+      const strength = validatePasswordStrength(newPassword);
       if (!strength.valid) {
         setStatusTone("error");
         setStatus(strength.error ?? "Invalid password.");
@@ -233,7 +192,7 @@ export function ChangePasswordCard({ hasPassword }: ChangePasswordCardProps) {
             form="changePasswordForm"
             type="password"
             autoComplete="new-password"
-            placeholder="At least 8 characters with letters, numbers, or symbols"
+            placeholder="At least 12 characters, using at least 3 of: uppercase, lowercase, numbers, symbols"
             value={newPassword}
             onChange={(event) => setNewPassword(event.target.value)}
             disabled={submitting}
@@ -247,7 +206,7 @@ export function ChangePasswordCard({ hasPassword }: ChangePasswordCardProps) {
               display: "inline-block",
             }}
           >
-            At least 8 characters. Use at least two different types:
+            At least 12 characters. Use at least three different types:
             uppercase, lowercase, numbers, or symbols.
           </small>
         </label>

@@ -1,9 +1,9 @@
 import { createHmac, timingSafeEqual, randomBytes } from "node:crypto";
-import { env } from "@/lib/env";
+import { deriveSigningKey } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import type { SecurityAuditKind, Prisma } from "@prisma/client";
 
-const SIGNING_SECRET = env.JOB_SIGNING_SECRET;
+const SIGNING_SECRET = deriveSigningKey("magic-link");
 const MAGIC_TOKEN_VERSION = "m1";
 const HMAC_ALG = "sha256";
 
@@ -12,13 +12,20 @@ const REAL_IP = "x-real-ip";
 
 export function extractIpFromRequest(request: Request): string | null {
   const headersList = new Headers(request.headers);
-  const ff = headersList.get(FORWARDED_FOR);
-  if (ff) {
-    const first = ff.split(",")[0]?.trim();
-    if (first) return first;
-  }
+  // The app sits behind a single trusted reverse proxy (nginx). nginx
+  // typically sets x-real-ip from $remote_addr, overwriting any
+  // client-supplied value, so it cannot be spoofed in this single-proxy
+  // setup. x-forwarded-for, on the other hand, is appended to (not
+  // overwritten) by each hop, so a client can prepend arbitrary fake IPs;
+  // only the LAST entry (appended by our trusted proxy) is trustworthy.
   const realIp = headersList.get(REAL_IP);
   if (realIp) return realIp.trim();
+  const ff = headersList.get(FORWARDED_FOR);
+  if (ff) {
+    const parts = ff.split(",");
+    const last = parts[parts.length - 1]?.trim();
+    if (last) return last;
+  }
   return null;
 }
 

@@ -14,6 +14,10 @@ import {
   verifyPassword,
 } from "@/lib/password";
 import { sendPasswordChangedAuditEmail } from "@/lib/trial-emails";
+import {
+  checkRateLimit,
+  formatRetrySeconds,
+} from "@/lib/rate-limit";
 
 const setPasswordBody = z
   .object({
@@ -55,6 +59,56 @@ export async function POST(request: Request) {
   const ipAddress = extractIpFromRequest(request);
   const userAgent = extractUserAgentFromRequest(request);
   const { newPassword, currentPassword } = parsed.data;
+
+  const perSubscriberLimit = checkRateLimit(
+    `change-password:subscriber:${subscriberId}`,
+    15 * 60_000,
+    10,
+  );
+  if (!perSubscriberLimit.allowed) {
+    await recordSecurityAudit({
+      kind: "PASSWORD_CHANGED_FAILED_WRONG_CURRENT",
+      subscriberId,
+      email: null,
+      ipAddress,
+      userAgent,
+      detail: { route: "change-password", per: "subscriber" },
+    });
+    return NextResponse.json(
+      {
+        ok: false,
+        message: `Too many password change attempts for this account. Please wait ${formatRetrySeconds(
+          perSubscriberLimit.retryAfterMs,
+        )} and try again.`,
+      },
+      { status: 429 },
+    );
+  }
+
+  const perIpLimit = checkRateLimit(
+    `change-password:ip:${ipAddress ?? "unknown"}`,
+    15 * 60_000,
+    15,
+  );
+  if (!perIpLimit.allowed) {
+    await recordSecurityAudit({
+      kind: "PASSWORD_CHANGED_FAILED_WRONG_CURRENT",
+      subscriberId,
+      email: null,
+      ipAddress,
+      userAgent,
+      detail: { route: "change-password", per: "ip" },
+    });
+    return NextResponse.json(
+      {
+        ok: false,
+        message: `Too many password change attempts from this location. Please wait ${formatRetrySeconds(
+          perIpLimit.retryAfterMs,
+        )} and try again.`,
+      },
+      { status: 429 },
+    );
+  }
 
   const subscriber = await prisma.subscriber.findUnique({
     where: { id: subscriberId },

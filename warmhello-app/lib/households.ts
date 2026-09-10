@@ -28,26 +28,54 @@ export type ConsentMetadata = {
   marketingEmailConsent?: boolean;
 };
 
-function normalizePhoneInput(input: CreateHouseholdInput): CreateHouseholdInput {
-  const additional = (input.additionalContacts ?? []).map((c) => ({
-    ...c,
-    phoneNumber: normalizePhone(c.phoneNumber),
-  }));
+function validateAndNormalizeInput(
+  input: CreateHouseholdInput,
+): { ok: true; data: CreateHouseholdInput } | { ok: false; message: string } {
+  const subscriberPhone = normalizePhone(input.subscriber.phoneNumber);
+  if (!subscriberPhone) {
+    return { ok: false, message: "Subscriber phone number is invalid." };
+  }
+  const seniorPhone = normalizePhone(input.senior.phoneNumber);
+  if (!seniorPhone) {
+    return { ok: false, message: "Senior phone number is invalid." };
+  }
+  const primaryContactPhone = normalizePhone(input.primaryContact.phoneNumber);
+  if (!primaryContactPhone) {
+    return { ok: false, message: "Primary contact phone number is invalid." };
+  }
+
+  if (!Number.isInteger(input.senior.checkInHour) || input.senior.checkInHour < 0 || input.senior.checkInHour > 23) {
+    return { ok: false, message: "Check-in hour must be an integer between 0 and 23." };
+  }
+  if (!Number.isInteger(input.senior.checkInMinute) || input.senior.checkInMinute < 0 || input.senior.checkInMinute > 59) {
+    return { ok: false, message: "Check-in minute must be an integer between 0 and 59." };
+  }
+
+  const additional = (input.additionalContacts ?? [])
+    .map((c) => ({
+      ...c,
+      phoneNumber: normalizePhone(c.phoneNumber),
+    }))
+    .filter((c): c is ContactInput & { phoneNumber: string } => Boolean(c.phoneNumber));
+
   return {
-    ...input,
-    subscriber: {
-      ...input.subscriber,
-      phoneNumber: normalizePhone(input.subscriber.phoneNumber),
+    ok: true,
+    data: {
+      ...input,
+      subscriber: {
+        ...input.subscriber,
+        phoneNumber: subscriberPhone,
+      },
+      senior: {
+        ...input.senior,
+        phoneNumber: seniorPhone,
+      },
+      primaryContact: {
+        ...input.primaryContact,
+        phoneNumber: primaryContactPhone,
+      },
+      additionalContacts: additional,
     },
-    senior: {
-      ...input.senior,
-      phoneNumber: normalizePhone(input.senior.phoneNumber),
-    },
-    primaryContact: {
-      ...input.primaryContact,
-      phoneNumber: normalizePhone(input.primaryContact.phoneNumber),
-    },
-    additionalContacts: additional,
   };
 }
 
@@ -86,14 +114,39 @@ export async function getHouseholdForSubscriber(subscriberId: string) {
   try {
     const subscriber = await prisma.subscriber.findUnique({
       where: { id: subscriberId },
-      include: {
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        phoneNumber: true,
+        billingCurrency: true,
+        created: true,
+        subscriptionStatus: true,
+        currentPeriodEndsAt: true,
         seniors: {
           orderBy: { createdAt: "asc" },
           take: 1,
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            phoneNumber: true,
+            timezone: true,
+            checkInHour: true,
+            checkInMinute: true,
+            secondAttemptHours: true,
+            active: true,
+          },
         },
         contacts: {
           orderBy: { priority: "asc" },
           take: MAX_CONTACTS,
+          select: {
+            id: true,
+            fullName: true,
+            relationship: true,
+            phoneNumber: true,
+          },
         },
       },
     });
@@ -158,7 +211,11 @@ export async function createHousehold(
   }
 
   try {
-    const normalized = normalizePhoneInput(input);
+    const validated = validateAndNormalizeInput(input);
+    if (!validated.ok) {
+      return { ok: false as const, message: validated.message };
+    }
+    const normalized = validated.data;
     const additionalInput = (normalized.additionalContacts ?? []).filter(
       (c) =>
         c &&
@@ -449,7 +506,11 @@ export async function updateHousehold(
   }
 
   try {
-    const normalized = normalizePhoneInput(input);
+    const validated = validateAndNormalizeInput(input);
+    if (!validated.ok) {
+      return { ok: false as const, message: validated.message };
+    }
+    const normalized = validated.data;
     const additionalInput = (normalized.additionalContacts ?? []).filter(
       (c) =>
         c &&
@@ -460,14 +521,23 @@ export async function updateHousehold(
 
     const existingSubscriber = await prisma.subscriber.findUnique({
       where: { id: subscriberId },
-      include: {
+      select: {
+        billingCurrency: true,
+        marketingEmailConsentAt: true,
         seniors: {
           orderBy: { createdAt: "asc" },
           take: 1,
+          select: {
+            id: true,
+            operationalSmsConsentAt: true,
+          },
         },
         contacts: {
           orderBy: { priority: "asc" },
           take: MAX_CONTACTS,
+          select: {
+            id: true,
+          },
         },
       },
     });
@@ -581,13 +651,11 @@ export async function updateHousehold(
             },
           });
 
-      const additionalContacts: (typeof contact)[] = [];
-      for (let i = 0; i < validatedAdditional.length; i += 1) {
-        const payload = validatedAdditional[i]!;
-        const existingRow = existingAdditional[i];
-        if (existingRow) {
-          additionalContacts.push(
-            await tx.contact.update({
+      const additionalContacts: (typeof contact)[] = await Promise.all(
+        validatedAdditional.map((payload, i) => {
+          const existingRow = existingAdditional[i];
+          if (existingRow) {
+            return tx.contact.update({
               where: { id: existingRow.id },
               data: {
                 fullName: payload.fullName,
@@ -597,24 +665,21 @@ export async function updateHousehold(
                 priority: i + 2,
                 seniorId: senior.id,
               },
-            }),
-          );
-        } else {
-          additionalContacts.push(
-            await tx.contact.create({
-              data: {
-                subscriberId,
-                seniorId: senior.id,
-                fullName: payload.fullName,
-                relationship: payload.relationship,
-                phoneNumber: payload.phoneNumber,
-                email: payload.email || undefined,
-                priority: i + 2,
-              },
-            }),
-          );
-        }
-      }
+            });
+          }
+          return tx.contact.create({
+            data: {
+              subscriberId,
+              seniorId: senior.id,
+              fullName: payload.fullName,
+              relationship: payload.relationship,
+              phoneNumber: payload.phoneNumber,
+              email: payload.email || undefined,
+              priority: i + 2,
+            },
+          });
+        }),
+      );
 
       const remainingExisting = existingAdditional.slice(validatedAdditional.length);
       if (remainingExisting.length > 0) {
@@ -720,17 +785,17 @@ function userMessageForHouseholdError(err: unknown, op: "createHousehold" | "upd
     err &&
     typeof err === "object" &&
     "code" in err &&
-    (err as any).code === "P2002" &&
-    typeof (err as any).message === "string"
+    (err as any).code === "P2002"
   ) {
-    const msg = String((err as any).message).toLowerCase();
-    if (msg.includes("`email`") || msg.includes("email unique")) {
+    const target = (err as any).meta?.target;
+    const targetFields: string[] = Array.isArray(target) ? target : [];
+    if (targetFields.includes("email")) {
       return "This email is already registered. Please log in to your existing account instead of creating a new one.";
     }
-    if (msg.includes("senior") && msg.includes("phonenumber")) {
+    if (targetFields.includes("phoneNumber")) {
       return "This senior phone number is already registered to another household. Each senior must have a unique phone number across all accounts.";
     }
-    if (msg.includes("`phonenumber`") || msg.includes("phone")) {
+    if (targetFields.some((f) => f.toLowerCase().includes("phone"))) {
       return "This phone number is already registered. Please log in to your existing account, or use a different phone number for a new account.";
     }
     return "This account information is already in use. Please log in instead of creating a duplicate household.";

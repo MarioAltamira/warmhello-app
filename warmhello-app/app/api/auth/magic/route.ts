@@ -18,6 +18,10 @@ import {
   subscriberSessionPresenceCookieName,
   subscriberSessionPresenceCookieOptions,
 } from "@/lib/subscriber-session";
+import {
+  checkRateLimit,
+  formatRetrySeconds,
+} from "@/lib/rate-limit";
 
 const bodySchema = z.object({
   token: z.string().min(1),
@@ -39,6 +43,31 @@ export async function POST(request: Request) {
   const token = parsed.data.token;
   const ipAddress = extractIpFromRequest(request);
   const userAgent = extractUserAgentFromRequest(request);
+
+  const perIpLimit = checkRateLimit(
+    `magic:ip:${ipAddress ?? "unknown"}`,
+    15 * 60_000,
+    10,
+  );
+  if (!perIpLimit.allowed) {
+    await recordSecurityAudit({
+      kind: "MAGIC_LINK_RATE_LIMITED",
+      subscriberId: null,
+      email: null,
+      ipAddress,
+      userAgent,
+      detail: { route: "magic", per: "ip" },
+    });
+    return NextResponse.json(
+      {
+        ok: false,
+        message: `Too many sign-in link attempts from this location. Please wait ${formatRetrySeconds(
+          perIpLimit.retryAfterMs,
+        )} and try again.`,
+      },
+      { status: 429 },
+    );
+  }
 
   const verify = verifyMagicLinkToken(token);
   if (!verify.ok) {
@@ -92,6 +121,31 @@ export async function POST(request: Request) {
       status: "invalid",
       message: "This log-in link is no longer valid. Please request a new one.",
     });
+  }
+
+  const perEmailLimit = checkRateLimit(
+    `magic:email:${subscriber.email}`,
+    15 * 60_000,
+    5,
+  );
+  if (!perEmailLimit.allowed) {
+    await recordSecurityAudit({
+      kind: "MAGIC_LINK_RATE_LIMITED",
+      subscriberId: subscriber.id,
+      email: subscriber.email,
+      ipAddress,
+      userAgent,
+      detail: { route: "magic", per: "email" },
+    });
+    return NextResponse.json(
+      {
+        ok: false,
+        message: `Too many sign-in link attempts for this email. Please wait ${formatRetrySeconds(
+          perEmailLimit.retryAfterMs,
+        )} and try again.`,
+      },
+      { status: 429 },
+    );
   }
 
   if ((subscriber.magicLinkNonce ?? null) !== (payload.nonce ?? null)) {

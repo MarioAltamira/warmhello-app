@@ -109,7 +109,7 @@ export default function BlogIndexPage() {
           <p className="eyebrow">Pricing</p>
           <h2>Simple, transparent pricing. Cancel anytime.</h2>
           <p className="section-copy">
-            Try Warm-Hello free for 14 days. No credit card required to start.
+            Try Warm-Hello free for 7 days. No credit card required to start.
           </p>
           <SmartBuyNowButton />
         </div>

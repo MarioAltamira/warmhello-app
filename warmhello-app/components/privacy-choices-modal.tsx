@@ -77,7 +77,8 @@ function writeStoredChoices(choices: PrivacyChoices) {
   }
   const cookieValue = encodeURIComponent(payload);
   const maxAge = 60 * 60 * 24 * 365;
-  document.cookie = `${COOKIE_NAME}=${cookieValue}; path=/; SameSite=Lax; max-age=${maxAge}`;
+  const secure = typeof window !== "undefined" && window.location.protocol === "https:";
+  document.cookie = `${COOKIE_NAME}=${cookieValue}; path=/; SameSite=Lax; max-age=${maxAge}${secure ? "; Secure" : ""}`;
 }
 
 export function PrivacyChoicesModalProvider({ children }: { children: ReactNode }) {
@@ -118,7 +119,8 @@ export function PrivacyChoicesModalProvider({ children }: { children: ReactNode 
       /* ignore */
     }
     if (typeof document !== "undefined") {
-      document.cookie = `${COOKIE_NAME}=; path=/; SameSite=Lax; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+      const secure = typeof window !== "undefined" && window.location.protocol === "https:";
+      document.cookie = `${COOKIE_NAME}=; path=/; SameSite=Lax; expires=Thu, 01 Jan 1970 00:00:00 GMT${secure ? "; Secure" : ""}`;
     }
     setSavedAt(null);
   }, []);

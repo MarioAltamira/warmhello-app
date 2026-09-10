@@ -3,16 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { verifyJobSecret } from "@/lib/qstash";
 import { aggregateMonthlyStats, getPreviousMonthlyRange } from "@/lib/reports";
 import { sendMonthlySalesReport } from "@/lib/report-emails";
-import { z } from "zod";
 
 export const dynamic = "force-dynamic";
 
-const bodySchema = z.object({
-  runImmediately: z.boolean().default(false),
-});
-
 export async function POST(request: Request) {
-  if (!verifyJobSecret(request) && process.env.NODE_ENV === "production") {
+  if (!verifyJobSecret(request)) {
     return NextResponse.json(
       { ok: false, message: "Unauthorized job request." },
       { status: 401 },
@@ -25,10 +20,6 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
-
-  const raw = await request.json().catch(() => ({}));
-  const parsed = bodySchema.safeParse(raw);
-  void parsed;
 
   try {
     const range = getPreviousMonthlyRange();

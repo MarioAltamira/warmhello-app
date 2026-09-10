@@ -116,7 +116,16 @@ export async function POST(request: Request) {
   const url = new URL(request.url);
   const providedSecret = url.searchParams.get("secret") ?? "";
   const expectedSecret = env.TELNYX_WEBHOOK_SECRET ?? "";
-  if (expectedSecret) {
+  if (!expectedSecret) {
+    // Fail closed: unauthenticated requests must never be processed, in any
+    // environment. A dev-only bypass requires an explicit opt-in env var.
+    if (!env.ALLOW_UNAUTHENTICATED_WEBHOOK_DEV) {
+      return NextResponse.json(
+        { ok: false, message: "Webhook is not configured." },
+        { status: 503 },
+      );
+    }
+  } else {
     try {
       const a = Buffer.from(providedSecret, "utf8");
       const b = Buffer.from(expectedSecret, "utf8");

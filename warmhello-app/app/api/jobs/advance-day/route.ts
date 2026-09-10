@@ -40,7 +40,7 @@ type AdvanceDayResult = {
 };
 
 export async function POST(request: Request) {
-  if (!verifyJobSecret(request) && process.env.NODE_ENV === "production") {
+  if (!verifyJobSecret(request)) {
     return NextResponse.json({ ok: false, message: "Unauthorized job request." }, { status: 401 });
   }
 
@@ -72,6 +72,29 @@ export async function POST(request: Request) {
       },
       orderBy: { createdAt: "asc" },
     });
+
+    const globalWindowStart = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+    const globalWindowEnd = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+    const allCheckInsForSeniors = await prisma.checkIn.findMany({
+      where: {
+        seniorId: { in: seniors.map((s) => s.id) },
+        scheduledFor: { gte: globalWindowStart, lte: globalWindowEnd },
+      },
+      select: { id: true, seniorId: true, scheduledFor: true, token: true },
+      orderBy: { scheduledFor: "desc" },
+    });
+    const checkInsBySeniorId = new Map<
+      string,
+      Array<{ id: string; scheduledFor: Date; token: string }>
+    >();
+    for (const row of allCheckInsForSeniors) {
+      const list = checkInsBySeniorId.get(row.seniorId);
+      if (list) {
+        if (list.length < 10) list.push(row);
+      } else {
+        checkInsBySeniorId.set(row.seniorId, [row]);
+      }
+    }
 
     const results: AdvanceDayResult[] = [];
     let totalEnqueueOk = 0;
@@ -147,10 +170,11 @@ export async function POST(request: Request) {
         day: "2-digit",
       }).format(scheduledFor);
 
-      const allSeniorsCheckInsForDay = await prisma.checkIn.findMany({
-        where: { seniorId: senior.id },
-        select: { id: true, scheduledFor: true, token: true },
-      });
+      const dayWindowStart = new Date(scheduledFor.getTime() - 2 * 24 * 60 * 60 * 1000);
+      const dayWindowEnd = new Date(scheduledFor.getTime() + 2 * 24 * 60 * 60 * 1000);
+      const allSeniorsCheckInsForDay = (checkInsBySeniorId.get(senior.id) ?? []).filter(
+        (row) => row.scheduledFor >= dayWindowStart && row.scheduledFor <= dayWindowEnd,
+      );
       let existingSameDay: { id: string; token: string; scheduledFor: Date } | null = null;
       for (const row of allSeniorsCheckInsForDay) {
         const rowKey = new Intl.DateTimeFormat("en-CA", {

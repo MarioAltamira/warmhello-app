@@ -1,16 +1,11 @@
 import { ForgotForm } from "./forgot-form";
+import { sanitizeRedirect } from "@/lib/routes";
 
 type ForgotPageProps = {
   searchParams?: Promise<{
     redirect?: string;
   }>;
 };
-
-function sanitizeRedirect(raw: string | null | undefined): string {
-  if (!raw) return "/dashboard";
-  if (raw.startsWith("/dashboard") || raw === "/onboard") return raw;
-  return "/dashboard";
-}
 
 export default async function ForgotPage({ searchParams }: ForgotPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};

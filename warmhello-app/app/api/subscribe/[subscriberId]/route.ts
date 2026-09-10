@@ -1,10 +1,22 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { createCheckoutSession } from "@/lib/stripe";
 import { getSubscriberSession } from "@/lib/subscriber-session";
 import { coerceInterval } from "@/lib/visitor-currency";
 import { TOS_VERSION_CURRENT, PRIVACY_VERSION_CURRENT } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import { pricingPlanFor } from "@/lib/pricing";
+import { checkRateLimit, formatRetrySeconds } from "@/lib/rate-limit";
+import { extractIpFromRequest } from "@/lib/security-audit";
+import { parseJsonBody } from "@/lib/zod-parse";
+
+const bodySchema = z.object({
+  tos_version: z.string().min(1).optional(),
+  privacy_version: z.string().min(1).optional(),
+  terms_checked: z.boolean().optional(),
+  caregiver_ack: z.boolean().optional(),
+  billing_interval: z.unknown().optional(),
+});
 
 function deriveClientMetadata(request: Request): { ipAddress: string | null; userAgent: string | null } {
   const headers = request.headers;
@@ -29,6 +41,24 @@ export async function POST(
     );
   }
 
+  const ip = extractIpFromRequest(request) ?? "unknown";
+  if (sessionSubscriberId) {
+    const subRl = checkRateLimit(`subscribe:checkout:sub:${sessionSubscriberId}`, 15 * 60 * 1000, 10);
+    if (!subRl.allowed) {
+      return NextResponse.json(
+        { ok: false, message: `Too many subscribe checkout attempts. Please try again in ${formatRetrySeconds(subRl.retryAfterMs)}.` },
+        { status: 429 },
+      );
+    }
+  }
+  const ipRl = checkRateLimit(`subscribe:checkout:ip:${ip}`, 15 * 60 * 1000, 20);
+  if (!ipRl.allowed) {
+    return NextResponse.json(
+      { ok: false, message: `Too many subscribe checkout attempts from this location. Please try again in ${formatRetrySeconds(ipRl.retryAfterMs)}.` },
+      { status: 429 },
+    );
+  }
+
   const { subscriberId } = await params;
 
   if (!sessionSubscriberId || sessionSubscriberId !== subscriberId) {
@@ -41,24 +71,9 @@ export async function POST(
     );
   }
 
-  let body: {
-    tos_version?: string;
-    privacy_version?: string;
-    terms_checked?: boolean;
-    caregiver_ack?: boolean;
-    billing_interval?: unknown;
-  } = {};
-  try {
-    body = (await request.json()) as {
-      tos_version?: string;
-      privacy_version?: string;
-      terms_checked?: boolean;
-      caregiver_ack?: boolean;
-      billing_interval?: unknown;
-    };
-  } catch {
-    body = {};
-  }
+  const parsedBody = await parseJsonBody(request, bodySchema);
+  if (!parsedBody.ok) return parsedBody.response;
+  const body = parsedBody.data;
 
   if (!body.terms_checked) {
     return NextResponse.json(

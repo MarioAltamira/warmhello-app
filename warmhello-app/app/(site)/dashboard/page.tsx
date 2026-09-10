@@ -258,11 +258,6 @@ export default async function DashboardPage() {
             </p>
           ) : null}
           {snapshot.latestCheckInToken ? (
-            <p>
-              <strong>Token:</strong> {snapshot.latestCheckInToken}
-            </p>
-          ) : null}
-          {snapshot.latestCheckInToken ? (
             <div className="actions" style={{ marginTop: 16 }}>
               <Link href={`/checkin/${snapshot.latestCheckInToken}?preview=1`} className="button secondary">
                 Open Check-In Link

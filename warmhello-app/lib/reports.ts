@@ -1,5 +1,6 @@
+import { dateFromTimeZoneParts } from "@/lib/dates";
 import { prisma } from "@/lib/prisma";
-import type { SubscriptionStatus } from "@prisma/client";
+import { Prisma, type SubscriptionStatus } from "@prisma/client";
 
 export type DailySummary = {
   dateLabel: string;
@@ -153,7 +154,7 @@ function monthName(year: number, month: number): string {
 function startOfDayTz(date: Date, tz = EASTERN): Date {
   const isoParts = ymdTz(date, tz).split("-");
   const [y, m, d] = isoParts.map(Number);
-  return new Date(y, m - 1, d, 0, 0, 0, 0);
+  return dateFromTimeZoneParts({ timeZone: tz, year: y!, month: m!, day: d!, hour: 0, minute: 0, second: 0 });
 }
 
 function addDays(date: Date, days: number): Date {
@@ -184,8 +185,8 @@ function getMonthRangeFor(
   lastDayIso: string;
   monthLabel: string;
 } {
-  const firstDay = new Date(year, month - 1, 1, 0, 0, 0, 0);
-  const lastDay = new Date(year, month, 1, 0, 0, 0, 0);
+  const firstDay = dateFromTimeZoneParts({ timeZone: tz, year, month, day: 1, hour: 0, minute: 0, second: 0 });
+  const lastDay = dateFromTimeZoneParts({ timeZone: tz, year, month: month + 1, day: 1, hour: 0, minute: 0, second: 0 });
   return {
     year,
     month,
@@ -293,7 +294,7 @@ function buildPaidCheckoutRowsFromSubscribers(
     email: string;
     billingCurrency: string;
     billingInterval: string;
-    subscriptionPriceAmount: number | null;
+    subscriptionPriceAmount: Prisma.Decimal | null;
   }>,
 ): {
   rows: DailySummary["paidCheckouts"]["rows"];
@@ -301,26 +302,26 @@ function buildPaidCheckoutRowsFromSubscribers(
   totalCad: number;
 } {
   const out: DailySummary["paidCheckouts"]["rows"] = [];
-  let totalUsd = 0;
-  let totalCad = 0;
+  let totalUsd = new Prisma.Decimal(0);
+  let totalCad = new Prisma.Decimal(0);
   for (const s of rows) {
-    const amount = Number(s.subscriptionPriceAmount ?? 0);
+    const amount = new Prisma.Decimal(s.subscriptionPriceAmount ?? 0);
     const isCad = String(s.billingCurrency).toUpperCase() === "CAD";
-    const rowAmountUsd = isCad ? 0 : amount;
-    const rowAmountCad = isCad ? amount : 0;
-    totalUsd += rowAmountUsd;
-    totalCad += rowAmountCad;
+    const rowAmountUsd = isCad ? new Prisma.Decimal(0) : amount;
+    const rowAmountCad = isCad ? amount : new Prisma.Decimal(0);
+    totalUsd = totalUsd.plus(rowAmountUsd);
+    totalCad = totalCad.plus(rowAmountCad);
     out.push({
       createdAt: s.subscriptionStartedAt ? s.subscriptionStartedAt.toISOString() : new Date().toISOString(),
       fullName: s.fullName,
       email: s.email,
-      amountUsd: rowAmountUsd,
-      amountCad: rowAmountCad,
+      amountUsd: rowAmountUsd.toNumber(),
+      amountCad: rowAmountCad.toNumber(),
       billingCurrency: String(s.billingCurrency ?? "USD"),
       billingInterval: String(s.billingInterval ?? "MONTHLY"),
     });
   }
-  return { rows: out, totalUsd, totalCad };
+  return { rows: out, totalUsd: totalUsd.toNumber(), totalCad: totalCad.toNumber() };
 }
 
 export async function aggregateDailyStats(range: {
@@ -401,7 +402,7 @@ export async function aggregateDailyStats(range: {
       ...s,
       billingCurrency: String(s.billingCurrency),
       billingInterval: String(s.billingInterval),
-      subscriptionPriceAmount: s.subscriptionPriceAmount ? Number(s.subscriptionPriceAmount) : null,
+      subscriptionPriceAmount: s.subscriptionPriceAmount,
     })),
   );
 
@@ -533,7 +534,7 @@ export async function aggregateMonthlyStats(range: {
       ...s,
       billingCurrency: String(s.billingCurrency),
       billingInterval: String(s.billingInterval),
-      subscriptionPriceAmount: s.subscriptionPriceAmount ? Number(s.subscriptionPriceAmount) : null,
+      subscriptionPriceAmount: s.subscriptionPriceAmount,
     })),
   );
 

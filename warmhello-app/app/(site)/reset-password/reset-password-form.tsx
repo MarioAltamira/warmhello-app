@@ -3,53 +3,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-
-const MAX_PASSWORD_BYTES = 128;
-const HAS_UPPERCASE = /[A-Z]/;
-const HAS_LOWERCASE = /[a-z]/;
-const HAS_DIGIT = /[0-9]/;
-const HAS_SYMBOL = /[^A-Za-z0-9]/;
+import { validatePasswordStrength } from "@/lib/password";
 
 type ResetPasswordFormProps = {
   token: string;
   redirect: string;
 };
-
-function validatePasswordStrengthClient(plaintext: string): {
-  valid: boolean;
-  error?: string;
-} {
-  if (!plaintext || typeof plaintext !== "string") {
-    return { valid: false, error: "Password is required." };
-  }
-  const byteCount = new TextEncoder().encode(plaintext).length;
-  if (byteCount < 8) {
-    return {
-      valid: false,
-      error: "Use a password at least 8 characters long.",
-    };
-  }
-  if (byteCount > MAX_PASSWORD_BYTES) {
-    return {
-      valid: false,
-      error: `Password must be ${MAX_PASSWORD_BYTES} characters or fewer.`,
-    };
-  }
-  const classes = [
-    HAS_UPPERCASE.test(plaintext) ? 1 : 0,
-    HAS_LOWERCASE.test(plaintext) ? 1 : 0,
-    HAS_DIGIT.test(plaintext) ? 1 : 0,
-    HAS_SYMBOL.test(plaintext) ? 1 : 0,
-  ].reduce((sum, n) => sum + n, 0);
-  if (classes < 2) {
-    return {
-      valid: false,
-      error:
-        "Use a password with at least two different character types: uppercase letters, lowercase letters, numbers, or symbols.",
-    };
-  }
-  return { valid: true };
-}
 
 export function ResetPasswordForm({
   token,
@@ -79,7 +38,7 @@ export function ResetPasswordForm({
       );
       return;
     }
-    const strength = validatePasswordStrengthClient(password);
+    const strength = validatePasswordStrength(password);
     if (!strength.valid) {
       setMessage(strength.error ?? "Invalid password.");
       return;
@@ -196,7 +155,7 @@ export function ResetPasswordForm({
                 form="resetPasswordForm"
                 autoComplete="new-password"
                 type="password"
-                placeholder="At least 8 characters with letters, numbers, or symbols"
+                placeholder="At least 12 characters, using at least 3 of: uppercase, lowercase, numbers, symbols"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 disabled={submitting || done}
@@ -210,7 +169,7 @@ export function ResetPasswordForm({
                   display: "inline-block",
                 }}
               >
-                At least 8 characters. Use at least two different types:
+                At least 12 characters. Use at least three different types:
                 uppercase, lowercase, numbers, or symbols.
               </small>
             </label>

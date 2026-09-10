@@ -1,8 +1,9 @@
 import { Client } from "@upstash/qstash";
 import { timingSafeEqual } from "crypto";
-import { env } from "@/lib/env";
+import { deriveSigningKey, env } from "@/lib/env";
 
-const JOB_SIGNING_SECRET: string = env.JOB_SIGNING_SECRET;
+const JOB_AUTH_KEY = deriveSigningKey("job-auth");
+const JOB_SIGNING_SECRET: string = JOB_AUTH_KEY.toString("base64url");
 
 const APP_URL = env.APP_URL.replace(/\/$/, "");
 
@@ -29,23 +30,28 @@ export async function enqueueJsonJobAt(
       "Content-Type": "application/json",
       "X-Job-Secret": JOB_SIGNING_SECRET,
     };
+    const doPublish = () =>
+      delayOverride
+        ? (qstash.publishJSON({
+            url,
+            body: payload,
+            headers,
+            delay: delayOverride,
+            retries: 0,
+          }) as Promise<{ messageId: string }>)
+        : (qstash.publishJSON({
+            url,
+            body: payload,
+            headers,
+            notBefore,
+            retries: 0,
+          }) as Promise<{ messageId: string }>);
     let res;
-    if (delayOverride) {
-      res = await qstash.publishJSON({
-        url,
-        body: payload,
-        headers,
-        delay: delayOverride,
-        retries: 0,
-      }) as { messageId: string };
-    } else {
-      res = await qstash.publishJSON({
-        url,
-        body: payload,
-        headers,
-        notBefore,
-        retries: 0,
-      }) as { messageId: string };
+    try {
+      res = await doPublish();
+    } catch {
+      await new Promise((r) => setTimeout(r, 300));
+      res = await doPublish();
     }
     return { ok: true, messageId: res.messageId };
   } catch (error) {
@@ -217,12 +223,11 @@ export async function deleteDuplicateSchedulesForPath(path: string): Promise<{
 }
 
 export function verifyJobSecret(request: Request): boolean {
-  if (process.env.NODE_ENV !== "production") return true;
   const supplied = request.headers.get("X-Job-Secret");
   if (!supplied) return false;
   try {
-    const a = Buffer.from(supplied, "utf8");
-    const b = Buffer.from(JOB_SIGNING_SECRET, "utf8");
+    const a = Buffer.from(supplied, "base64url");
+    const b = JOB_AUTH_KEY;
     if (a.length !== b.length) return false;
     return timingSafeEqual(a, b);
   } catch {

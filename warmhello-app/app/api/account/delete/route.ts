@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import {
   getSubscriberSession,
   subscriberSessionBootCookieName,
@@ -10,6 +11,13 @@ import {
 import { prisma } from "@/lib/prisma";
 import { getStripeClient } from "@/lib/stripe";
 import { sendAccountDeletionConfirmationEmail } from "@/lib/trial-emails";
+import { checkRateLimit, formatRetrySeconds } from "@/lib/rate-limit";
+import { extractIpFromRequest } from "@/lib/security-audit";
+import { parseJsonBody } from "@/lib/zod-parse";
+
+const bodySchema = z.object({
+  confirmEmail: z.string().email().optional(),
+});
 
 export const dynamic = "force-dynamic";
 
@@ -22,20 +30,31 @@ export async function POST(request: Request) {
     );
   }
 
+  const ip = extractIpFromRequest(request) ?? "unknown";
+  const subRl = checkRateLimit(`account:delete:sub:${subscriberId}`, 60 * 60 * 1000, 3);
+  if (!subRl.allowed) {
+    return NextResponse.json(
+      { ok: false, message: `Too many account deletion attempts. Please try again in ${formatRetrySeconds(subRl.retryAfterMs)}.` },
+      { status: 429 },
+    );
+  }
+  const ipRl = checkRateLimit(`account:delete:ip:${ip}`, 15 * 60 * 1000, 10);
+  if (!ipRl.allowed) {
+    return NextResponse.json(
+      { ok: false, message: `Too many account deletion attempts from this location. Please try again in ${formatRetrySeconds(ipRl.retryAfterMs)}.` },
+      { status: 429 },
+    );
+  }
+
   if (!prisma) {
     return NextResponse.json(
       { ok: false, message: "Database is not configured yet." },
       { status: 500 },
     );
   }
-  const db = prisma;
-
-  let body: { confirmEmail?: string } = {};
-  try {
-    body = (await request.json()) as { confirmEmail?: string };
-  } catch {
-    body = {};
-  }
+  const parsedBody = await parseJsonBody(request, bodySchema);
+  if (!parsedBody.ok) return parsedBody.response;
+  const body = parsedBody.data;
 
   try {
     const subscriber = await prisma.subscriber.findUnique({
@@ -113,10 +132,8 @@ export async function POST(request: Request) {
         where: { OR: [{ subscriberId }, { seniorId: { in: seniorIds } }] },
       });
       await tx.senior.deleteMany({ where: { subscriberId } });
-      await tx.alertJob.deleteMany({});
-      await tx.checkIn.deleteMany({ where: { subscriberId } });
 
-      const orphanShortLinks = await db.shortLink
+      const orphanShortLinks = await tx.shortLink
         .findMany({
           where: {
             checkIn: null,
@@ -175,7 +192,8 @@ export async function POST(request: Request) {
     });
 
     return response;
-  } catch {
+  } catch (error) {
+    console.error("[account/delete] Failed to delete account:", error);
     return NextResponse.json(
       { ok: false, message: "Could not delete your account right now." },
       { status: 500 },

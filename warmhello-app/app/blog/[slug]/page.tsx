@@ -275,7 +275,7 @@ export default async function BlogPostPage({
                   {plan.marketing.monthlyCard} · Cancel any time.
                 </h2>
                 <p className="section-copy">
-                  14-day free trial, no credit card required. Coverage for 1
+                  7-day free trial, no credit card required. Coverage for 1
                   senior living alone + unlimited family members on the
                   dashboard.
                 </p>

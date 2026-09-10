@@ -107,7 +107,7 @@ function getTimeZoneOffsetMs(date: Date, timeZone: string) {
   return asUtcMs - date.getTime();
 }
 
-function dateFromTimeZoneParts(input: {
+export function dateFromTimeZoneParts(input: {
   timeZone: string;
   year: number;
   month: number;

@@ -239,9 +239,12 @@ export async function createCheckoutSession(input: {
 
   const baseParamsAsStripe = baseParams as unknown as Stripe.Checkout.SessionCreateParams;
 
+  const idempotencyBucket = Math.floor(Date.now() / (5 * 60 * 1000));
+  const idempotencyKey = `checkout_${subscriber.id}_${interval}_${currency}_${idempotencyBucket}`;
+
   let session: Stripe.Checkout.Session;
   try {
-    session = await stripe.checkout.sessions.create(baseParamsAsStripe);
+    session = await stripe.checkout.sessions.create(baseParamsAsStripe, { idempotencyKey });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     const baseParamsAny = baseParams as Record<string, unknown>;
@@ -274,7 +277,9 @@ export async function createCheckoutSession(input: {
         msg,
       );
     }
-    session = await stripe.checkout.sessions.create(fallbackParams);
+    session = await stripe.checkout.sessions.create(fallbackParams, {
+      idempotencyKey: `${idempotencyKey}_fallback`,
+    });
   }
 
   try {
@@ -366,24 +371,17 @@ export function verifyStripeWebhookSignature(payload: string, signature: string 
   const stripe = getStripeClient();
   if (!stripe || !env.STRIPE_WEBHOOK_SECRET || !signature) {
     console.warn(
-      `[stripe-webhook:verify-signature] ABORT: stripeClient? ${Boolean(stripe)} ENV_STRIPE_WEBHOOK_SECRET_LEN=${env.STRIPE_WEBHOOK_SECRET?.length ?? 0} signature_header=${signature ? `present(len=${signature.length})` : "MISSING"}. Returning null -> 400 to Stripe.`,
+      `[stripe-webhook:verify-signature] ABORT: stripeClient configured=${Boolean(stripe)} webhookSecretConfigured=${Boolean(env.STRIPE_WEBHOOK_SECRET)} signatureHeaderPresent=${Boolean(signature)}. Returning null -> 400 to Stripe.`,
     );
     return null;
   }
 
   try {
     return stripe.webhooks.constructEvent(payload, signature, env.STRIPE_WEBHOOK_SECRET);
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
+  } catch {
     console.warn(
-      `[stripe-webhook:verify-signature] constructEvent FAILED. message=${msg}. signature_header_len=${signature.length}. ENV_STRIPE_WEBHOOK_SECRET_first10=${env.STRIPE_WEBHOOK_SECRET.slice(0, 10)}…`.slice(
-        0,
-        420,
-      ),
+      "[stripe-webhook:verify-signature] constructEvent FAILED. Signature verification did not pass.",
     );
-    if (error instanceof Error && typeof error.stack === "string") {
-      console.warn(`[stripe-webhook:verify-signature] stack=${error.stack.slice(0, 700)}`);
-    }
     return null;
   }
 }

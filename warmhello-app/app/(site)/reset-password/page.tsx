@@ -1,4 +1,5 @@
 import { ResetPasswordForm } from "./reset-password-form";
+import { sanitizeRedirect } from "@/lib/routes";
 
 type ResetPasswordPageProps = {
   searchParams?: Promise<{
@@ -6,12 +7,6 @@ type ResetPasswordPageProps = {
     redirect?: string;
   }>;
 };
-
-function sanitizeRedirect(raw: string | null | undefined): string {
-  if (!raw) return "/dashboard";
-  if (raw.startsWith("/dashboard") || raw === "/onboard") return raw;
-  return "/dashboard";
-}
 
 export default async function ResetPasswordPage({
   searchParams,

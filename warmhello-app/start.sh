@@ -6,8 +6,10 @@ cd "$(dirname "$0")"
 # stripping comments and blank lines.
 if [ -f .env ]; then
   set -a
-  # shellcheck disable=SC1091
-  . ./.env
+  while IFS='=' read -r key value; do
+    [[ "$key" =~ ^#.*$ || -z "$key" ]] && continue
+    export "$key=$value"
+  done < .env
   set +a
 fi
 
@@ -15,4 +17,4 @@ fi
 export NODE_ENV="${NODE_ENV:-production}"
 export PORT="${PORT:-8080}"
 
-exec node --max-old-space-size=4096 ./node_modules/next/dist/bin/next start -p "$PORT"
+exec node --max-old-space-size=2048 ./node_modules/next/dist/bin/next start -p "$PORT"

@@ -3,6 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { BillingCurrency, isBillingCurrency } from "@/lib/pricing";
 import { sendSuccessfulSubscriptionEmail, sendInvoicePaymentFailedEmail } from "@/lib/trial-emails";
 import { getStripeClient } from "@/lib/stripe";
+import { TOS_VERSION_CURRENT, PRIVACY_VERSION_CURRENT } from "@/lib/constants";
+
+function maskEmail(email: string): string {
+  const atIndex = email.indexOf("@");
+  if (atIndex <= 0) return "***";
+  return `${email.slice(0, 2)}***@${email.slice(atIndex + 1)}`;
+}
 
 type ConsoleWithWarn = Console & {
   warn?: (...args: unknown[]) => void;
@@ -86,6 +93,20 @@ export async function applyStripeEvent(event: Stripe.Event) {
     return { ok: false as const, message: "Database is not configured yet." };
   }
 
+  try {
+    await prisma.processedStripeEvent.create({
+      data: { id: event.id, type: event.type },
+    });
+  } catch (err) {
+    if ((err as { code?: string })?.code === "P2002") {
+      console.log(
+        `[stripe-webhook] DUPLICATE event.id=${event.id} type=${event.type} - skipping.`,
+      );
+      return { ok: true as const, duplicate: true };
+    }
+    throw err;
+  }
+
   console.log(
     `[stripe-webhook] event.type=${event.type} event.id=${event.id}`,
   );
@@ -155,8 +176,8 @@ export async function applyStripeEvent(event: Stripe.Event) {
 
       const now = new Date();
       const sessionMetadata = (session.metadata ?? {}) as Record<string, string | undefined>;
-      const tosVersion = sessionMetadata.tos_version ?? "v2026-08-29";
-      const privacyVersion = sessionMetadata.privacy_version ?? "v2026-08-29";
+      const tosVersion = sessionMetadata.tos_version ?? TOS_VERSION_CURRENT;
+      const privacyVersion = sessionMetadata.privacy_version ?? PRIVACY_VERSION_CURRENT;
       const caregiverAck = sessionMetadata.caregiver_ack === "1";
       const subscriptionTermsDisclosureVer =
         `CPA_DISCLOSURE_v1 | TOS_${tosVersion} | PRIVACY_${privacyVersion}`;
@@ -459,7 +480,7 @@ export async function applyStripeEvent(event: Stripe.Event) {
         }
 
         console.log(
-          `[stripe-webhook:invoice.paid] matched subscriber id=${matchedSubscriber.id} email=${matchedSubscriber.email}. Queuing success email fire-and-forget.`,
+          `[stripe-webhook:invoice.paid] matched subscriber id=${matchedSubscriber.id} email=${maskEmail(matchedSubscriber.email)}. Queuing success email fire-and-forget.`,
         );
 
         void (async () => {

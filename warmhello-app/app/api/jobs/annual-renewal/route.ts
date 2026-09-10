@@ -6,7 +6,7 @@ import { sendAnnualRenewalReminderEmail } from "@/lib/trial-emails";
 import { addDays } from "@/lib/dates";
 
 export async function POST(request: Request) {
-  if (!verifyJobSecret(request) && process.env.NODE_ENV === "production") {
+  if (!verifyJobSecret(request)) {
     return NextResponse.json({ ok: false, message: "Unauthorized job request." }, { status: 401 });
   }
 
@@ -51,50 +51,56 @@ export async function POST(request: Request) {
 
     const stripe = getStripeClient();
 
-    for (const subscriber of candidates) {
-      let annualInterval = false;
-      if (stripe && subscriber.stripeSubscriptionId) {
-        try {
-          const sub = await stripe.subscriptions.retrieve(subscriber.stripeSubscriptionId, {
-            expand: ["items.data.price"],
-          });
-          annualInterval = sub.items.data.some((item) => {
-            const p = item.price as any;
-            if (!p?.recurring) return false;
-            return (
-              p.recurring.interval === "year" ||
-              (p.recurring.interval === "month" && Number(p.recurring.interval_count) >= 12)
-            );
-          });
-        } catch {
-          annualInterval = subscriber.currentPeriodEndsAt != null;
-        }
-      } else {
-        annualInterval = subscriber.currentPeriodEndsAt != null;
-      }
+    const BATCH_SIZE = 5;
+    for (let i = 0; i < candidates.length; i += BATCH_SIZE) {
+      const batch = candidates.slice(i, i + BATCH_SIZE);
+      const batchResults = await Promise.all(
+        batch.map(async (subscriber) => {
+          let annualInterval = false;
+          if (stripe && subscriber.stripeSubscriptionId) {
+            try {
+              const sub = await stripe.subscriptions.retrieve(subscriber.stripeSubscriptionId, {
+                expand: ["items.data.price"],
+              });
+              annualInterval = sub.items.data.some((item) => {
+                const p = item.price as any;
+                if (!p?.recurring) return false;
+                return (
+                  p.recurring.interval === "year" ||
+                  (p.recurring.interval === "month" && Number(p.recurring.interval_count) >= 12)
+                );
+              });
+            } catch {
+              annualInterval = subscriber.currentPeriodEndsAt != null;
+            }
+          } else {
+            annualInterval = subscriber.currentPeriodEndsAt != null;
+          }
 
-      if (!annualInterval) {
-        results.push({
-          subscriberId: subscriber.id,
-          annual: false,
-          emailOk: false,
-          message: "Skipped — subscription interval not annual.",
-        });
-        continue;
-      }
+          if (!annualInterval) {
+            return {
+              subscriberId: subscriber.id,
+              annual: false,
+              emailOk: false,
+              message: "Skipped — subscription interval not annual.",
+            };
+          }
 
-      const sent = await sendAnnualRenewalReminderEmail(subscriber.id);
-      const emailOk = sent.ok;
-      const messageId = "id" in sent ? sent.id : null;
-      const errorMsg = !sent.ok && "message" in sent ? sent.message : undefined;
+          const sent = await sendAnnualRenewalReminderEmail(subscriber.id);
+          const emailOk = sent.ok;
+          const messageId = "id" in sent ? sent.id : null;
+          const errorMsg = !sent.ok && "message" in sent ? sent.message : undefined;
 
-      results.push({
-        subscriberId: subscriber.id,
-        annual: true,
-        emailOk,
-        messageId: messageId ?? undefined,
-        message: emailOk ? "Reminder sent." : errorMsg,
-      });
+          return {
+            subscriberId: subscriber.id,
+            annual: true,
+            emailOk,
+            messageId: messageId ?? undefined,
+            message: emailOk ? "Reminder sent." : errorMsg,
+          };
+        }),
+      );
+      results.push(...batchResults);
     }
 
     return NextResponse.json({
