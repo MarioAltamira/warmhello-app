@@ -52,6 +52,7 @@ export async function createCheckoutSession(input: {
   subscriberId: string;
   billingInterval?: BillingInterval | null;
   metadata?: Record<string, string>;
+  winbackOffer?: boolean;
 }) {
   const stripe = getStripeClient();
   if (!prisma) {
@@ -71,6 +72,7 @@ export async function createCheckoutSession(input: {
       subscriptionStatus: true,
       stripeSubscriptionId: true,
       currentPeriodEndsAt: true,
+      winbackEmailSentAt: true,
     },
   });
   if (!subscriber) {
@@ -101,7 +103,8 @@ export async function createCheckoutSession(input: {
         "Your subscription is still active through the end of the current paid period. No new payment is needed right now. You can reactivate in Settings → Subscription once your paid period ends.",
     };
   }
-  if (subscriber.subscriptionStatus === "PAST_DUE") {
+  const eligibleForWinback = Boolean(input.winbackOffer && subscriber.winbackEmailSentAt);
+  if (subscriber.subscriptionStatus === "PAST_DUE" && !eligibleForWinback) {
     return {
       ok: false as const,
       alreadySubscribed: true as const,
@@ -235,6 +238,9 @@ export async function createCheckoutSession(input: {
         quantity: 1,
       },
     ],
+    ...(input.winbackOffer && interval === "annual" && env.STRIPE_WINBACK_COUPON_ID
+      ? { discounts: [{ coupon: env.STRIPE_WINBACK_COUPON_ID }] }
+      : {}),
   };
 
   const baseParamsAsStripe = baseParams as unknown as Stripe.Checkout.SessionCreateParams;

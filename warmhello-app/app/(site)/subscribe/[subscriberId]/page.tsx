@@ -12,15 +12,18 @@ export const metadata: Metadata = {
 
 export default async function SubscribePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ subscriberId: string }>;
+  searchParams: Promise<{ offer?: string }>;
 }) {
   const { subscriberId } = await params;
+  const { offer } = await searchParams;
   const resolved = await resolveCurrencyForCurrentVisitor({ subscriberId });
   const plan = pricingPlanFor(resolved.currency);
   void plan;
 
   return (
-    <SubscribeClient subscriberId={subscriberId} currency={resolved.currency} />
+    <SubscribeClient subscriberId={subscriberId} currency={resolved.currency} offerCode={offer} />
   );
 }

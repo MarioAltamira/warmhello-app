@@ -16,6 +16,7 @@ const bodySchema = z.object({
   terms_checked: z.boolean().optional(),
   caregiver_ack: z.boolean().optional(),
   billing_interval: z.unknown().optional(),
+  offer_code: z.string().optional(),
 });
 
 function deriveClientMetadata(request: Request): { ipAddress: string | null; userAgent: string | null } {
@@ -93,6 +94,7 @@ export async function POST(
   const md = deriveClientMetadata(request);
 
   let checkoutOk = false;
+  let winbackOffer = false;
   try {
     const subscriber = await prisma?.subscriber.findUnique({
       where: { id: subscriberId },
@@ -101,6 +103,7 @@ export async function POST(
         subscriptionStatus: true,
         stripeSubscriptionId: true,
         currentPeriodEndsAt: true,
+        winbackEmailSentAt: true,
       },
     });
 
@@ -132,15 +135,18 @@ export async function POST(
       );
     }
     if (subscriber?.subscriptionStatus === "PAST_DUE") {
-      return NextResponse.json(
-        {
-          ok: false,
-          alreadySubscribed: true,
-          message:
-            "Your account currently shows an unpaid invoice. Please contact sales@warm-hello.com to resolve this before starting a new subscription so you are not double-billed.",
-        },
-        { status: 409 },
-      );
+      winbackOffer = Boolean(body.offer_code === "winback25" && subscriber?.winbackEmailSentAt);
+      if (!winbackOffer) {
+        return NextResponse.json(
+          {
+            ok: false,
+            alreadySubscribed: true,
+            message:
+              "Your account currently shows an unpaid invoice. Please contact sales@warm-hello.com to resolve this before starting a new subscription so you are not double-billed.",
+          },
+          { status: 409 },
+        );
+      }
     }
 
     const currency = subscriber?.billingCurrency ?? "USD";
@@ -192,6 +198,7 @@ export async function POST(
   const result = await createCheckoutSession({
     subscriberId,
     billingInterval,
+    winbackOffer,
     metadata: {
       tos_version: tosVersion,
       privacy_version: privacyVersion,

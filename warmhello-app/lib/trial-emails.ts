@@ -5,6 +5,7 @@ import { env } from "@/lib/env";
 import { escapeHtml } from "@/lib/html-escape";
 import { LEGAL_ENTITY_PLACEHOLDERS } from "@/lib/legal-placeholders";
 import { createUnsubscribeToken } from "@/lib/unsubscribe";
+import { createWinbackToken } from "@/lib/winback-token";
 import { pricingPlanFor, type BillingCurrency } from "@/lib/pricing";
 
 const SALES_EMAIL = "sales@warm-hello.com";
@@ -79,6 +80,11 @@ function getSettingsLink() {
 function getUnsubscribeLink(subscriberId: string) {
   const token = createUnsubscribeToken({ subscriberId });
   return `${env.APP_URL}/unsubscribe/${token}`;
+}
+
+function getWinbackLink(subscriberId: string) {
+  const token = createWinbackToken({ subscriberId });
+  return `${env.APP_URL}/api/winback/${token}`;
 }
 
 function pad2(n: number) {
@@ -656,6 +662,67 @@ The Warm-Hello Team${footer.text}`,
 <p>If you&rsquo;d like to review or cancel, visit <a href="${settingsLink}">Dashboard &rarr; Settings</a>.</p>
 <p>Cancelling is a single click from Dashboard &rarr; Settings &rarr; Subscription. No phone calls, no emails, no cancellation fees &mdash; and your coverage continues until the end of the term you&rsquo;ve already paid for.</p>
 <p>If you have any questions about your renewal, reply to this email or write to <a href="mailto:${SALES_EMAIL}">${SALES_EMAIL}</a>.</p>
+<p>Warmly,<br />The Warm-Hello Team</p>
+${footer.html}`,
+  });
+}
+
+export async function sendWinbackOfferEmail(subscriberId: string) {
+  const subscriber = await getSubscriberForEmail(subscriberId);
+  if (!subscriber) {
+    return {
+      ok: false as const,
+      message:
+        "Winback offer email skipped: subscriber not found or has unsubscribed from trial/non-essential emails.",
+      id: null,
+    };
+  }
+
+  if (subscriber.subscriptionStatus !== "PAST_DUE") {
+    return {
+      ok: false as const,
+      message: `Winback offer email skipped. Subscriber status=${subscriber.subscriptionStatus}.`,
+      id: null,
+    };
+  }
+
+  const currency = subscriber.billingCurrency as BillingCurrency;
+  const plan = pricingPlanFor(currency);
+  const discountedLabel =
+    currency === "CAD" ? "$135.00 CAD for the first year" : "$108.00 USD for the first year";
+  const winbackLink = getWinbackLink(subscriber.id);
+  const unsubscribeLink = getUnsubscribeLink(subscriber.id);
+  const footer = buildEmailFooter({
+    unsubscribeCopy: "To stop receiving these offer emails,",
+    unsubscribeLink,
+  });
+
+  return sendEmail({
+    to: subscriber.email,
+    replyTo: SALES_EMAIL,
+    subject: "We miss you — 25% off your first year back with Warm-Hello",
+    text: `Hi there,
+
+We noticed your Warm-Hello trial ended and you haven't come back to check-ins yet. We'd love to have you and your family back.
+
+For a limited time, you can subscribe to the Annual plan and get 25% off your first year: ${discountedLabel} (regularly ${plan.yearlyLabel}).
+
+Claim your discount:
+${winbackLink}
+
+This link will take you straight to checkout with the discount already applied.
+
+If you have any questions, reply to this email or write to ${SALES_EMAIL}.
+
+Warmly,
+The Warm-Hello Team${footer.text}`,
+    html: `<p><img src="${env.APP_URL}/warmhello-logo-b.png" alt="Warm-Hello" width="140" /></p>
+<p>Hi there,</p>
+<p>We noticed your Warm-Hello trial ended and you haven&rsquo;t come back to check-ins yet. We&rsquo;d love to have you and your family back.</p>
+<p>For a limited time, you can subscribe to the Annual plan and get <strong>25% off your first year</strong>: <strong>${discountedLabel}</strong> (regularly ${plan.yearlyLabel}).</p>
+<p><a href="${winbackLink}" style="display:inline-block; background:#2b6cb0; color:#ffffff; padding:12px 20px; border-radius:6px; text-decoration:none; font-weight:600;">Claim your 25% off</a></p>
+<p>This link will take you straight to checkout with the discount already applied.</p>
+<p>If you have any questions, reply to this email or write to <a href="mailto:${SALES_EMAIL}">${SALES_EMAIL}</a>.</p>
 <p>Warmly,<br />The Warm-Hello Team</p>
 ${footer.html}`,
   });

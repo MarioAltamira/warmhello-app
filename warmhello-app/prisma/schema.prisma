@@ -119,6 +119,7 @@ model Subscriber {
   cancellationDate               DateTime?
   cancellationRequestedAt        DateTime?
   unsubscribedAt                 DateTime?
+  winbackEmailSentAt             DateTime?
   tosAcceptedAt                  DateTime?
   tosVersion                     String?             @default("v2026-08-29")
   privacyPolicyVersion           String?             @default("v2026-08-29")
@@ -151,6 +152,7 @@ model Subscriber {
   @@index([subscriptionStartedAt])
   @@index([cancellationRequestedAt])
   @@index([cancellationDate])
+  @@index([winbackEmailSentAt])
 }
 
 model Senior {

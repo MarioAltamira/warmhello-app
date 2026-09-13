@@ -25,6 +25,7 @@ import {
 type SubscribeClientProps = {
   subscriberId: string;
   currency: BillingCurrency;
+  offerCode?: string;
 };
 
 const TICK = "✓";
@@ -32,13 +33,17 @@ const TICK = "✓";
 export function SubscribeClient({
   subscriberId,
   currency,
+  offerCode,
 }: SubscribeClientProps) {
   const [termsChecked, setTermsChecked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [billingInterval, setBillingInterval] = useState<BillingInterval>(DEFAULT_INTERVAL);
+  const [billingInterval, setBillingInterval] = useState<BillingInterval>(
+    offerCode === "winback25" ? "annual" : DEFAULT_INTERVAL,
+  );
 
   const plan = useMemo(() => pricingPlanFor(currency), [currency]);
+  const isWinbackOffer = offerCode === "winback25";
 
   const annualEquiv = plan.annual.equivalentMonthly;
   const monthlyAmt = plan.monthly.amount;
@@ -73,6 +78,7 @@ export function SubscribeClient({
           privacy_version: PRIVACY_VERSION_CURRENT,
           terms_checked: true,
           billing_interval: interval,
+          ...(offerCode ? { offer_code: offerCode } : {}),
         }),
       });
       clearTimeout(timeoutId);
@@ -426,6 +432,25 @@ export function SubscribeClient({
               select a plan and complete checkout below. No charge is made until
               you confirm purchase on the next screen.
             </p>
+
+            {isWinbackOffer ? (
+              <div
+                style={{
+                  margin: "4px 0 18px",
+                  padding: "14px 16px",
+                  borderRadius: 12,
+                  border: "2px solid color-mix(in oklab, #10b981 55%, var(--border))",
+                  background: "color-mix(in oklab, #10b981 10%, var(--surface))",
+                  fontSize: 14,
+                  lineHeight: 1.55,
+                }}
+              >
+                <strong>Welcome back offer: 25% off your first year</strong>
+                <div style={{ marginTop: 6, color: "var(--muted)" }}>
+                  Select the Annual plan and your 25% discount will be applied automatically at checkout.
+                </div>
+              </div>
+            ) : null}
 
             <div
               className="subscribe-renewal-mediabar"
