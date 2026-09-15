@@ -31,9 +31,15 @@ function buildCsp(nonce: string | null) {
   // across dozens of components/pages), which CSP treats the same as
   // inline `style` attributes governed by style-src. Removing it would break
   // the UI broadly.
+  // 'unsafe-eval' is allowed only in development: Next.js dev mode (webpack)
+  // wraps modules with eval() for Fast Refresh/source maps, which a strict
+  // CSP blocks and silently breaks client-side hydration (e.g. onClick-only
+  // buttons like the Return pill). Production builds don't use eval, so
+  // 'unsafe-eval' is never sent in production.
+  const devEval = process.env.NODE_ENV !== "production" ? " 'unsafe-eval'" : "";
   return (
     "default-src 'self'; " +
-    `script-src 'self'${nonceSrc} https://js.stripe.com; ` +
+    `script-src 'self'${nonceSrc}${devEval} https://js.stripe.com; ` +
     `style-src 'self' 'unsafe-inline' fonts.googleapis.com; ` +
     // Scoped from a bare "https:" to 'self' data: blob: — a codebase-wide
     // search found no external image domains actually referenced by any
