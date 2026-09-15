@@ -104,12 +104,15 @@ export function middleware(request: NextRequest) {
       ? crypto.randomUUID().replace(/-/g, "")
       : null;
 
+  const requestHeaders = new Headers(headers);
+  if (nonce) {
+    requestHeaders.set("x-nonce", nonce);
+  }
+
   const response = NextResponse.next({
-    request: nonce
-      ? {
-          headers: new Headers(headers),
-        }
-      : undefined,
+    request: {
+      headers: requestHeaders,
+    },
   });
 
   if (nextUrl.protocol === "https:" || process.env.NODE_ENV === "production") {
