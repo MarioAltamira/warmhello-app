@@ -17,6 +17,11 @@ export function FloatingReturnButton() {
   }
 
   function handleReturn() {
+    if (window.opener && !window.opener.closed) {
+      window.close();
+      return;
+    }
+
     if (window.history.length > 1) {
       router.back();
       return;
