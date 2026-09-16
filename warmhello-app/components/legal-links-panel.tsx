@@ -64,8 +64,6 @@ export function LegalLinksPanel(_props: Props) {
               <li key={section}>
                 <Link
                   href={sectionHrefs[section]!}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="footer-link-button"
                 >
                   {sectionLabels[section]}

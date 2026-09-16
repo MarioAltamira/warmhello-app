@@ -58,16 +58,41 @@ function buildCsp(nonce: string | null) {
   );
 }
 
+function hostMatches(a: string, b: string): boolean {
+  if (a === b) return true;
+  if (a === "www." + b) return true;
+  if (b === "www." + a) return true;
+  const aParts = a.split(".");
+  const bParts = b.split(".");
+  if (
+    aParts.length >= 2 &&
+    bParts.length >= 2 &&
+    aParts.slice(-2).join(".") === bParts.slice(-2).join(".")
+  ) {
+    return true;
+  }
+  return false;
+}
+
 function isTrustedOrigin(originHeader: string | null, appPublicUrl: string | undefined): boolean {
   if (!originHeader) return false;
   try {
     const u = new URL(originHeader);
     if (u.protocol !== "http:" && u.protocol !== "https:") return false;
+    if (u.hostname === "localhost" || u.hostname === "127.0.0.1") return true;
     if (!appPublicUrl) {
       return u.hostname === "localhost" || u.hostname === "127.0.0.1";
     }
     const app = new URL(appPublicUrl);
-    return u.protocol === app.protocol && u.host === app.host;
+    const protocolOk = u.protocol === app.protocol;
+    const hostOk = hostMatches(u.hostname, app.hostname);
+    const portOk =
+      u.port === app.port ||
+      (u.port === "" && ((app.protocol === "https:" && app.port === "") || app.port === "443")) ||
+      (u.port === "" && ((app.protocol === "http:" && app.port === "") || app.port === "80")) ||
+      (app.port === "" && ((u.protocol === "https:" && u.port === "") || u.port === "443")) ||
+      (app.port === "" && ((u.protocol === "http:" && u.port === "") || u.port === "80"));
+    return protocolOk && hostOk && portOk;
   } catch {
     return false;
   }
