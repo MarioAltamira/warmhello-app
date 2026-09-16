@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { Route } from "next";
 import { LEGAL_DISCLAIMER_UNIVERSAL } from "@/lib/constants";
 import { YourPrivacyChoicesButton } from "@/components/privacy-choices-modal";
 
@@ -16,13 +17,13 @@ const sectionLabels: Record<SectionKey, string> = {
   choices: "Your Privacy Choices",
 };
 
-const sectionHrefs: Partial<Record<SectionKey, string>> = {
-  terms: "/terms",
-  privacy: "/privacy",
-  about: "/about",
-  contact: "/contact",
-  howto: "/howto",
-  faq: "/faq",
+const sectionHrefs: Partial<Record<SectionKey, Route<string>>> = {
+  terms: "/terms" as Route<string>,
+  privacy: "/privacy" as Route<string>,
+  about: "/about" as Route<string>,
+  contact: "/contact" as Route<string>,
+  howto: "/howto" as Route<string>,
+  faq: "/faq" as Route<string>,
 };
 
 type Props = { initialCurrency?: unknown };
