@@ -15,7 +15,10 @@ function normalizeForDestCompare(url: string): string {
     .replace(/\/$/, "");
 }
 
-const qstash = new Client({ token: env.QSTASH_TOKEN });
+const qstash = new Client({
+  token: env.QSTASH_TOKEN,
+  baseUrl: (env.QSTASH_URL ?? "https://qstash-us-east-1.upstash.io").replace(/\/$/, ""),
+});
 
 export async function enqueueJsonJobAt(
   path: string,
