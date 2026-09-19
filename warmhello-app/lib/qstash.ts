@@ -40,14 +40,14 @@ export async function enqueueJsonJobAt(
             body: payload,
             headers,
             delay: delayOverride,
-            retries: 0,
+            retries: 2,
           }) as Promise<{ messageId: string }>)
         : (qstash.publishJSON({
             url,
             body: payload,
             headers,
             notBefore,
-            retries: 0,
+            retries: 2,
           }) as Promise<{ messageId: string }>);
     let res;
     try {

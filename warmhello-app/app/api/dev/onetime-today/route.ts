@@ -37,6 +37,8 @@ export async function POST(request: Request) {
 
     const results = [];
     let delivered = 0;
+    const dayWindowStart = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+    const dayWindowEnd = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
 
     for (const senior of seniors) {
       const name = `${senior.firstName} ${senior.lastName}`;
@@ -58,11 +60,21 @@ export async function POST(request: Request) {
         continue;
       }
 
+      const staleDeleted = await prisma.checkIn.deleteMany({
+        where: {
+          seniorId: senior.id,
+          scheduledFor: { gte: dayWindowStart, lte: dayWindowEnd },
+          status: "PENDING",
+          firstSmsSentAt: null,
+          firstJobMessageId: null,
+        },
+      });
+
       const created = await createCheckInSession({
         subscriberId: senior.subscriberId,
         seniorId: senior.id,
         scheduledFor: now,
-        skipRemindersAndEscalation: true,
+        skipRemindersAndEscalation: false,
         requireSmsSuccess: false,
       });
 
@@ -76,6 +88,7 @@ export async function POST(request: Request) {
           enqueueOk: created.enqueue.enqueueOk,
           enqueueFailed: created.enqueue.enqueueFailed,
           checkInId: created.checkIn.id,
+          staleOnetimeDeletedCount: staleDeleted.count,
         });
       } else {
         results.push({ name, phone: senior.phoneNumber, error: created.message });

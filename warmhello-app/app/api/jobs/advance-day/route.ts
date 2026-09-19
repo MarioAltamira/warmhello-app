@@ -176,6 +176,7 @@ export async function POST(request: Request) {
         (row) => row.scheduledFor >= dayWindowStart && row.scheduledFor <= dayWindowEnd,
       );
       let existingSameDay: { id: string; token: string; scheduledFor: Date } | null = null;
+      const existingSameDayRaw: (typeof allSeniorsCheckInsForDay)[number] | null = null;
       for (const row of allSeniorsCheckInsForDay) {
         const rowKey = new Intl.DateTimeFormat("en-CA", {
           timeZone,
@@ -189,17 +190,37 @@ export async function POST(request: Request) {
         }
       }
       if (existingSameDay) {
-        results.push({
-          seniorId: senior.id,
-          subscriberId: senior.subscriberId,
-          seniorName: `${senior.firstName} ${senior.lastName}`,
-          scheduledFor: existingSameDay.scheduledFor.toISOString(),
-          created: false,
-          skipped: true,
-          skipReason: "already_scheduled_same_day",
-          ok: true,
+        const existingDetail = await prisma.checkIn.findUnique({
+          where: { id: existingSameDay.id },
+          select: { firstSmsSentAt: true, firstJobMessageId: true, status: true },
         });
-        continue;
+        const hasJobOrSms =
+          existingDetail != null &&
+          (existingDetail.firstJobMessageId != null || existingDetail.firstSmsSentAt != null);
+        if (hasJobOrSms) {
+          results.push({
+            seniorId: senior.id,
+            subscriberId: senior.subscriberId,
+            seniorName: `${senior.firstName} ${senior.lastName}`,
+            scheduledFor: existingSameDay.scheduledFor.toISOString(),
+            created: false,
+            skipped: true,
+            skipReason: "already_scheduled_same_day",
+            ok: true,
+          });
+          continue;
+        } else {
+          results.push({
+            seniorId: senior.id,
+            subscriberId: senior.subscriberId,
+            seniorName: `${senior.firstName} ${senior.lastName}`,
+            scheduledFor: existingSameDay.scheduledFor.toISOString(),
+            created: false,
+            skipped: true,
+            skipReason: "stale_onetime_same_day_ignored_by_dedupe",
+            ok: true,
+          });
+        }
       }
 
       const created = await createCheckInSession({
