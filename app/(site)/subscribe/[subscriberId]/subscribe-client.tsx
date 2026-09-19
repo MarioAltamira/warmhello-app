@@ -614,7 +614,7 @@ export function SubscribeClient({
             background: "rgba(250, 204, 21, 0.10)",
           }}
         >
-          <blockquote className="notice-block" style={{ marginTop: 0, marginBottom: 0 }}>
+          <blockquote className="notice-block" style={{ marginTop: 0, marginBottom: 0, color: "rgb(239, 68, 68)", fontSize: 14 }}>
             {LEGAL_DISCLAIMER_UNIVERSAL}
           </blockquote>
           <p style={{ marginTop: 8, fontSize: 13, color: "var(--muted)" }}>

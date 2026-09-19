@@ -34,9 +34,10 @@ export default function AboutPage() {
           style={{
             borderColor: "rgba(255,214,102,0.25)",
             background: "rgba(255,214,102,0.06)",
+            color: "rgb(239, 68, 68)",
           }}
         >
-          <strong>{NON_EMERGENCY_POSITIONING_LINE}</strong>
+          <strong style={{ fontSize: 14 }}>{NON_EMERGENCY_POSITIONING_LINE}</strong>
         </blockquote>
         <p>
           Our goal is to keep families connected with reliable, secure, and

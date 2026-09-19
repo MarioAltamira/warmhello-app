@@ -78,9 +78,10 @@ export function LegalLinksPanel(_props: Props) {
         <p
           className="footer-disclaimer"
           style={{
-            fontSize: 10,
+            fontSize: 11,
             lineHeight: 1.55,
             opacity: 0.92,
+            color: "rgb(239, 68, 68)",
           }}
         >
           &copy; 2026 Warm-Hello. All rights reserved. | {LEGAL_DISCLAIMER_UNIVERSAL}{" "}

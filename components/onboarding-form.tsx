@@ -728,7 +728,7 @@ export function OnboardingForm({
             }}
           >
             <p style={{ marginTop: 0, marginBottom: 0 }}>
-              <strong>{EMERGENCY_WARNING_ONBOARDING}</strong>
+              <strong style={{ color: "rgb(239, 68, 68)", fontSize: 15 }}>{EMERGENCY_WARNING_ONBOARDING}</strong>
             </p>
           </div>
           <div
@@ -741,7 +741,7 @@ export function OnboardingForm({
             }}
           >
             <p style={{ marginTop: 0, marginBottom: 0 }}>
-              <strong>{LEGAL_DISCLAIMER_CONDENSED}</strong>
+              <strong style={{ color: "rgb(239, 68, 68)", fontSize: 14 }}>{LEGAL_DISCLAIMER_CONDENSED}</strong>
             </p>
           </div>
           </div>
@@ -769,8 +769,9 @@ export function OnboardingForm({
               borderRadius: 10,
               border: "1px solid color-mix(in oklab, rgb(250, 204, 21) 45%, var(--border))",
               background: "rgba(250, 204, 21, 0.06)",
-              fontSize: 13,
+              fontSize: 14,
               lineHeight: 1.55,
+              color: "rgb(239, 68, 68)",
             }}
           >
             <strong>{EMERGENCY_WARNING_SENIOR_SETUP}</strong>
@@ -1225,12 +1226,20 @@ export function OnboardingForm({
           ) : null}
           {firstCheckIn ? (
             <div className="result-panel-actions">
-              <Link href="/dashboard" className="button primary">
+              <a
+                href="/dashboard"
+                className="button primary"
+                data-force-navigation="reload"
+              >
                 View Family Dashboard
-              </Link>
-              <Link href={`/checkin/${firstCheckIn.token}?preview=1`} className="button secondary">
+              </a>
+              <a
+                href={`/checkin/${firstCheckIn.token}?preview=1`}
+                className="button secondary"
+                data-force-navigation="reload"
+              >
                 Preview First Check-In
-              </Link>
+              </a>
               <button
                 type="button"
                 className="button secondary"
@@ -1242,9 +1251,13 @@ export function OnboardingForm({
             </div>
           ) : (
             <div className="result-panel-actions">
-              <Link href="/dashboard" className="button primary">
+              <a
+                href="/dashboard"
+                className="button primary"
+                data-force-navigation="reload"
+              >
                 View Family Dashboard
-              </Link>
+              </a>
               <button
                 type="button"
                 className="button secondary"
@@ -1261,9 +1274,13 @@ export function OnboardingForm({
           {testMessage ? <p className="result-panel-note">{testMessage}</p> : null}
           {testCheckInToken ? (
             <div className="result-panel-actions">
-              <Link href={`/checkin/${testCheckInToken}?preview=1`} className="button secondary">
+              <a
+                href={`/checkin/${testCheckInToken}?preview=1`}
+                className="button secondary"
+                data-force-navigation="reload"
+              >
                 Open Test Check-In Link
-              </Link>
+              </a>
             </div>
           ) : null}
         </div>

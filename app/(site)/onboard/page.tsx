@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { OnboardingForm } from "@/components/onboarding-form";
 import { getHouseholdForSubscriber } from "@/lib/households";
 import { getSubscriberSessionId } from "@/lib/subscriber-session";
@@ -32,12 +31,20 @@ export default async function OnboardPage({ searchParams }: OnboardPageProps) {
         <p className="lede">{lede}</p>
         <p>{supportingCopy}</p>
         <div className="actions">
-          <Link href="/dashboard" className="button secondary">
+          <a
+            href="/dashboard"
+            className="button secondary"
+            data-force-navigation="reload"
+          >
             Back to Dashboard
-          </Link>
-          <Link href="/checkin/demo-token?preview=1" className="button secondary">
+          </a>
+          <a
+            href="/checkin/demo-token?preview=1"
+            className="button secondary"
+            data-force-navigation="reload"
+          >
             Preview Check-In
-          </Link>
+          </a>
         </div>
       </section>
 

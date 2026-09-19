@@ -105,9 +105,10 @@ export function SubscriptionManagementCard({
           borderColor: "rgba(255,214,102,0.25)",
           background: "rgba(255,214,102,0.06)",
           marginTop: 14,
+          color: "rgb(239, 68, 68)",
         }}
       >
-        <strong>{NON_EMERGENCY_POSITIONING_LINE}</strong>
+        <strong style={{ fontSize: 14 }}>{NON_EMERGENCY_POSITIONING_LINE}</strong>
       </blockquote>
 
       <div

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SmartBuyNowButton } from "@/components/smart-buy-now-button";
 import { DashboardDisclaimerBanner } from "@/components/dashboard-disclaimer-banner";
@@ -124,9 +123,13 @@ export default async function DashboardPage() {
               </ul>
               <div className="actions" style={{ marginTop: 16 }}>
                 {monthlyUrl ? (
-                  <Link href={monthlyUrl as any} className="button primary">
+                  <a
+                    href={monthlyUrl}
+                    className="button primary"
+                    data-force-navigation="reload"
+                  >
                     Choose Monthly — {plan.monthlyLabel}
-                  </Link>
+                  </a>
                 ) : (
                   <SmartBuyNowButton className="button primary" />
                 )}
@@ -156,9 +159,13 @@ export default async function DashboardPage() {
               </ul>
               <div className="actions" style={{ marginTop: 16 }}>
                 {annualUrl ? (
-                  <Link href={annualUrl as any} className="button buy-now-button">
+                  <a
+                    href={annualUrl}
+                    className="button buy-now-button"
+                    data-force-navigation="reload"
+                  >
                     Choose Annual — {plan.yearlyLabel}
-                  </Link>
+                  </a>
                 ) : (
                   <SmartBuyNowButton className="button buy-now-button" />
                 )}
@@ -259,9 +266,13 @@ export default async function DashboardPage() {
           ) : null}
           {snapshot.latestCheckInToken ? (
             <div className="actions" style={{ marginTop: 16 }}>
-              <Link href={`/checkin/${snapshot.latestCheckInToken}?preview=1`} className="button secondary">
+              <a
+                href={`/checkin/${snapshot.latestCheckInToken}?preview=1`}
+                className="button secondary"
+                data-force-navigation="reload"
+              >
                 Open Check-In Link
-              </Link>
+              </a>
             </div>
           ) : null}
         </article>
@@ -284,9 +295,13 @@ export default async function DashboardPage() {
       <section className="card" style={{ marginTop: 24 }}>
         <h2>Next actions</h2>
         <div className="actions" style={{ marginTop: 16 }}>
-          <Link href="/onboard?mode=edit" className="button primary">
+          <a
+            href="/onboard?mode=edit"
+            className="button primary"
+            data-force-navigation="reload"
+          >
             {snapshot.hasHousehold ? "Edit Household" : "Create Household"}
-          </Link>
+          </a>
           <a
             href="/dashboard/timeline"
             className="button secondary"
@@ -301,9 +316,13 @@ export default async function DashboardPage() {
           >
             Settings
           </a>
-          <Link href="/checkin/demo-token?preview=1" className="button secondary">
+          <a
+            href="/checkin/demo-token?preview=1"
+            className="button secondary"
+            data-force-navigation="reload"
+          >
             Preview Demo Check-In
-          </Link>
+          </a>
         </div>
         {(snapshot.subscriberId ?? subscriberId) ? (
           <div style={{ marginTop: 16 }}>

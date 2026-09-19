@@ -43,8 +43,8 @@ export function DashboardDisclaimerBanner({ subscriberId, initiallyDismissed }: 
       }}
     >
       <blockquote className="notice-block" style={{ marginTop: 0, marginBottom: 0 }}>
-        <strong>{EMERGENCY_WARNING_DASHBOARD}</strong>
-        <div style={{ marginTop: 6, fontSize: 13, color: "var(--muted)" }}>
+        <strong style={{ color: "rgb(239, 68, 68)", fontSize: 15 }}>{EMERGENCY_WARNING_DASHBOARD}</strong>
+        <div style={{ marginTop: 6, fontSize: 14, color: "rgb(239, 68, 68)" }}>
           {LEGAL_DISCLAIMER_CONDENSED}
         </div>
       </blockquote>

@@ -242,8 +242,9 @@ export default async function AlternativesLandingPage() {
                 borderRadius: 10,
                 border: "1px solid color-mix(in oklab, rgb(250, 204, 21) 45%, var(--border))",
                 background: "rgba(250, 204, 21, 0.06)",
-                fontSize: 13,
+                fontSize: 14,
                 lineHeight: 1.55,
+                color: "rgb(239, 68, 68)",
               }}
             >
               <strong>{NON_EMERGENCY_POSITIONING_LINE}</strong>
