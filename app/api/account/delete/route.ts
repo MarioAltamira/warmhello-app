@@ -1,5 +1,4 @@
-﻿import type { Prisma } from "@prisma/client";
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { z } from "zod";
 import {
   getSubscriberSession,
