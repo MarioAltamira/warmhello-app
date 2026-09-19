@@ -2,9 +2,9 @@ module.exports = {
   apps: [
     {
       name: "warmhello",
-      script: "./start.sh",
-      cwd: "/home/admin/warmhello/warmhello-app/warmhello-app",
-      exec_mode: "fork_mode",
+      script: "node_modules/next/dist/bin/next",
+      args: "start -p 8080",
+      cwd: "/home/admin/warmhello/warmhello-app",
       instances: 1,
       autorestart: true,
       watch: false,
