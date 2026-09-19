@@ -1,0 +1,21 @@
+.dbg/
+build.log
+documentation/
+# Node / Next.js caches
+node_modules/
+.next/
+.repair-probe/
+tsconfig.tsbuildinfo
+.dev-server*.log
+# Secrets / local env
+.env
+.env.local
+.env.*.local
+# Supabase local dev cache
+supabase/
+# macOS / Windows
+.DS_Store
+Thumbs.db
+# PM2 logs
+*.log
+!next-env.d.ts

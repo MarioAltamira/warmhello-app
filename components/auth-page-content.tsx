@@ -1,0 +1,308 @@
+"use client";
+
+import type { Route } from "next";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+
+const allowedRedirects = new Set<Route>(["/onboard", "/dashboard", "/dashboard/settings"]);
+
+function getSafeRedirect(redirect: string | null): Route {
+  if (redirect && allowedRedirects.has(redirect as Route)) {
+    return redirect as Route;
+  }
+
+  return "/dashboard";
+}
+
+function getHeading(source: string | null, redirectPath: Route) {
+  if (source === "dashboard" || redirectPath === "/dashboard") {
+    return {
+      eyebrow: "Welcome Back",
+      title: "Log in or create an account to view your family dashboard.",
+      lede: "",
+    };
+  }
+
+  if (source === "protect") {
+    return {
+      eyebrow: "Protect A Loved One",
+      title: "Create an account or log in before you start protecting your loved one.",
+      lede: "This quick step takes you into household setup so you can launch the trial and daily check-ins.",
+    };
+  }
+
+  return {
+    eyebrow: "Start Your Trial",
+    title: "Create an account or log in to begin the 7-day trial.",
+    lede: "Set up your Warm-Hello household, choose a morning check-in time, and invite the right contacts.",
+  };
+}
+
+type AuthPageContentProps = {
+  sessionExpired?: boolean;
+};
+
+export function AuthPageContent({ sessionExpired = false }: AuthPageContentProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [signupForm, setSignupForm] = useState({
+    fullName: "",
+    email: "",
+  });
+  const [loginForm, setLoginForm] = useState({
+    email: "",
+    password: "",
+  });
+  const [signupStatus, setSignupStatus] = useState("");
+  const [loginStatus, setLoginStatus] = useState("");
+  const [submitting, setSubmitting] = useState<"signup" | "login" | null>(null);
+
+  const redirectPath = getSafeRedirect(searchParams.get("redirect"));
+  const mode = searchParams.get("mode") === "login" ? "login" : "signup";
+  const heading = getHeading(searchParams.get("source"), redirectPath);
+  const showSessionExpiredMessage =
+    sessionExpired || searchParams.get("session") === "expired";
+
+  function updateSignupField(name: keyof typeof signupForm, value: string) {
+    setSignupForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  }
+
+  function updateLoginField(name: keyof typeof loginForm, value: string) {
+    setLoginForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  }
+
+  function resetSignupForm() {
+    setSignupForm({
+      fullName: "",
+      email: "",
+    });
+  }
+
+  function handleCreateAccount() {
+    const trimmedName = signupForm.fullName.trim();
+    const trimmedEmail = signupForm.email.trim();
+
+    if (!trimmedName || !trimmedEmail) {
+      setSignupStatus("Enter your name and email first so we can prefill the household setup.");
+      return;
+    }
+
+    const destination = new URLSearchParams();
+    destination.set("subscriberName", trimmedName);
+    destination.set("subscriberEmail", trimmedEmail);
+    setSignupStatus("");
+    resetSignupForm();
+    router.push(`/onboard?${destination.toString()}`);
+  }
+
+  async function handleLogin() {
+    const trimmedEmail = loginForm.email.trim();
+    const passwordRaw = String(loginForm.password ?? "");
+
+    if (!trimmedEmail) {
+      setLoginStatus("Enter the subscriber email you used when creating the household.");
+      return;
+    }
+    if (passwordRaw.length === 0) {
+      setLoginStatus("Enter your password. If you haven't set one yet, click 'Email me a secure sign-in link' below.");
+      return;
+    }
+
+    setSubmitting("login");
+    setLoginStatus("Logging in...");
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort("Request timed out."), 20000);
+
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: trimmedEmail,
+          password: passwordRaw,
+        }),
+        signal: controller.signal,
+      });
+
+      const data = (await response.json()) as {
+        ok?: boolean;
+        message?: string;
+        redirect?: string;
+      };
+
+      if (!response.ok || !data.ok) {
+        setLoginStatus(
+          data.message ?? "We could not log you in right now.",
+        );
+        return;
+      }
+
+      router.push(
+        data.redirect && allowedRedirects.has(data.redirect as Route)
+          ? (data.redirect as Route)
+          : redirectPath === "/dashboard"
+            ? "/dashboard"
+            : redirectPath,
+      );
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") {
+        setLoginStatus("Login request timed out. Please try again.");
+      } else {
+        setLoginStatus("We could not log you in right now.");
+      }
+    } finally {
+      clearTimeout(timeoutId);
+      setSubmitting(null);
+    }
+  }
+
+  function handleSignupSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    handleCreateAccount();
+  }
+
+  function handleLoginSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    handleLogin();
+  }
+
+  return (
+    <main className="shell">
+      <section className="card auth-hero">
+        <p className="eyebrow">{heading.eyebrow}</p>
+        <h1>{heading.title}</h1>
+        <p className="lede">{heading.lede}</p>
+      </section>
+
+      <section className="auth-grid">
+        <article className={`card auth-panel ${mode === "signup" ? "auth-panel-active" : ""}`}>
+          <p className="auth-kicker">New to Warm-Hello?</p>
+          <h2>Sign Up</h2>
+          <p className="auth-copy">
+            Create your account, then continue into the setup flow for your family.
+          </p>
+          <form
+            id="signupForm"
+            className="form-grid"
+            autoComplete="off"
+            data-lpignore="true"
+            data-form-type="other"
+            onSubmit={handleSignupSubmit}
+            noValidate
+          >
+            <label>
+              Full name
+              <input
+                form="signupForm"
+                type="text"
+                name="signupName"
+                autoComplete="off"
+                placeholder="Jordan Miller"
+                value={signupForm.fullName}
+                onChange={(event) => updateSignupField("fullName", event.target.value)}
+              />
+            </label>
+            <label>
+              Email address
+              <input
+                form="signupForm"
+                type="email"
+                name="signupEmail"
+                autoComplete="off"
+                placeholder="jordan@example.com"
+                value={signupForm.email}
+                onChange={(event) => updateSignupField("email", event.target.value)}
+              />
+            </label>
+          </form>
+          <button
+            type="submit"
+            form="signupForm"
+            className="button primary auth-submit"
+            onClick={handleCreateAccount}
+            disabled={submitting === "signup"}
+          >
+            Create Account
+          </button>
+          {signupStatus ? <p className="auth-copy">{signupStatus}</p> : null}
+        </article>
+
+        <article className={`card auth-panel ${mode === "login" ? "auth-panel-active" : ""}`}>
+          <p className="auth-kicker">Already have an account?</p>
+          <h2>Log In</h2>
+          <p className="auth-copy">
+            Log in to continue where you left off and manage your household.
+          </p>
+          {showSessionExpiredMessage ? (
+            <p className="auth-copy">Session expired, please log in again.</p>
+          ) : null}
+          <form
+            id="loginForm"
+            className="form-grid"
+            autoComplete="off"
+            data-lpignore="true"
+            data-form-type="other"
+            onSubmit={handleLoginSubmit}
+            noValidate
+          >
+            <label>
+              Email address
+              <input
+                form="loginForm"
+                type="email"
+                name="loginEmail"
+                autoComplete="off"
+                placeholder="jordan@example.com"
+                value={loginForm.email}
+                onChange={(event) => updateLoginField("email", event.target.value)}
+              />
+            </label>
+            <label>
+              Password
+              <input
+                form="loginForm"
+                type="password"
+                name="loginPassword"
+                autoComplete="new-password"
+                placeholder="Enter your password"
+                value={loginForm.password}
+                onChange={(event) => updateLoginField("password", event.target.value)}
+              />
+            </label>
+          </form>
+          <button
+            type="submit"
+            form="loginForm"
+            className="button secondary auth-submit"
+            onClick={handleLogin}
+            disabled={submitting === "login"}
+          >
+            Log In
+          </button>
+          {loginStatus ? <p className="auth-copy">{loginStatus}</p> : null}
+          <p
+            className="auth-copy"
+            style={{
+              marginTop: 14,
+              fontSize: 13,
+            }}
+          >
+            Can&rsquo;t log in?{" "}
+            <a href="/forgot" style={{ fontWeight: 600 }}>
+              Email me a secure sign-in link
+            </a>
+            .
+          </p>
+        </article>
+      </section>
+    </main>
+  );
+}

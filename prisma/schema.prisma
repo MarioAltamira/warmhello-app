@@ -1,0 +1,355 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+enum BillingCurrency {
+  USD
+  CAD
+}
+
+enum BillingInterval {
+  MONTHLY
+  ANNUAL
+}
+
+enum CancellationStatus {
+  NONE
+  PENDING_AT_PERIOD_END
+  CANCELED
+}
+
+enum CheckInStatus {
+  PENDING
+  CONFIRMED
+  REMINDER_SENT
+  ESCALATED
+  EXPIRED
+}
+
+enum AlertJobStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum SmsDirection {
+  OUT
+  IN
+}
+
+enum SmsStatus {
+  SENT
+  FAILED
+  RECEIVED
+}
+
+enum LegalConsentEvent {
+  TERMS_ACCEPTED
+  PRIVACY_ACKNOWLEDGED
+  SUBSCRIPTION_PURCHASE
+  OPERATIONAL_SMS_OPT_IN
+  MARKETING_SMS_OPT_IN
+  MARKETING_EMAIL_OPT_IN
+  SENIOR_SMS_AUTHORIZATION
+}
+
+enum SecurityAuditKind {
+  MAGIC_LINK_REQUESTED
+  MAGIC_LINK_SENT
+  MAGIC_LINK_COMPLETED
+  MAGIC_LINK_FAILED_NO_SUBSCRIBER
+  MAGIC_LINK_INVALID_TOKEN
+  MAGIC_LINK_EXPIRED
+  MAGIC_LINK_REUSE_ATTEMPT
+  MAGIC_LINK_RATE_LIMITED
+  SESSION_LOGIN_EMAIL_ONLY
+  SESSION_LOGIN_EMAIL_ONLY_BLOCKED
+  SESSION_LOGIN_RATE_LIMITED
+  SESSION_LOGIN_BLOCKED_UNSUBSCRIBED
+  SESSION_LOGIN_SUBSCRIBER_ID
+  SESSION_LOGIN_MAGIC_LINK
+  SESSION_LOGIN_PASSWORD
+  SESSION_LOGOUT
+  ACCOUNT_DELETION_REQUESTED
+  ACCOUNT_DELETION_COMPLETED
+  PASSWORD_RESET_REQUESTED
+  PASSWORD_RESET_COMPLETED
+  PASSWORD_RESET_FAILED
+  PASSWORD_SET_RESET
+  PASSWORD_CHANGED
+  PASSWORD_CHANGED_FAILED_WRONG_CURRENT
+  LOGIN_PASSWORD_RATE_LIMITED
+  LOGIN_PASSWORD_FAILED_UNSUBSCRIBED
+  LOGIN_PASSWORD_FAILED_NO_SUBSCRIBER
+  LOGIN_PASSWORD_FAILED_LEGACY_NO_HASH
+  LOGIN_PASSWORD_FAILED_WRONG_PASSWORD
+  SUBSCRIBER_UPDATE_FAILED_DUPLICATE
+}
+
+model Subscriber {
+  id                             String              @id @default(cuid())
+  email                          String              @unique
+  fullName                       String
+  phoneNumber                    String
+  stripeCustomerId               String?             @unique
+  stripeSubscriptionId           String?             @unique
+  subscriptionStatus             SubscriptionStatus  @default(TRIAL)
+  billingCurrency                BillingCurrency     @default(USD)
+  billingInterval                BillingInterval     @default(MONTHLY)
+  subscriptionPriceAmount        Decimal?            @db.Decimal(10, 2)
+  currentPeriodEndsAt            DateTime?
+  nextRenewalDate                DateTime?
+  trialStartedAt                 DateTime?
+  trialEndedAt                   DateTime?
+  subscriptionStartedAt          DateTime?
+  cancellationStatus             CancellationStatus  @default(NONE)
+  cancellationDate               DateTime?
+  cancellationRequestedAt        DateTime?
+  unsubscribedAt                 DateTime?
+  winbackEmailSentAt             DateTime?
+  tosAcceptedAt                  DateTime?
+  tosVersion                     String?             @default("v2026-08-29")
+  privacyPolicyVersion           String?             @default("v2026-08-29")
+  privacyAcknowledgedAt          DateTime?
+  caregiverSeniorConsentAckAt    DateTime?
+  marketingEmailConsent          Boolean             @default(false)
+  marketingEmailConsentAt        DateTime?
+  marketingSmsConsent            Boolean             @default(false)
+  marketingSmsConsentAt          DateTime?
+  operationalSmsConsentGrantedAt DateTime?
+  subscriptionTermsDisclosureVer String?
+  dashboardDisclaimerDismissedAt DateTime?
+  passwordHash                   String?             @map("password_hash") @db.VarChar(255)
+  magicLinkNonce                 String?             @unique
+  magicLinkNonceRotatedAt        DateTime?
+  created                        DateTime            @default(now()) @map("Created")
+  createdAt                      DateTime            @default(now())
+  updatedAt                      DateTime            @updatedAt
+  seniors                        Senior[]
+  contacts                       Contact[]
+  checkIns                       CheckIn[]
+  smsLogs                        SmsLog[]
+  consentAudits                  LegalConsentAudit[]
+  securityAudits                 SecurityAudit[]
+
+  @@index([subscriptionStatus])
+  @@index([currentPeriodEndsAt])
+  @@index([createdAt])
+  @@index([trialEndedAt])
+  @@index([subscriptionStartedAt])
+  @@index([cancellationRequestedAt])
+  @@index([cancellationDate])
+  @@index([winbackEmailSentAt])
+}
+
+model Senior {
+  id                      String     @id @default(cuid())
+  subscriberId            String
+  firstName               String
+  lastName                String
+  phoneNumber             String     @unique
+  timezone                String     @default("America/New_York")
+  checkInHour             Int        @default(9)
+  checkInMinute           Int        @default(0)
+  secondAttemptHours      Int        @default(1)
+  active                  Boolean    @default(true)
+  caregiverConsentAckAt   DateTime?
+  operationalSmsConsent   Boolean    @default(false)
+  operationalSmsConsentAt DateTime?
+  selfSmsConsent          Boolean    @default(false)
+  selfSmsConsentAt        DateTime?
+  smsOptedOut             Boolean    @default(false)
+  smsOptedOutAt           DateTime?
+  createdAt               DateTime   @default(now())
+  updatedAt               DateTime   @updatedAt
+  subscriber              Subscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  contacts                Contact[]
+  checkIns                CheckIn[]
+  smsLogs                 SmsLog[]
+
+  @@index([subscriberId])
+  @@index([active])
+}
+
+model Contact {
+  id           String     @id @default(cuid())
+  subscriberId String
+  seniorId     String
+  fullName     String
+  relationship String
+  phoneNumber  String
+  email        String?
+  priority     Int        @default(1)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  subscriber   Subscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  senior       Senior     @relation(fields: [seniorId], references: [id], onDelete: Cascade)
+
+  @@index([subscriberId])
+  @@index([seniorId])
+}
+
+model CheckIn {
+  id                        String        @id @default(cuid())
+  subscriberId              String
+  seniorId                  String
+  token                     String        @unique
+  status                    CheckInStatus @default(PENDING)
+  scheduledFor              DateTime
+  reminderAt                DateTime
+  escalationAt              DateTime
+  confirmedAt               DateTime?
+  firstSmsSentAt            DateTime?
+  secondSmsSentAt           DateTime?
+  firstAlertUnresponsiveAt  DateTime?
+  secondAlertUnresponsiveAt DateTime?
+  primaryContactSmsSentAt   DateTime?
+  firstJobMessageId         String?
+  reminderJobMessageId      String?
+  escalationJobMessageId    String?
+  createdAt                 DateTime      @default(now())
+  updatedAt                 DateTime      @updatedAt
+  subscriber                Subscriber    @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  senior                    Senior        @relation(fields: [seniorId], references: [id], onDelete: Cascade)
+  alertJobs                 AlertJob[]
+  smsLogs                   SmsLog[]
+  shortLink                 ShortLink?
+
+  @@index([subscriberId])
+  @@index([seniorId, scheduledFor])
+}
+
+model AlertJob {
+  id                String         @id @default(cuid())
+  checkInId         String
+  kind              String
+  status            AlertJobStatus @default(PENDING)
+  providerMessageId String?
+  payload           Json
+  runAt             DateTime
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  checkIn           CheckIn        @relation(fields: [checkInId], references: [id], onDelete: Cascade)
+
+  @@index([checkInId])
+}
+
+model ProcessedStripeEvent {
+  id          String   @id
+  type        String
+  processedAt DateTime @default(now())
+}
+
+model SmsLog {
+  id                String       @id @default(cuid())
+  direction         SmsDirection
+  status            SmsStatus
+  provider          String       @default("telnyx")
+  providerMessageId String?
+  kind              String?
+  fromNumber        String
+  toNumber          String
+  body              String
+  subscriberId      String?
+  seniorId          String?
+  checkInId         String?
+  createdAt         DateTime     @default(now())
+
+  subscriber Subscriber? @relation(fields: [subscriberId], references: [id], onDelete: SetNull)
+  senior     Senior?     @relation(fields: [seniorId], references: [id], onDelete: SetNull)
+  checkIn    CheckIn?    @relation(fields: [checkInId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([subscriberId, createdAt])
+  @@index([seniorId, createdAt])
+  @@index([checkInId, createdAt])
+}
+
+model SmsConsentTombstone {
+  id            String     @id @default(cuid())
+  phoneE164     String     @unique
+  optInAt       DateTime?
+  optOutAt      DateTime?
+  reOptInAt     DateTime[]
+  reason        String?
+  retainedUntil DateTime
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([phoneE164])
+  @@index([retainedUntil])
+}
+
+model LegalConsentAudit {
+  id                   String            @id @default(cuid())
+  subscriberId         String?
+  subscriber           Subscriber?       @relation(fields: [subscriberId], references: [id], onDelete: SetNull)
+  event                LegalConsentEvent
+  ipAddress            String?
+  userAgent            String?
+  termsVersion         String?
+  privacyVersion       String?
+  subscriptionPlan     BillingCurrency?
+  billingInterval      String?
+  priceAmount          Decimal?          @db.Decimal(10, 2)
+  currency             BillingCurrency?
+  stripeSessionId      String?
+  stripeSubscriptionId String?
+  seniorPhoneNumber    String?
+  phoneE164            String?
+  metadata             Json?
+  createdAt            DateTime          @default(now())
+
+  @@index([subscriberId, createdAt])
+  @@index([event, createdAt])
+  @@index([createdAt])
+}
+
+model ShortLink {
+  id         String   @id @default(cuid())
+  code       String   @unique
+  targetPath String
+  kind       String?
+  checkInId  String?  @unique
+  createdAt  DateTime @default(now())
+
+  checkIn CheckIn? @relation(fields: [checkInId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([checkInId])
+}
+
+model SecurityAudit {
+  id             String            @id @default(cuid())
+  subscriberId   String?
+  subscriber     Subscriber?       @relation(fields: [subscriberId], references: [id], onDelete: SetNull)
+  kind           SecurityAuditKind
+  email          String?
+  ipAddress      String?
+  userAgent      String?
+  tokenJti       String?
+  tokenExpiresAt DateTime?
+  magicLinkNonce String?
+  redirectTarget String?
+  detail         Json?
+  createdAt      DateTime          @default(now())
+
+  @@index([subscriberId, createdAt])
+  @@index([kind, createdAt])
+  @@index([email, createdAt])
+  @@index([createdAt])
+  @@index([tokenJti])
+}

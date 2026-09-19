@@ -1,0 +1,38 @@
+{
+  "name": "warmhello-app",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.17.1",
+  "scripts": {
+    "dev": "next dev --webpack -p 8080",
+    "build": "next build",
+    "build:deploy": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\" && prisma generate && next build",
+    "start": "next start -p 8080",
+    "lint": "eslint .",
+    "db:seed": "tsx prisma/seed.ts",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:push": "prisma db push"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.9.0",
+    "@upstash/qstash": "^2.11.3",
+    "bcryptjs": "^3.0.3",
+    "next": "16.2.7",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "stripe": "^18.3.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.7",
+    "prisma": "^6.9.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5"
+  }
+}

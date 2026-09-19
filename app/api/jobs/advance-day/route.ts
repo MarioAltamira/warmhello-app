@@ -1,0 +1,280 @@
+import { NextResponse } from "next/server";
+import { addDays } from "@/lib/dates";
+import {
+  createCheckInSession,
+  type createCheckInSession as _createCheckInSessionType,
+} from "@/lib/checkins";
+import { prisma } from "@/lib/prisma";
+import { shouldSendCheckInMessaging } from "@/lib/subscriber-lifecycle";
+import { getNextOccurrenceAtHourInTimeZone } from "@/lib/dates";
+import { normalizeTimeZone } from "@/lib/timezones";
+import { verifyJobSecret } from "@/lib/qstash";
+import { isSeniorActive } from "@/lib/senior-active";
+import { z } from "zod";
+
+const bodySchema = z.object({
+  runImmediately: z.boolean().default(false),
+});
+
+type AdvanceDayResultEnqueue = {
+  firstJobMessageId: string | null;
+  reminderJobMessageId: string | null;
+  escalationJobMessageId: string | null;
+  firstSmsDeliveredImmediately: boolean;
+  enqueueErrors: string[];
+  enqueueOk: number;
+  enqueueFailed: number;
+};
+
+type AdvanceDayResult = {
+  seniorId: string;
+  subscriberId: string;
+  seniorName: string;
+  scheduledFor: string | null;
+  created: boolean;
+  skipped: boolean;
+  skipReason?: string;
+  ok: boolean;
+  message?: string;
+  enqueue?: AdvanceDayResultEnqueue;
+};
+
+export async function POST(request: Request) {
+  if (!verifyJobSecret(request)) {
+    return NextResponse.json({ ok: false, message: "Unauthorized job request." }, { status: 401 });
+  }
+
+  if (!prisma) {
+    return NextResponse.json(
+      { ok: false, message: "Database is not configured yet." },
+      { status: 500 },
+    );
+  }
+
+  const raw = await request.json().catch(() => ({}));
+  const parsed = bodySchema.safeParse(raw);
+  const runImmediately = parsed.success ? parsed.data.runImmediately : false;
+
+  try {
+    const now = new Date();
+    const seniors = await prisma.senior.findMany({
+      where: { active: true },
+      include: {
+        subscriber: {
+          select: {
+            id: true,
+            subscriptionStatus: true,
+            created: true,
+            currentPeriodEndsAt: true,
+            unsubscribedAt: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "asc" },
+    });
+
+    const globalWindowStart = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+    const globalWindowEnd = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+    const allCheckInsForSeniors = await prisma.checkIn.findMany({
+      where: {
+        seniorId: { in: seniors.map((s) => s.id) },
+        scheduledFor: { gte: globalWindowStart, lte: globalWindowEnd },
+      },
+      select: { id: true, seniorId: true, scheduledFor: true, token: true },
+      orderBy: { scheduledFor: "desc" },
+    });
+    const checkInsBySeniorId = new Map<
+      string,
+      Array<{ id: string; scheduledFor: Date; token: string }>
+    >();
+    for (const row of allCheckInsForSeniors) {
+      const list = checkInsBySeniorId.get(row.seniorId);
+      if (list) {
+        if (list.length < 10) list.push(row);
+      } else {
+        checkInsBySeniorId.set(row.seniorId, [row]);
+      }
+    }
+
+    const results: AdvanceDayResult[] = [];
+    let totalEnqueueOk = 0;
+    let totalEnqueueFailed = 0;
+    let immediateSmsDeliveredCount = 0;
+
+    for (const senior of seniors) {
+      if (!senior.subscriber || senior.subscriber.unsubscribedAt != null) {
+        results.push({
+          seniorId: senior.id,
+          subscriberId: senior.subscriberId,
+          seniorName: `${senior.firstName} ${senior.lastName}`,
+          scheduledFor: null,
+          created: false,
+          skipped: true,
+          skipReason: senior.subscriber?.unsubscribedAt != null ? "subscriber_unsubscribed" : "subscriber_missing",
+          ok: true,
+        });
+        continue;
+      }
+
+      if (!isSeniorActive(senior)) {
+        results.push({
+          seniorId: senior.id,
+          subscriberId: senior.subscriberId,
+          seniorName: `${senior.firstName} ${senior.lastName}`,
+          scheduledFor: null,
+          created: false,
+          skipped: true,
+          skipReason: "senior_toggled_inactive",
+          ok: true,
+        });
+        continue;
+      }
+
+      const canSend = shouldSendCheckInMessaging({
+        subscriptionStatus: senior.subscriber.subscriptionStatus as
+          | "TRIAL"
+          | "ACTIVE"
+          | "PAST_DUE"
+          | "CANCELED",
+        created: senior.subscriber.created,
+        currentPeriodEndsAt: senior.subscriber.currentPeriodEndsAt,
+        now,
+      });
+      if (!canSend) {
+        results.push({
+          seniorId: senior.id,
+          subscriberId: senior.subscriberId,
+          seniorName: `${senior.firstName} ${senior.lastName}`,
+          scheduledFor: null,
+          created: false,
+          skipped: true,
+          skipReason: `subscription_ineligible_${senior.subscriber.subscriptionStatus}`,
+          ok: true,
+        });
+        continue;
+      }
+
+      const timeZone = normalizeTimeZone(senior.timezone);
+      const from = now;
+      const scheduledFor = getNextOccurrenceAtHourInTimeZone({
+        timeZone,
+        hour: senior.checkInHour,
+        minute: senior.checkInMinute,
+        from,
+      });
+
+      const ymdDateKey = new Intl.DateTimeFormat("en-CA", {
+        timeZone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(scheduledFor);
+
+      const dayWindowStart = new Date(scheduledFor.getTime() - 2 * 24 * 60 * 60 * 1000);
+      const dayWindowEnd = new Date(scheduledFor.getTime() + 2 * 24 * 60 * 60 * 1000);
+      const allSeniorsCheckInsForDay = (checkInsBySeniorId.get(senior.id) ?? []).filter(
+        (row) => row.scheduledFor >= dayWindowStart && row.scheduledFor <= dayWindowEnd,
+      );
+      let existingSameDay: { id: string; token: string; scheduledFor: Date } | null = null;
+      const existingSameDayRaw: (typeof allSeniorsCheckInsForDay)[number] | null = null;
+      for (const row of allSeniorsCheckInsForDay) {
+        const rowKey = new Intl.DateTimeFormat("en-CA", {
+          timeZone,
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).format(row.scheduledFor);
+        if (rowKey === ymdDateKey) {
+          existingSameDay = row;
+          break;
+        }
+      }
+      if (existingSameDay) {
+        const existingDetail = await prisma.checkIn.findUnique({
+          where: { id: existingSameDay.id },
+          select: { firstSmsSentAt: true, firstJobMessageId: true, status: true },
+        });
+        const hasJobOrSms =
+          existingDetail != null &&
+          (existingDetail.firstJobMessageId != null || existingDetail.firstSmsSentAt != null);
+        if (hasJobOrSms) {
+          results.push({
+            seniorId: senior.id,
+            subscriberId: senior.subscriberId,
+            seniorName: `${senior.firstName} ${senior.lastName}`,
+            scheduledFor: existingSameDay.scheduledFor.toISOString(),
+            created: false,
+            skipped: true,
+            skipReason: "already_scheduled_same_day",
+            ok: true,
+          });
+          continue;
+        } else {
+          results.push({
+            seniorId: senior.id,
+            subscriberId: senior.subscriberId,
+            seniorName: `${senior.firstName} ${senior.lastName}`,
+            scheduledFor: existingSameDay.scheduledFor.toISOString(),
+            created: false,
+            skipped: true,
+            skipReason: "stale_onetime_same_day_ignored_by_dedupe",
+            ok: true,
+          });
+        }
+      }
+
+      const created = await createCheckInSession({
+        subscriberId: senior.subscriberId,
+        seniorId: senior.id,
+        scheduledFor,
+        skipRemindersAndEscalation: false,
+      });
+
+      if (created.ok) {
+        totalEnqueueOk += created.enqueue.enqueueOk;
+        totalEnqueueFailed += created.enqueue.enqueueFailed;
+        if (created.enqueue.firstSmsDeliveredImmediately) immediateSmsDeliveredCount += 1;
+      }
+
+      results.push({
+        seniorId: senior.id,
+        subscriberId: senior.subscriberId,
+        seniorName: `${senior.firstName} ${senior.lastName}`,
+        scheduledFor: created.ok ? created.checkIn.scheduledFor.toISOString() : scheduledFor.toISOString(),
+        created: created.ok,
+        skipped: false,
+        ok: created.ok,
+        message: created.ok ? undefined : created.message,
+        enqueue: created.ok ? created.enqueue : undefined,
+      });
+    }
+
+    const createdCount = results.filter((r) => r.created).length;
+    const skippedCount = results.filter((r) => r.skipped).length;
+    const failedCount = results.filter((r) => !r.ok).length;
+    const rowsWithAnyEnqueueFailure = results.filter(
+      (r) => r.enqueue && r.enqueue.enqueueFailed > 0,
+    ).length;
+
+    return NextResponse.json({
+      ok: true,
+      totalSeniors: seniors.length,
+      created: createdCount,
+      skipped: skippedCount,
+      failed: failedCount,
+      enqueueSummary: {
+        totalEnqueueOk,
+        totalEnqueueFailed,
+        rowsWithAnyEnqueueFailure,
+        immediateSmsDeliveredCount,
+      },
+      results,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return NextResponse.json(
+      { ok: false, message: `Advance day job failed: ${message}` },
+      { status: 500 },
+    );
+  }
+}
