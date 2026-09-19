@@ -1,3 +1,4 @@
+﻿import type { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import {
@@ -119,7 +120,7 @@ export async function POST(request: Request) {
       // best-effort only
     }
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const seniors = await tx.senior.findMany({
         where: { subscriberId },
         select: { id: true, phoneNumber: true },
