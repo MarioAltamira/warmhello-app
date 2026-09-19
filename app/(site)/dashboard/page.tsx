@@ -287,12 +287,20 @@ export default async function DashboardPage() {
           <Link href="/onboard?mode=edit" className="button primary">
             {snapshot.hasHousehold ? "Edit Household" : "Create Household"}
           </Link>
-          <Link href="/dashboard/timeline" className="button secondary">
+          <a
+            href="/dashboard/timeline"
+            className="button secondary"
+            data-force-navigation="reload"
+          >
             View 7-Day Timeline
-          </Link>
-          <Link href="/dashboard/settings" className="button secondary">
+          </a>
+          <a
+            href="/dashboard/settings"
+            className="button secondary"
+            data-force-navigation="reload"
+          >
             Settings
-          </Link>
+          </a>
           <Link href="/checkin/demo-token?preview=1" className="button secondary">
             Preview Demo Check-In
           </Link>

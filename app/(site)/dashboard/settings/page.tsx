@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AccountPrivacyCard } from "@/components/account-privacy-card";
 import { ChangePasswordCard } from "@/components/change-password-card";
@@ -56,9 +55,13 @@ export default async function DashboardSettingsPage() {
           Manage your subscription, billing, password, and email notification preferences.
         </p>
         <div className="actions" style={{ marginTop: 16 }}>
-          <Link href="/dashboard" className="button secondary">
+          <a
+            href="/dashboard"
+            className="button secondary"
+            data-force-navigation="reload"
+          >
             Back to Dashboard
-          </Link>
+          </a>
         </div>
       </div>
 

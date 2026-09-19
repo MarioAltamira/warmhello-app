@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { TimelineClient } from "@/components/timeline-client";
 import { getSubscriberSession } from "@/lib/subscriber-session";
@@ -27,9 +26,13 @@ export default async function DashboardTimelinePage() {
           compressed view maps 1 day to 1 minute so you can preview the sequence quickly.
         </p>
         <div className="actions" style={{ marginTop: 16 }}>
-          <Link href="/dashboard" className="button secondary">
+          <a
+            href="/dashboard"
+            className="button secondary"
+            data-force-navigation="reload"
+          >
             Back to Dashboard
-          </Link>
+          </a>
         </div>
       </div>
 
