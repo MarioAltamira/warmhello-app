@@ -6,20 +6,21 @@ import { useState, useSyncExternalStore } from "react";
 
 const PRESENCE_COOKIE_NAME = "warmhello_logged_in";
 
-function hasSubscriberCookie() {
-  if (typeof document === "undefined") {
-    return false;
-  }
+type VerifiedState =
+  | { verified: false }
+  | { verified: true; authenticated: boolean };
 
-  const pairs = document.cookie.split(";").map((part) => part.trim());
-  for (const pair of pairs) {
-    const eq = pair.indexOf("=");
-    if (eq < 0) continue;
-    const name = pair.slice(0, eq).trim();
-    const value = pair.slice(eq + 1).trim();
-    if (name === PRESENCE_COOKIE_NAME && value === "1") return true;
+let _verifiedCache: VerifiedState = { verified: false };
+
+function getVerifiedState(): VerifiedState {
+  if (typeof window === "undefined") {
+    return { verified: false };
   }
-  return false;
+  return _verifiedCache;
+}
+
+function setVerifiedState(authenticated: boolean) {
+  _verifiedCache = { verified: true, authenticated };
 }
 
 function clearAllClientSideCookies() {
@@ -50,13 +51,19 @@ export function HeaderAuthActions() {
   const [busy, setBusy] = useState(false);
   usePathname();
 
-  const loggedIn = useSyncExternalStore(
+  const verifiedState = useSyncExternalStore<VerifiedState>(
     (callback) => {
       if (typeof window === "undefined") {
         return () => {};
       }
 
-      const settled = () => callback();
+      const settled = (evt?: Event) => {
+        const custom = evt as CustomEvent<{ authenticated?: boolean }> | undefined;
+        if (custom?.detail && typeof custom.detail.authenticated === "boolean") {
+          setVerifiedState(custom.detail.authenticated);
+        }
+        callback();
+      };
       window.addEventListener("focus", callback);
       window.addEventListener("popstate", callback);
       window.addEventListener("pageshow", callback);
@@ -76,9 +83,14 @@ export function HeaderAuthActions() {
         window.clearTimeout(t3);
       };
     },
-    () => hasSubscriberCookie(),
-    () => false,
+    () => getVerifiedState(),
+    () => ({ verified: false } as VerifiedState),
   );
+
+  let loggedIn = false;
+  if (verifiedState.verified) {
+    loggedIn = verifiedState.authenticated;
+  }
 
   async function handleLogout() {
     if (busy) {
@@ -87,6 +99,7 @@ export function HeaderAuthActions() {
 
     setBusy(true);
     clearAllClientSideCookies();
+    setVerifiedState(false);
     try {
       await fetch("/api/session", {
         method: "DELETE",
@@ -95,6 +108,7 @@ export function HeaderAuthActions() {
       }).catch(() => {});
     } finally {
       clearAllClientSideCookies();
+      setVerifiedState(false);
       window.location.replace("/auth");
     }
   }

@@ -11,7 +11,7 @@ function setPresenceCookie() {
     `${PRESENCE_COOKIE_NAME}=1`,
     "path=/",
     "SameSite=Lax",
-    `Max-Age=${60 * 60 * 24 * 30}`,
+    `Max-Age=${60 * 60 * 24 * 7}`,
   ];
   if (secure) attrs.push("Secure");
   document.cookie = attrs.join("; ");
@@ -21,16 +21,19 @@ function clearPresenceCookie() {
   if (typeof document === "undefined") return;
   const secure = typeof window !== "undefined" && window.location.protocol === "https:";
   const paths = ["/", "/dashboard", "/auth", "/checkout", "/subscribe"];
+  const secureFlags = secure ? [true] : [true, false];
   for (const path of paths) {
-    const attrs: string[] = [
-      `${PRESENCE_COOKIE_NAME}=`,
-      `path=${path}`,
-      "Max-Age=0",
-      "Expires=Thu, 01 Jan 1970 00:00:00 GMT",
-      "SameSite=Lax",
-    ];
-    if (secure) attrs.push("Secure");
-    document.cookie = attrs.join("; ");
+    for (const secureFlag of secureFlags) {
+      const attrs: string[] = [
+        `${PRESENCE_COOKIE_NAME}=`,
+        `path=${path}`,
+        "Max-Age=0",
+        "Expires=Thu, 01 Jan 1970 00:00:00 GMT",
+        "SameSite=Lax",
+      ];
+      if (secureFlag) attrs.push("Secure");
+      document.cookie = attrs.join("; ");
+    }
   }
 }
 
@@ -101,15 +104,40 @@ export function SessionExitLogout() {
       }
     }
 
+    const origPush = window.history.pushState;
+    const origReplace = window.history.replaceState;
+    let navTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function handleNav() {
+      if (navTimer) clearTimeout(navTimer);
+      navTimer = setTimeout(() => void syncPresenceWithServer(), 50);
+    }
+
+    window.history.pushState = function patchedPushState(...args: Parameters<typeof origPush>) {
+      const result = origPush.apply(this, args);
+      handleNav();
+      return result;
+    };
+    window.history.replaceState = function patchedReplaceState(...args: Parameters<typeof origReplace>) {
+      const result = origReplace.apply(this, args);
+      handleNav();
+      return result;
+    };
+
     window.addEventListener("pagehide", handlePageHide);
     window.addEventListener("pageshow", handleRevive);
     window.addEventListener("focus", handleRevive);
+    window.addEventListener("popstate", handleRevive);
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
+      window.history.pushState = origPush;
+      window.history.replaceState = origReplace;
+      if (navTimer) clearTimeout(navTimer);
       window.removeEventListener("pagehide", handlePageHide);
       window.removeEventListener("pageshow", handleRevive);
       window.removeEventListener("focus", handleRevive);
+      window.removeEventListener("popstate", handleRevive);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
