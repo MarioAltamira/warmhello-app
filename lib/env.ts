@@ -58,9 +58,18 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   APP_URL: z.string().url().default("http://localhost:8080"),
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:8080"),
-  DATABASE_URL: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
-  DIRECT_URL: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
-  JOB_SIGNING_SECRET: z.string().min(32),
+  DATABASE_URL: z
+    .preprocess(emptyToUndefined, z.string().min(1).optional())
+    .default("local-build-placeholder-postgresql://user:pass@localhost:5432/placeholder"),
+  DIRECT_URL: z
+    .preprocess(emptyToUndefined, z.string().min(1).optional())
+    .default("local-build-placeholder-postgresql://user:pass@localhost:5432/placeholder"),
+  JOB_SIGNING_SECRET: z
+    .string()
+    .min(32)
+    .default(
+      "local-build-placeholder-job-signing-secret-please-set-this-in-production",
+    ),
   STRIPE_SECRET_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
   STRIPE_WEBHOOK_SECRET: z.preprocess(emptyToUndefined, z.string().optional()),
   STRIPE_PRICE_ID: z.preprocess(emptyToUndefined, z.string().optional()),

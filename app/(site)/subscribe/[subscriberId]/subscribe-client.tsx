@@ -231,16 +231,7 @@ export function SubscribeClient({
                 />
               </div>
 
-              <div
-                className="subscribe-plan-compare"
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "minmax(240px, 300px) minmax(240px, 300px)",
-                  justifyContent: "center",
-                  gap: 10,
-                  marginTop: 4,
-                }}
-              >
+              <div className="subscribe-plan-compare">
                 <div
                   className={`subscribe-plan-chip ${billingInterval === "monthly" ? "is-selected" : ""}`}
                   style={{

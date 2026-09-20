@@ -128,15 +128,15 @@ export function TimelineClient({ initialTimeline }: TimelineClientProps) {
             <p>No upcoming activity found yet.</p>
           ) : (
             events.map((event) => (
-              <div key={event.id} className="status-row" style={{ gap: 16 }}>
-                <span style={{ flex: 1 }}>
+              <div key={event.id} className="status-row status-row-gap">
+                <span className="tl-channel">
                   {formatChannel(event.channel)} · {formatKind(event.kind)}
                 </span>
-                <span style={{ width: 220, textAlign: "right" }}>
+                <span className="tl-time">
                   {useSimulation ? event.simulatedLabel : event.scheduledLabel}
                 </span>
-                <span style={{ width: 110, textAlign: "right" }}>{event.status}</span>
-                <span style={{ width: 170, textAlign: "right" }}>
+                <span className="tl-status">{event.status}</span>
+                <span className="tl-action">
                   {event.actionUrl ? (
                     <a href={event.actionUrl} className="button secondary">
                       Open
@@ -157,11 +157,11 @@ export function TimelineClient({ initialTimeline }: TimelineClientProps) {
             <p>No SMS has been sent yet.</p>
           ) : (
             smsHistory.map((log) => (
-              <div key={log.id} className="status-row" style={{ gap: 16, alignItems: "flex-start" }}>
-                <span style={{ width: 180 }}>{log.createdLabel}</span>
-                <span style={{ width: 80 }}>{log.status}</span>
-                <span style={{ width: 120 }}>{log.kind ? formatKind(log.kind) : "SMS"}</span>
-                <span style={{ flex: 1, whiteSpace: "pre-wrap" }}>{log.body}</span>
+              <div key={log.id} className="status-row status-row-gap status-row-top">
+                <span className="tl-date">{log.createdLabel}</span>
+                <span className="tl-status-sm">{log.status}</span>
+                <span className="tl-kind">{log.kind ? formatKind(log.kind) : "SMS"}</span>
+                <span className="tl-body">{log.body}</span>
               </div>
             ))
           )}

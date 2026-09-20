@@ -12,9 +12,11 @@ type VerifiedState =
 
 let _verifiedCache: VerifiedState = { verified: false };
 
+const SERVER_SNAPSHOT: VerifiedState = { verified: false };
+
 function getVerifiedState(): VerifiedState {
   if (typeof window === "undefined") {
-    return { verified: false };
+    return SERVER_SNAPSHOT;
   }
   return _verifiedCache;
 }
@@ -47,7 +49,11 @@ function clearAllClientSideCookies() {
   }
 }
 
-export function HeaderAuthActions() {
+type Props = {
+  onAuthenticatedAction?: () => void;
+};
+
+export function HeaderAuthActions({ onAuthenticatedAction }: Props = {}) {
   const [busy, setBusy] = useState(false);
   usePathname();
 
@@ -84,7 +90,7 @@ export function HeaderAuthActions() {
       };
     },
     () => getVerifiedState(),
-    () => ({ verified: false } as VerifiedState),
+    () => SERVER_SNAPSHOT,
   );
 
   let loggedIn = false;
@@ -115,14 +121,22 @@ export function HeaderAuthActions() {
 
   if (!loggedIn) {
     return (
-      <Link href="/auth" className="button secondary site-header-button">
+      <Link
+        href="/auth"
+        className="button secondary site-header-button"
+        onClick={onAuthenticatedAction}
+      >
         Log In / Sign Up
       </Link>
     );
   }
 
   return (
-    <button className="button secondary site-header-button" onClick={handleLogout} disabled={busy}>
+    <button
+      className="button secondary site-header-button"
+      onClick={handleLogout}
+      disabled={busy}
+    >
       Log Out
     </button>
   );

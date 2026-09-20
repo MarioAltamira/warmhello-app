@@ -572,20 +572,8 @@ export function OnboardingForm({
         </p>
       ) : null}
       {!editMode ? (
-        <p
-          style={{
-            marginTop: 12,
-            marginBottom: 4,
-            padding: "10px 14px",
-            borderRadius: 10,
-            background: "color-mix(in srgb, var(--primary) 8%, transparent)",
-            border: "1px solid color-mix(in srgb, var(--primary) 22%, var(--border))",
-            color: "var(--muted)",
-            fontSize: 14,
-            lineHeight: 1.5,
-          }}
-        >
-          For best sign up experience use a laptop or a desktop computer.
+        <p className="onboarding-device-tip">
+          Tip: A tablet, laptop, or desktop works well for sign up. Phone is also fully supported — use two-finger pinch to zoom if needed.
         </p>
       ) : null}
       <form className="form-grid" onSubmit={handleSubmit} noValidate>
@@ -950,7 +938,7 @@ export function OnboardingForm({
                 Remove
               </button>
             </div>
-            <div className="form-grid" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
+            <div className="form-grid additional-contacts-form-grid">
               <label>
                 Second contact name
                 <input

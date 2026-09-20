@@ -202,18 +202,26 @@ function useShareModal() {
   return ctx;
 }
 
+type ShareAppButtonProps = {
+  label?: string;
+  className?: string;
+  onBeforeOpen?: () => void;
+};
+
 export function ShareAppButton({
   label = "Share",
   className,
-}: {
-  label?: string;
-  className?: string;
-}) {
+  onBeforeOpen,
+}: ShareAppButtonProps) {
   const { open } = useShareModal();
+  function handleClick() {
+    if (typeof onBeforeOpen === "function") onBeforeOpen();
+    open();
+  }
   return (
     <button
       type="button"
-      onClick={() => open()}
+      onClick={handleClick}
       className={`button secondary site-header-button share-button ${className ?? ""}`}
       aria-label="Share Warm-Hello"
     >

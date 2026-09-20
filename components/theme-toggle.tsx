@@ -25,7 +25,11 @@ function getThemeSnapshot() {
   return window.localStorage.getItem(THEME_STORAGE_KEY) ?? "light";
 }
 
-export function ThemeToggle() {
+type Props = {
+  onToggle?: () => void;
+};
+
+export function ThemeToggle({ onToggle }: Props = {}) {
   const theme = useSyncExternalStore(subscribeTheme, getThemeSnapshot, () => "light");
   const isDark = theme === "dark";
 
@@ -39,6 +43,7 @@ export function ThemeToggle() {
     document.documentElement.dataset.theme = nextIsDark ? "dark" : "light";
     window.localStorage.setItem(THEME_STORAGE_KEY, nextIsDark ? "dark" : "light");
     window.dispatchEvent(new Event("warmhello-theme"));
+    if (typeof onToggle === "function") onToggle();
   }
 
   return (
