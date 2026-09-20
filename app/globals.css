@@ -926,11 +926,12 @@ h3 {
   }
   .comparison-head,
   .comparison-body {
-    width: max-content;
+    display: inline-block;
+    vertical-align: top;
     min-width: 100%;
   }
   .comparison-row {
-    display: inline-grid;
+    display: grid;
     grid-template-columns: 200px 220px 220px 220px;
     min-width: 860px;
   }
