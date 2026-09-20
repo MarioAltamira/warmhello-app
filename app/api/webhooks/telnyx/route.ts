@@ -25,23 +25,58 @@ function extractInboundMessage(body: unknown) {
   const from =
     payload?.from?.phone_number ??
     payload?.from?.phoneNumber ??
+    payload?.from?.number ??
     payload?.from ??
     "";
   const toCandidate =
     payload?.to?.[0]?.phone_number ??
     payload?.to?.[0]?.phoneNumber ??
+    payload?.to?.[0]?.number ??
     payload?.to?.phone_number ??
     payload?.to?.phoneNumber ??
+    payload?.to?.number ??
     payload?.to ??
     "";
   const to = typeof toCandidate === "string" ? toCandidate : "";
   const providerMessageId =
-    payload?.id ?? (body as any)?.data?.id ?? (body as any)?.id ?? null;
+    payload?.id ??
+    payload?.message_id ??
+    payload?.messageId ??
+    (body as any)?.data?.id ??
+    (body as any)?.data?.payload?.id ??
+    (body as any)?.id ??
+    null;
   const kind =
     (body as any)?.data?.event_type ??
     (body as any)?.event_type ??
     payload?.event_type ??
+    payload?.type ??
     null;
+
+  const eventMeta = {
+    eventType: typeof kind === "string" ? kind : null,
+    dlrt: {
+      code: payload?.to?.[0]?.status?.code ?? payload?.status?.code ?? null,
+      description:
+        payload?.to?.[0]?.status?.description ??
+        payload?.status?.description ??
+        payload?.error?.code ??
+        payload?.failure?.code ??
+        null,
+    },
+    isStatusEvent: false as boolean,
+  };
+  const lowerKind = String(kind ?? "").toLowerCase();
+  if (
+    lowerKind.includes("message.delivered") ||
+    lowerKind.includes("delivery") ||
+    lowerKind.includes("message.finalized") ||
+    lowerKind.includes("message.failed") ||
+    lowerKind.includes("message.rejected") ||
+    lowerKind.includes("undelivered")
+  ) {
+    eventMeta.isStatusEvent = true;
+  }
 
   return {
     text: String(text ?? "").trim(),
@@ -49,6 +84,7 @@ function extractInboundMessage(body: unknown) {
     to: normalizePhone(String(to ?? "").trim()),
     providerMessageId: providerMessageId ? String(providerMessageId) : null,
     kind: kind ? String(kind) : null,
+    eventMeta,
   };
 }
 
@@ -117,8 +153,6 @@ export async function POST(request: Request) {
   const providedSecret = url.searchParams.get("secret") ?? "";
   const expectedSecret = env.TELNYX_WEBHOOK_SECRET ?? "";
   if (!expectedSecret) {
-    // Fail closed: unauthenticated requests must never be processed, in any
-    // environment. A dev-only bypass requires an explicit opt-in env var.
     if (!env.ALLOW_UNAUTHENTICATED_WEBHOOK_DEV) {
       return NextResponse.json(
         { ok: false, message: "Webhook is not configured." },
@@ -148,11 +182,30 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, message: "Invalid JSON payload." }, { status: 400 });
   }
 
-  const { text, from, to, providerMessageId, kind } = extractInboundMessage(body);
+  const { text, from, to, providerMessageId, kind, eventMeta } = extractInboundMessage(body);
+
+  let dlrtHandled = false;
+  if (eventMeta.isStatusEvent && providerMessageId) {
+    dlrtHandled = await tryHandleDlrtStatusUpdate({
+      providerMessageId,
+      eventMeta,
+      text,
+      from,
+      to,
+    });
+    if (dlrtHandled) {
+      return NextResponse.json({
+        ok: true,
+        handled: "dlrt-status-update",
+        matched: true,
+      });
+    }
+  }
+
   if (!text || !from || !to) {
     return NextResponse.json(
-      { ok: false, message: "Missing inbound message fields." },
-      { status: 400 },
+      { ok: eventMeta.isStatusEvent, message: eventMeta.isStatusEvent ? "DLRT event received but no matching SmsLog row found." : "Missing inbound message fields." },
+      { status: eventMeta.isStatusEvent ? 200 : 400 },
     );
   }
 
@@ -327,4 +380,79 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({ ok: true, handled: isStop || isHelp || isStart });
+}
+
+async function tryHandleDlrtStatusUpdate(params: {
+  providerMessageId: string;
+  eventMeta: {
+    eventType: string | null;
+    isStatusEvent: boolean;
+    dlrt: { code: unknown; description: unknown };
+  };
+  text: string;
+  from: string | null;
+  to: string | null;
+}): Promise<boolean> {
+  if (!prisma) return false;
+  try {
+    const existing = await prisma.smsLog.findFirst({
+      where: { providerMessageId: params.providerMessageId },
+      select: {
+        id: true,
+        direction: true,
+        status: true,
+        providerMessageId: true,
+        body: true,
+        fromNumber: true,
+        toNumber: true,
+        subscriberId: true,
+        seniorId: true,
+        checkInId: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    if (!existing) return false;
+
+    const code = params.eventMeta.dlrt.code == null
+      ? null
+      : String(params.eventMeta.dlrt.code);
+    const desc = params.eventMeta.dlrt.description == null
+      ? null
+      : String(params.eventMeta.dlrt.description);
+    const eventType = params.eventMeta.eventType ?? "unknown_event";
+
+    const lower = eventType.toLowerCase();
+    const isFailure =
+      lower.includes("failed") ||
+      lower.includes("undelivered") ||
+      lower.includes("rejected") ||
+      lower.includes("expired") ||
+      (code != null && /(40010|40011|40013|40016|40017|40018|40024|40025|40028|40032|40040|40041|40043|40044|40045|40047|40048|40050|40051|40052|40054|40057|40058|40087|40200|40210|40300)/.test(code));
+
+    const newStatus = isFailure ? "FAILED" : existing.status;
+    const footer =
+      "\n\n[DLRT: " +
+      [
+        `event=${eventType}`,
+        code ? `code=${code}` : null,
+        desc ? `desc=${desc}` : null,
+      ].filter(Boolean).join(" | ") +
+      ` | receivedAt=${new Date().toISOString()}]`;
+    const newBody =
+      existing.body.length + footer.length > 9000
+        ? existing.body.slice(0, 9000 - footer.length) + footer
+        : existing.body + footer;
+
+    await prisma.smsLog.update({
+      where: { id: existing.id },
+      data: {
+        status: newStatus,
+        body: newBody,
+      },
+    });
+
+    return true;
+  } catch {
+    return false;
+  }
 }
