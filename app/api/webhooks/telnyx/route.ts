@@ -73,8 +73,14 @@ function extractInboundMessage(body: unknown) {
     lowerKind.includes("message.finalized") ||
     lowerKind.includes("message.failed") ||
     lowerKind.includes("message.rejected") ||
-    lowerKind.includes("undelivered")
+    lowerKind.includes("undelivered") ||
+    lowerKind.includes("message.sent") ||
+    lowerKind.includes("message.queued") ||
+    lowerKind.includes("message.expired")
   ) {
+    eventMeta.isStatusEvent = true;
+  }
+  if (lowerKind.startsWith("message.") && lowerKind !== "message.received" && providerMessageId) {
     eventMeta.isStatusEvent = true;
   }
 
@@ -202,10 +208,19 @@ export async function POST(request: Request) {
     }
   }
 
+  if (eventMeta.isStatusEvent) {
+    return NextResponse.json({
+      ok: true,
+      handled: "dlrt-status-update",
+      matched: false,
+      message: "DLRT event received but no matching SmsLog row found.",
+    });
+  }
+
   if (!text || !from || !to) {
     return NextResponse.json(
-      { ok: eventMeta.isStatusEvent, message: eventMeta.isStatusEvent ? "DLRT event received but no matching SmsLog row found." : "Missing inbound message fields." },
-      { status: eventMeta.isStatusEvent ? 200 : 400 },
+      { ok: false, message: "Missing inbound message fields." },
+      { status: 400 },
     );
   }
 
@@ -422,12 +437,32 @@ async function tryHandleDlrtStatusUpdate(params: {
     const eventType = params.eventMeta.eventType ?? "unknown_event";
 
     const lower = eventType.toLowerCase();
-    const isFailure =
+    const descLower = desc ? desc.toLowerCase() : "";
+    const isFailureByEventType =
       lower.includes("failed") ||
       lower.includes("undelivered") ||
       lower.includes("rejected") ||
-      lower.includes("expired") ||
-      (code != null && /(40010|40011|40013|40016|40017|40018|40024|40025|40028|40032|40040|40041|40043|40044|40045|40047|40048|40050|40051|40052|40054|40057|40058|40087|40200|40210|40300)/.test(code));
+      lower.includes("expired");
+    const numericCode = code != null ? Number(code) : NaN;
+    const isKnownTelnyxErrorCode = code != null && /^(40|41|42|50|5)\d{3}$/.test(String(code));
+    const isCarrierFailureCode = !Number.isNaN(numericCode) && numericCode >= 40000;
+    const isFailureByDescription =
+      descLower.includes("failed") ||
+      descLower.includes("undelivered") ||
+      descLower.includes("rejected") ||
+      descLower.includes("blocked") ||
+      descLower.includes("filtered") ||
+      descLower.includes("spam") ||
+      descLower.includes("invalid") ||
+      descLower.includes("error") ||
+      descLower.includes("carrier violation") ||
+      descLower.includes("not delivered") ||
+      descLower.includes("expired");
+    const isFailure =
+      isFailureByEventType ||
+      isKnownTelnyxErrorCode ||
+      isCarrierFailureCode ||
+      isFailureByDescription;
 
     const newStatus = isFailure ? "FAILED" : existing.status;
     const footer =
