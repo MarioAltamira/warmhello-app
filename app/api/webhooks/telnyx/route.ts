@@ -107,10 +107,11 @@ function tombstoneRetainedUntil(anchor: Date = new Date()): Date {
 }
 
 function helpReply(): string {
-  const entity = E.LEGAL_ENTITY_NAME;
   const support = E.SUPPORT_EMAIL;
   return [
-    `${entity} Warm-Hello check-ins. Reply STOP to opt out of all messages. Msg & data rates may apply. Contact: ${support} | warm-hello.com`,
+    "Warm-Hello: Reply STOP to opt out of all messages. Msg & data rates may apply. Contact:",
+    support,
+    "| https://warm-hello.com Privacy: https://warm-hello.com/privacy",
   ].join(" ");
 }
 
@@ -320,7 +321,7 @@ export async function POST(request: Request) {
       // best-effort only
     }
     keywordReply =
-      "You have opted out of Warm-Hello SMS check-ins. No further messages will be sent to this number. Reply START to re-enable.";
+      "Warm-Hello: You have opted out of Warm-Hello SMS check-ins. No further messages will be sent. Reply START to re-enroll. Msg & data rates may apply. Privacy: https://warm-hello.com/privacy";
   } else if (isHelp) {
     keywordReply = helpReply();
   } else if (isStart) {
@@ -376,7 +377,7 @@ export async function POST(request: Request) {
       // best-effort only
     }
     keywordReply =
-      "Welcome back. You have opted in to Warm-Hello SMS check-ins. Msg & data rates may apply. Reply STOP to opt out, HELP for info.";
+      "Warm-Hello: You have opted in to check-ins. Message frequency may vary. Msg & data rates may apply. Reply STOP to opt out, HELP for help.";
   }
 
   if (keywordReply && env.TELNYX_API_KEY && env.TELNYX_FROM_NUMBER) {
