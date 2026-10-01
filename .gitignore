@@ -19,3 +19,5 @@ Thumbs.db
 # PM2 logs
 *.log
 !next-env.d.ts
+# Generated email preview HTML/TXT (regenerate on demand: pnpm tsx scripts/generate-email-preview-files.ts)
+scripts/email-previews/

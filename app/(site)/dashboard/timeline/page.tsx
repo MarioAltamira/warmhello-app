@@ -19,20 +19,24 @@ export default async function DashboardTimelinePage() {
   return (
     <main className="shell">
       <div className="card">
-        <p className="eyebrow">Subscriber Dashboard</p>
-        <h1>7-day timeline</h1>
-        <p className="lede">
-          See what the trial emails and check-in workflow will do over the next 7 days. The
-          compressed view maps 1 day to 1 minute so you can preview the sequence quickly.
-        </p>
-        <div className="actions" style={{ marginTop: 16 }}>
-          <a
-            href="/dashboard"
-            className="button secondary"
-            data-force-navigation="reload"
-          >
-            Back to Dashboard
-          </a>
+        <div style={{ display: "flex", gap: 14, justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap" }}>
+          <div style={{ flex: "1 1 auto", minWidth: 260 }}>
+            <p className="eyebrow">Subscriber Dashboard</p>
+            <h1 style={{ marginTop: 8 }}>7-day timeline</h1>
+            <p className="lede" style={{ marginTop: 8 }}>
+              See what the trial emails and check-in workflow will do over the next 7 days.
+              The compressed view maps 1 day to 1 minute so you can preview the sequence quickly.
+            </p>
+          </div>
+          <div className="actions" style={{ marginTop: 2, gap: 10 }}>
+            <a
+              href="/dashboard"
+              className="button secondary"
+              data-force-navigation="reload"
+            >
+              Back to Dashboard
+            </a>
+          </div>
         </div>
       </div>
 

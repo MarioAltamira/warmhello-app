@@ -43,7 +43,7 @@ export function TimelineClient({ initialTimeline }: TimelineClientProps) {
     }
   }
 
-  async function runAction(action: "trial-welcome" | "trial-nudge" | "trial-final" | "checkin-now") {
+  async function runAction(action: "checkin-now") {
     setBusy(action);
     setNotice(null);
     try {
@@ -62,59 +62,31 @@ export function TimelineClient({ initialTimeline }: TimelineClientProps) {
 
   return (
     <div className="card" style={{ marginTop: 24 }}>
-      <div className="actions" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-        <div className="actions" style={{ gap: 12, flexWrap: "wrap" }}>
-          <button
-            type="button"
-            className="button secondary"
-            onClick={() => setUseSimulation((value) => !value)}
-          >
-            {useSimulation ? "Showing compressed timeline" : "Showing real timeline"}
-          </button>
-          <button
-            type="button"
-            className="button secondary"
-            onClick={() => void refresh()}
-            disabled={busy !== null}
-          >
-            Refresh
-          </button>
-        </div>
-
-        <div className="actions" style={{ gap: 12, flexWrap: "wrap" }}>
-          <button
-            type="button"
-            className="button secondary"
-            onClick={() => void runAction("trial-welcome")}
-            disabled={busy !== null}
-          >
-            Send Trial Welcome Now
-          </button>
-          <button
-            type="button"
-            className="button secondary"
-            onClick={() => void runAction("trial-nudge")}
-            disabled={busy !== null}
-          >
-            Send Trial Nudge Now
-          </button>
-          <button
-            type="button"
-            className="button secondary"
-            onClick={() => void runAction("trial-final")}
-            disabled={busy !== null}
-          >
-            Send Trial Final Now
-          </button>
-          <button
-            type="button"
-            className="button primary"
-            onClick={() => void runAction("checkin-now")}
-            disabled={busy !== null}
-          >
-            Send Check-In Now
-          </button>
-        </div>
+      <div className="actions" style={{ gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+        <button
+          type="button"
+          className="button secondary"
+          onClick={() => setUseSimulation((value) => !value)}
+        >
+          {useSimulation ? "Showing compressed timeline" : "Showing real timeline"}
+        </button>
+        <button
+          type="button"
+          className="button secondary"
+          onClick={() => void refresh()}
+          disabled={busy !== null}
+        >
+          Refresh
+        </button>
+        <span style={{ flex: "1 1 auto" }} />
+        <button
+          type="button"
+          className="button primary"
+          onClick={() => void runAction("checkin-now")}
+          disabled={busy !== null}
+        >
+          Send Check-In Now
+        </button>
       </div>
 
       {notice ? <p style={{ marginTop: 12 }}>{notice}</p> : null}

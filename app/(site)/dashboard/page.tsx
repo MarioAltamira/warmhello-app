@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { SmartBuyNowButton } from "@/components/smart-buy-now-button";
 import { DashboardDisclaimerBanner } from "@/components/dashboard-disclaimer-banner";
 import { getDashboardSnapshot } from "@/lib/checkins";
@@ -199,12 +200,27 @@ export default async function DashboardPage() {
         </section>
       ) : null}
 
-      <div className="card">
-        <p className="eyebrow">Subscriber Dashboard</p>
-        <h1>{snapshot.subscriberName}</h1>
-        <p className="lede">
-          Monitor the senior, billing state, and the reminder/escalation workflow from one place.
-        </p>
+      <div className="card" style={{ marginTop: 24 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 14, flexWrap: "wrap" }}>
+          <div style={{ flex: "1 1 auto", minWidth: 280 }}>
+            <p className="eyebrow">Subscriber Dashboard</p>
+            <h1 style={{ marginTop: 8 }}>{snapshot.subscriberName}</h1>
+            <p className="lede" style={{ marginTop: 8 }}>
+              Monitor the senior, billing state, and the reminder/escalation workflow from one place.
+            </p>
+          </div>
+          <div className="actions" style={{ marginTop: 2, gap: 10 }}>
+            {annualUrl ? (
+              <a
+                href={annualUrl}
+                className="button buy-now-button"
+                data-force-navigation="reload"
+              >
+                Subscribe — {plan.yearlyLabel} / year
+              </a>
+            ) : null}
+          </div>
+        </div>
       </div>
 
       <section className="dashboard-grid" style={{ marginTop: 24 }}>
@@ -294,7 +310,7 @@ export default async function DashboardPage() {
 
       <section className="card" style={{ marginTop: 24 }}>
         <h2>Next actions</h2>
-        <div className="actions" style={{ marginTop: 16 }}>
+        <div className="actions" style={{ marginTop: 16, gap: 12, flexWrap: "wrap" }}>
           <a
             href="/onboard?mode=edit"
             className="button primary"
@@ -316,19 +332,17 @@ export default async function DashboardPage() {
           >
             Settings
           </a>
-          <a
+          <Link
             href="/checkin/demo-token?preview=1"
             className="button secondary"
             data-force-navigation="reload"
           >
             Preview Demo Check-In
-          </a>
-        </div>
-        {(snapshot.subscriberId ?? subscriberId) ? (
-          <div style={{ marginTop: 16 }}>
+          </Link>
+          {(snapshot.subscriberId ?? subscriberId) ? (
             <SmartBuyNowButton className="button buy-now-button" />
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </section>
     </main>
   );

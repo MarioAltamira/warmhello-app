@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { OnboardingForm } from "@/components/onboarding-form";
 import { getHouseholdForSubscriber } from "@/lib/households";
 import { getSubscriberSessionId } from "@/lib/subscriber-session";
@@ -38,13 +39,13 @@ export default async function OnboardPage({ searchParams }: OnboardPageProps) {
           >
             Back to Dashboard
           </a>
-          <a
+          <Link
             href="/checkin/demo-token?preview=1"
             className="button secondary"
             data-force-navigation="reload"
           >
             Preview Check-In
-          </a>
+          </Link>
         </div>
       </section>
 
