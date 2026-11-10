@@ -77,7 +77,7 @@ function buildFaq(currency: BillingCurrency): FaqEntry[] {
     },
     {
       question: `What does Warm-Hello cost after the free 7-day trial?`,
-      answer: `Billing is simple and predictable. Choose Monthly at ${plan.monthly.displayLabel} with the flexibility to cancel anytime, or lock in ~20% savings with Annual at ${plan.annual.displayLabel} — that's under $0.50 a day for a simple way to stay connected. No fees, no contracts, no hidden charges.`,
+      answer: `Billing is simple and predictable. Choose Monthly at ${plan.monthly.displayLabel} with the flexibility to cancel anytime, or lock in ~${plan.annual.savingsPercent}% savings with Annual at ${plan.annual.displayLabel} — that's under $0.50 a day for a simple way to stay connected. No fees, no contracts, no hidden charges.`,
     },
   ];
 }
@@ -464,8 +464,8 @@ export default async function HomePage() {
             </h2>
             <p className="section-copy">
               Choose Monthly Standard for short-term needs, or lock in Annual
-              savings of ~20% to keep daily check-ins running for under $0.50
-              a day.
+              savings of ~{plan.annual.savingsPercent}% to keep daily check-ins
+              running for under $0.50 a day.
             </p>
           </div>
           <LandingPricingSection initialCurrency={visitorCurrency.currency} />

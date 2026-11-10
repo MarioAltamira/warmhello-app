@@ -31,17 +31,17 @@ const SAMPLE = {
   timezone: "America/Toronto",
   billingInterval: "annual" as "annual" | "monthly",
   currency: "CAD" as "CAD" | "USD",
-  planMonthCAD: "$14.99 CAD",
-  planYearCAD: "$144.00 CAD",
-  planMonthUSD: "$12.00 USD",
-  planYearUSD: "$108.00 USD",
+  planMonthCAD: "$18.99 CAD",
+  planYearCAD: "$180.00 CAD",
+  planMonthUSD: "$14.99 USD",
+  planYearUSD: "$144.00 USD",
   nextRenewal: new Date(Date.UTC(2027, 8, 15, 0, 0, 0)),
   trialStart: new Date(Date.UTC(2026, 8, 24, 0, 0, 0)),
   trialEnd: new Date(Date.UTC(2026, 9, 1, 0, 0, 0)),
-  winbackDiscountedCAD: "$108.00 CAD",
-  winbackDiscountedUSD: "$81.00 USD",
-  invoiceAmountUSD: 108.0,
-  invoiceAmountCAD: 144.0,
+  winbackDiscountedCAD: "$135.00 CAD",
+  winbackDiscountedUSD: "$108.00 USD",
+  invoiceAmountUSD: 144.0,
+  invoiceAmountCAD: 180.0,
   ipAddress: "206.248.172.44",
   deletionEffective: new Date(Date.UTC(2026, 9, 1, 14, 22, 0)),
   optedOutAt: new Date(Date.UTC(2026, 8, 28, 9, 11, 0)),
@@ -104,9 +104,9 @@ function plan() {
     year: isCAD ? SAMPLE.planYearCAD : SAMPLE.planYearUSD,
     sym: isCAD ? "CA$" : "$",
     cur: SAMPLE.currency,
-    monthAmt: isCAD ? 14.99 : 12.0,
-    yearAmt: isCAD ? 144.0 : 108.0,
-    daily: isCAD ? "$0.39 CAD/day" : "$0.30 USD/day",
+    monthAmt: isCAD ? 18.99 : 14.99,
+    yearAmt: isCAD ? 180.0 : 144.0,
+    daily: isCAD ? "$0.49 CAD/day" : "$0.39 USD/day",
   };
 }
 
@@ -355,12 +355,12 @@ ${f.html}`,
 
 VARIANTS.push({
   id: "10", category: "💰 Billing", name: "Invoice Payment Failed",
-  subject: "Action needed: payment did not go through ($144.00 CAD)",
+  subject: "Action needed: payment did not go through ($180.00 CAD)",
   replyTo: SALES_EMAIL,
   build: () => {
     const f = buildFooter({ unsubCopy: "To stop billing notification emails,", unsubLink: SAMPLE.unsubscribeLink });
     const attempts = 2;
-    const amt = "CA$144.00 CAD";
+    const amt = "CA$180.00 CAD";
     const due = "Sep 30, 2026";
     return {
       text: `Hi there,\n\nThis is an automated message from Warm-Hello.\n\nWe were unable to process the payment of ${amt} due ${due} for your Warm-Hello subscription. This is attempt ${attempts}.\n\nHow to resolve this right now:\n  • Visit your Dashboard Billing settings to update your payment method:\n    ${SAMPLE.settingsLink}\n  • Or review the charge with your card issuer / bank to make sure there are no blocks on the card.\n\nService remains accessible for a short grace period. If payment cannot be collected, access may be restricted and your subscription eventually cancelled. You can review subscription status at any time:\n  ${SAMPLE.dashboardLink}\n\nWarm-Hello is a routine check-in and notification service only. It does not contact 911 or emergency services. Subscriptions automatically renew unless cancelled before the next renewal date. See the full Terms of Service and Privacy Policy on the website for the cancellation and refund policy that apply.\n\nWarmly,\nThe Warm-Hello Team${f.text}`,
@@ -388,7 +388,7 @@ VARIANTS.push({
   build: () => {
     const f = buildFooter({ unsubCopy: "To stop receiving these offer emails,", unsubLink: SAMPLE.unsubscribeLink });
     const p = plan();
-    const discounted = p.cur === "CAD" ? "$108.00 CAD for the first year" : "$81.00 USD for the first year";
+    const discounted = p.cur === "CAD" ? "$135.00 CAD for the first year" : "$108.00 USD for the first year";
     return {
       text: `Hi there,\n\nWe noticed your Warm-Hello trial ended and you haven't come back to check-ins yet. We'd love to have you and your family back.\n\nFor a limited time, you can subscribe to the Annual plan and get 25% off your first year: ${discounted} (regularly ${p.year}).\n\nClaim your discount:\n${SAMPLE.winbackLink}\n\nThis link will take you straight to checkout with the discount already applied.\n\nIf you have any questions, reply to this email or write to ${SALES_EMAIL}.\n\nWarmly,\nThe Warm-Hello Team${f.text}`,
       html: `<p><img src="${LOGO}" alt="Warm-Hello" width="140" /></p>
@@ -693,11 +693,11 @@ ${tbl(
 ${tbl(
   ["Paid At (ET)", "Caregiver", "Email", "Plan", "USD", "CAD"],
   [
-    ["Sep 30, 2026, 11:07 AM", "Jennifer MacLeod", "jen.macleod@icloud.com", "Annual", "$0.00", "C$144.00"],
-    ["Sep 30, 2026, 4:40 PM", "Robert Okafor", "robert.okafor@yahoo.com", "Monthly", "$12.00", "C$0.00"],
+    ["Sep 30, 2026, 11:07 AM", "Jennifer MacLeod", "jen.macleod@icloud.com", "Annual", "$0.00", "C$180.00"],
+    ["Sep 30, 2026, 4:40 PM", "Robert Okafor", "robert.okafor@yahoo.com", "Monthly", "$14.99", "C$0.00"],
   ],
 )}
-<p style="margin:0 0 8px 0; font-size:14px;"><strong>USD Total:</strong> $12.00 &nbsp; · &nbsp; <strong>CAD Total:</strong> C$144.00</p>
+<p style="margin:0 0 8px 0; font-size:14px;"><strong>USD Total:</strong> $14.99 &nbsp; · &nbsp; <strong>CAD Total:</strong> C$180.00</p>
 
 <h2 style="font-size:18px; margin:20px 0 10px; color:#0f172a;">Trials Expiring End Of Day Yesterday</h2>
 ${tbl(
@@ -734,15 +734,15 @@ ${f.html}
     const text =
       `Warm-Hello Daily Report — October 01, 2026 (Eastern)\n` +
       `Window: 2026-09-30T04:00:00.000Z → 2026-10-01T04:00:00.000Z\n\n` +
-      `KPIs\n  Total Subscribers: 142\n  New Sign-Ups: 4\n  Trials Expired Today: 3\n  Paid Checkouts: 2  (USD 12.00  CAD 144.00)\n  Check-Ins Scheduled: 89\n    Okay: 78   Call Me: 3   Escalated: 1   Expired: 5   Pending: 2\n  STOP replies: 1   HELP replies: 0\n\n` +
+      `KPIs\n  Total Subscribers: 142\n  New Sign-Ups: 4\n  Trials Expired Today: 3\n  Paid Checkouts: 2  (USD 14.99  CAD 180.00)\n  Check-Ins Scheduled: 89\n    Okay: 78   Call Me: 3   Escalated: 1   Expired: 5   Pending: 2\n  STOP replies: 1   HELP replies: 0\n\n` +
       `New Sign-Ups (4)\n` +
       `· Sarah Chen <sarah.chen.84@gmail.com> · Currency CAD · Senior Margaret Halliwell +1 416-555-0142\n` +
       `· David Kowalski <david.k.personal@outlook.com> · Currency USD · Senior Eleanor Kowalski +1 202-555-0119\n` +
       `· Anita Desai <anitar.desai@gmail.com> · Currency CAD · Senior Rajesh Desai +1 604-555-0181\n` +
       `· Marcus Reid <marcus.w.reid@proton.me> · Currency USD · Senior Gloria Reid +1 505-555-0131\n\n` +
       `Paid Checkouts (2)\n` +
-      `· Jennifer MacLeod <jen.macleod@icloud.com> · Annual · USD 0.00 CAD 144.00\n` +
-      `· Robert Okafor <robert.okafor@yahoo.com> · Monthly · USD 12.00 CAD 0.00\n\n` +
+      `· Jennifer MacLeod <jen.macleod@icloud.com> · Annual · USD 0.00 CAD 180.00\n` +
+      `· Robert Okafor <robert.okafor@yahoo.com> · Monthly · USD 14.99 CAD 0.00\n\n` +
       `Trials Expiring End Of Day (3)\n` +
       `· Lisa Tremblay <l.tremblay@videotron.ca>\n` +
       `· Tom Whitfield <tom.whitfield@hotmail.com>\n` +
@@ -766,8 +766,8 @@ VARIANTS.push({
 </p>
 
 <div style="display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 18px;">
-${kpi("Revenue USD", "$348.00", "#16a34a")}
-${kpi("Revenue CAD", "C$1,152.00", "#16a34a")}
+${kpi("Revenue USD", "$476.97", "#16a34a")}
+${kpi("Revenue CAD", "C$738.99", "#16a34a")}
 ${kpi("Paid Transactions", 11, "#22c55e")}
 ${kpi("Trials Created", 34, "#2563eb")}
 ${kpi("Trial → Paid", "7 · 21%", "#7c3aed")}
@@ -785,22 +785,22 @@ ${kpi("Active Seniors (today)", 118, "#16a34a")}
 ${tbl(
   ["Date", "Caregiver", "Email", "Plan", "USD", "CAD"],
   [
-    ["Sep 03, 2026", "Jennifer MacLeod", "jen.macleod@icloud.com", "Annual", "$0.00", "C$144.00"],
-    ["Sep 05, 2026", "Hassan El-Sayed", "hassan.elsayed@gmail.com", "Annual", "$108.00", "C$0.00"],
-    ["Sep 08, 2026", "Yuki Tanaka", "yuki.tanaka@rogers.com", "Monthly", "$0.00", "C$14.99"],
-    ["Sep 09, 2026", "Diane Bergeron", "diane.bergeron@sympatico.ca", "Annual", "$0.00", "C$144.00"],
-    ["Sep 11, 2026", "Michael Zhao", "michael.zhao88@hotmail.com", "Monthly", "$12.00", "C$0.00"],
-    ["Sep 14, 2026", "Amelia Rossi", "amelia.rossi@yahoo.com", "Annual", "$108.00", "C$0.00"],
-    ["Sep 16, 2026", "Rachel Greenberg", "r.greenberg@shaw.ca", "Annual", "$0.00", "C$144.00"],
-    ["Sep 18, 2026", "Nathan Okonkwo", "nate.o@protonmail.com", "Monthly", "$12.00", "C$0.00"],
-    ["Sep 22, 2026", "Priya Ramanathan", "priya.r@cogeco.net", "Annual", "$0.00", "C$144.00"],
-    ["Sep 26, 2026", "Sofia Mendes", "sofia.mendes@aol.com", "Annual", "$108.00", "C$0.00"],
-    ["Sep 30, 2026", "Robert Okafor", "robert.okafor@yahoo.com", "Monthly", "$12.00", "C$0.00"],
+    ["Sep 03, 2026", "Jennifer MacLeod", "jen.macleod@icloud.com", "Annual", "$0.00", "C$180.00"],
+    ["Sep 05, 2026", "Hassan El-Sayed", "hassan.elsayed@gmail.com", "Annual", "$144.00", "C$0.00"],
+    ["Sep 08, 2026", "Yuki Tanaka", "yuki.tanaka@rogers.com", "Monthly", "$0.00", "C$18.99"],
+    ["Sep 09, 2026", "Diane Bergeron", "diane.bergeron@sympatico.ca", "Annual", "$0.00", "C$180.00"],
+    ["Sep 11, 2026", "Michael Zhao", "michael.zhao88@hotmail.com", "Monthly", "$14.99", "C$0.00"],
+    ["Sep 14, 2026", "Amelia Rossi", "amelia.rossi@yahoo.com", "Annual", "$144.00", "C$0.00"],
+    ["Sep 16, 2026", "Rachel Greenberg", "r.greenberg@shaw.ca", "Annual", "$0.00", "C$180.00"],
+    ["Sep 18, 2026", "Nathan Okonkwo", "nate.o@protonmail.com", "Monthly", "$14.99", "C$0.00"],
+    ["Sep 22, 2026", "Priya Ramanathan", "priya.r@cogeco.net", "Annual", "$0.00", "C$180.00"],
+    ["Sep 26, 2026", "Sofia Mendes", "sofia.mendes@aol.com", "Annual", "$144.00", "C$0.00"],
+    ["Sep 30, 2026", "Robert Okafor", "robert.okafor@yahoo.com", "Monthly", "$14.99", "C$0.00"],
   ],
 )}
 <p style="font-size:14px; margin:0 0 6px 0;">
-  <strong>Total USD:</strong> $348.00 ·
-  <strong>Total CAD:</strong> C$1,152.00
+  <strong>Total USD:</strong> $476.97 ·
+  <strong>Total CAD:</strong> C$738.99
 </p>
 
 <h2 style="font-size:18px; margin:20px 0 10px; color:#0f172a;">Trials & Conversion</h2>
@@ -870,19 +870,19 @@ ${f.html}
     const text =
       `Warm-Hello Monthly Report — September 2026\n` +
       `Window: 2026-09-01 → 2026-09-30 (Eastern)\n\n` +
-      `KPIs\n  Revenue USD: 348.00\n  Revenue CAD: 1152.00\n  Paid transactions: 11\n  Trials created: 34\n  Trial → Paid: 7 (21%)\n  Trials expired no purchase: 19\n  Churned: 2\n  Check-ins scheduled: 2318\n    Okay: 2045  Call Me: 64  Escalated: 58  Expired: 142\n  Escalations total: 8 ok=8 failed=0\n  SMS sent: 5124  STOP=6  HELP=2\n  Active seniors today: 118\n\n` +
+      `KPIs\n  Revenue USD: 476.97\n  Revenue CAD: 738.99\n  Paid transactions: 11\n  Trials created: 34\n  Trial → Paid: 7 (21%)\n  Trials expired no purchase: 19\n  Churned: 2\n  Check-ins scheduled: 2318\n    Okay: 2045  Call Me: 64  Escalated: 58  Expired: 142\n  Escalations total: 8 ok=8 failed=0\n  SMS sent: 5124  STOP=6  HELP=2\n  Active seniors today: 118\n\n` +
       `Revenue (11)\n` +
-      `· Sep 03, 2026  Jennifer MacLeod  Annual  USD 0.00  CAD 144.00\n` +
-      `· Sep 05, 2026  Hassan El-Sayed  Annual  USD 108.00  CAD 0.00\n` +
-      `· Sep 08, 2026  Yuki Tanaka  Monthly  USD 0.00  CAD 14.99\n` +
-      `· Sep 09, 2026  Diane Bergeron  Annual  USD 0.00  CAD 144.00\n` +
-      `· Sep 11, 2026  Michael Zhao  Monthly  USD 12.00  CAD 0.00\n` +
-      `· Sep 14, 2026  Amelia Rossi  Annual  USD 108.00  CAD 0.00\n` +
-      `· Sep 16, 2026  Rachel Greenberg  Annual  USD 0.00  CAD 144.00\n` +
-      `· Sep 18, 2026  Nathan Okonkwo  Monthly  USD 12.00  CAD 0.00\n` +
-      `· Sep 22, 2026  Priya Ramanathan  Annual  USD 0.00  CAD 144.00\n` +
-      `· Sep 26, 2026  Sofia Mendes  Annual  USD 108.00  CAD 0.00\n` +
-      `· Sep 30, 2026  Robert Okafor  Monthly  USD 12.00  CAD 0.00\n\n` +
+      `· Sep 03, 2026  Jennifer MacLeod  Annual  USD 0.00  CAD 180.00\n` +
+      `· Sep 05, 2026  Hassan El-Sayed  Annual  USD 144.00  CAD 0.00\n` +
+      `· Sep 08, 2026  Yuki Tanaka  Monthly  USD 0.00  CAD 18.99\n` +
+      `· Sep 09, 2026  Diane Bergeron  Annual  USD 0.00  CAD 180.00\n` +
+      `· Sep 11, 2026  Michael Zhao  Monthly  USD 14.99  CAD 0.00\n` +
+      `· Sep 14, 2026  Amelia Rossi  Annual  USD 144.00  CAD 0.00\n` +
+      `· Sep 16, 2026  Rachel Greenberg  Annual  USD 0.00  CAD 180.00\n` +
+      `· Sep 18, 2026  Nathan Okonkwo  Monthly  USD 14.99  CAD 0.00\n` +
+      `· Sep 22, 2026  Priya Ramanathan  Annual  USD 0.00  CAD 180.00\n` +
+      `· Sep 26, 2026  Sofia Mendes  Annual  USD 144.00  CAD 0.00\n` +
+      `· Sep 30, 2026  Robert Okafor  Monthly  USD 14.99  CAD 0.00\n\n` +
       `Trials created (34)\n` +
       `· Lisa Tremblay <l.tremblay@videotron.ca> · CAD\n` +
       `· Tom Whitfield <tom.whitfield@hotmail.com> · USD\n` +

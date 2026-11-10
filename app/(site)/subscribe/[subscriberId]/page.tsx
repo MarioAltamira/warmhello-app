@@ -6,7 +6,7 @@ import { pricingPlanFor } from "@/lib/pricing";
 export const metadata: Metadata = {
   title: "Activate your Warm-Hello subscription",
   description:
-    "Secure your Warm-Hello subscription with monthly or annual billing. Two-plan pricing: Monthly Standard or Annual Peace of Mind with ~20% savings.",
+    "Secure your Warm-Hello subscription with monthly or annual billing. Two-plan pricing: Monthly Standard or Annual Peace of Mind with up to ~21% savings.",
   robots: { index: false, follow: false },
 };
 

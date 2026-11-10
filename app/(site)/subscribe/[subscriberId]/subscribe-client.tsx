@@ -227,6 +227,7 @@ export function SubscribeClient({
                 <IntervalToggle
                   value={billingInterval}
                   onChange={setBillingInterval}
+                  savingsPercent={plan.annual.savingsPercent}
                   compact
                 />
               </div>
@@ -330,7 +331,7 @@ export function SubscribeClient({
                       color: billingInterval === "annual" ? "#ffffff" : "#10b981",
                     }}
                   >
-                    Save ~20%
+                    Save ~{plan.annual.savingsPercent}%
                   </span>
                   <p
                     style={{

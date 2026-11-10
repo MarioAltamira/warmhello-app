@@ -32,7 +32,7 @@ export default function FaqPage() {
             <strong>Do paid subscriptions renew?</strong> Yes. Paid subscriptions automatically renew at the applicable billing interval unless cancelled before the next renewal date.
           </li>
           <li>
-            <strong>How much does it cost?</strong> United States: $14.99 USD/month or $144 USD/year. Canada: $19.99 CAD/month or $180 CAD/year. Plus applicable taxes.
+            <strong>How much does it cost?</strong> United States: $14.99 USD/month or $144 USD/year. Canada: $18.99 CAD/month or $180 CAD/year. Plus applicable taxes.
           </li>
           <li>
             <strong>What devices work?</strong> Any phone capable of sending and receiving SMS messages can use Warm-Hello.

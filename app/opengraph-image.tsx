@@ -9,7 +9,7 @@ export const alt =
 const DEFAULT_TITLE = "Warm-Hello";
 const DEFAULT_SUBTITLE =
   "Simple daily SMS check-ins for seniors living alone.";
-const DEFAULT_PRICE = "From $14.99 USD / month · about $0.39 / day";
+const DEFAULT_PRICE = "$144 USD / year · about $0.39 USD / day";
 
 function splitTitle(input: string, maxChars: number): string[] {
   if (!input) return [DEFAULT_TITLE, DEFAULT_SUBTITLE];

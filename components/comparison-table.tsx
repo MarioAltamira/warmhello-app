@@ -46,7 +46,7 @@ function buildRows(currency: BillingCurrency): ComparisonRow[] {
     currency === "USD" ? PRICING_PLANS.CAD : PRICING_PLANS.USD;
 
   const planLabel = (p: typeof plan) =>
-    `${p.currencySymbol}${p.monthly.amount.toFixed(2)}/mo · ${p.currencySymbol}${p.annual.totalPerYear.toFixed(2)}/yr (${p.currencySymbol}${p.annual.dailyAmount.toFixed(2)}/day, save ~20% annual)`;
+    `${p.currencySymbol}${p.monthly.amount.toFixed(2)}/mo · ${p.currencySymbol}${p.annual.totalPerYear.toFixed(2)}/yr (${p.currencySymbol}${p.annual.dailyAmount.toFixed(2)}/day, save ~${p.annual.savingsPercent}% annual)`;
 
   const costCell: RowCell = {
     variant: "highlight",

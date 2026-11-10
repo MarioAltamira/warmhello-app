@@ -21,7 +21,7 @@ export const metadata: Metadata = {
       "Warm-Hello - Simple Alternatives to Medical Alert Systems for Seniors Living Alone",
   },
   description:
-    "Compare Warm-Hello vs Life Alert style medical alert pendants and call-center daily check-ins. Gentle one-tap SMS check-ins for seniors - no wearables, no call centers, no contracts. USD $14.99/month or CAD $19.99/month, cancel anytime. Start a free 7-day trial.",
+    "Compare Warm-Hello vs Life Alert style medical alert pendants and call-center daily check-ins. Gentle one-tap SMS check-ins for seniors - no wearables, no call centers, no contracts. USD $14.99/month or CAD $18.99/month, cancel anytime. Start a free 7-day trial.",
   alternates: {
     canonical: "/alternatives-to-medical-alert-systems",
   },
@@ -40,10 +40,10 @@ export const metadata: Metadata = {
     title:
       "Warm-Hello - Simple Alternatives to Medical Alert Systems for Seniors Living Alone",
     description:
-      "Compare Warm-Hello vs medical-alert pendants and call-center check-ins. Gentle daily SMS check-ins for seniors living alone - no wearables, no operators, no contracts, USD $14.99 or CAD $19.99/month.",
+      "Compare Warm-Hello vs medical-alert pendants and call-center check-ins. Gentle daily SMS check-ins for seniors living alone - no wearables, no operators, no contracts, USD $14.99 or CAD $18.99/month.",
     images: [
       {
-        url: `/opengraph-image?title=${encodeURIComponent("Simple Alternatives to Medical Alert Systems for Seniors Living Alone")}&subtitle=${encodeURIComponent("Gentle daily SMS check-ins: no wearables, no call-center operators, no contracts. USD $14.99 or CAD $19.99/month.")}`,
+        url: `/opengraph-image?title=${encodeURIComponent("Simple Alternatives to Medical Alert Systems for Seniors Living Alone")}&subtitle=${encodeURIComponent("Gentle daily SMS check-ins: no wearables, no call-center operators, no contracts. USD $14.99 or CAD $18.99/month.")}`,
         width: 1200,
         height: 630,
         alt: "Warm-Hello alternatives to medical alert systems - compare Warm-Hello vs Life Alert style pendants and call-center check-ins.",
@@ -90,7 +90,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "How does the cost compare to a traditional medical alert system?",
-    a: "Medical alert systems typically cost $30–$50 per month plus equipment fees and lock you into 1–3 year contracts. Warm-Hello is USD $14.99/month (about $0.50/day) for United States families or CAD $19.99/month (about $0.66/day) for Canadian families. No equipment, no contracts, cancel or pause anytime with one click.",
+    a: "Medical alert systems typically cost $30–$50 per month plus equipment fees and lock you into 1–3 year contracts. Warm-Hello is USD $14.99/month or $144/year (about $0.39/day) for United States families, and CAD $18.99/month or $180/year (about $0.49/day) for Canadian families. No equipment, no contracts, cancel or pause anytime with one click.",
   },
 ];
 
@@ -155,14 +155,14 @@ export default async function AlternativesLandingPage() {
       },
       {
         "@type": "Offer" as const,
-        price: "19.99",
+        price: "18.99",
         priceCurrency: "CAD",
         priceValidUntil,
         billingIncrement: 1,
         billingCycle: "monthly",
         name: "CAD monthly plan",
         description:
-          "CAD $19.99 per month - equivalent to CAD $180.00 per year or about $0.49 per day.",
+          "CAD $18.99 per month - equivalent to CAD $180.00 per year or about $0.49 per day.",
         url: "https://warm-hello.com/alternatives-to-medical-alert-systems",
         availability: "https://schema.org/InStock",
         areaServed: { "@type": "Place" as const, name: "Canada" },

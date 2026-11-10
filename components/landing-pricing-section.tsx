@@ -34,6 +34,10 @@ export function LandingPricingSection({ initialCurrency }: Props) {
 
   const usd = pricingPlanFor("USD");
   const cad = pricingPlanFor("CAD");
+  const maxSavingsPercent = Math.max(
+    usd.annual.savingsPercent,
+    cad.annual.savingsPercent,
+  );
 
   function renderCountryRow(
     countryFlag: string,
@@ -87,7 +91,11 @@ export function LandingPricingSection({ initialCurrency }: Props) {
       <div className="landing-pricing-toolbar">
         <h2>Select your Plan.</h2>
         <div className="landing-pricing-toolbar-actions">
-          <IntervalToggle value={billingInterval} onChange={setBillingInterval} />
+          <IntervalToggle
+            value={billingInterval}
+            onChange={setBillingInterval}
+            savingsPercent={plan.annual.savingsPercent}
+          />
           <span className="landing-pricing-toolbar-divider" aria-hidden />
           <CurrencyToggle
             initial={currency}
@@ -124,7 +132,7 @@ export function LandingPricingSection({ initialCurrency }: Props) {
             >
               Annual
               <div className="landing-pricing-head-badge">
-                RECOMMENDED · SAVE ~20%
+                RECOMMENDED · SAVE UP TO ~{maxSavingsPercent}%
               </div>
             </div>
           </div>

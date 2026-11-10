@@ -13,9 +13,16 @@ type Props = {
   onChange: (next: BillingInterval) => void;
   compact?: boolean;
   className?: string;
+  savingsPercent?: number;
 };
 
-export function IntervalToggle({ value, onChange, compact, className }: Props) {
+export function IntervalToggle({
+  value,
+  onChange,
+  compact,
+  className,
+  savingsPercent = 20,
+}: Props) {
   const handleClick = useCallback(
     (next: BillingInterval) => {
       if (!isBillingInterval(next)) return;
@@ -89,7 +96,7 @@ export function IntervalToggle({ value, onChange, compact, className }: Props) {
                   textTransform: "uppercase",
                 }}
               >
-                Save ~20%
+                Save ~{savingsPercent}%
               </span>
             ) : null}
           </button>

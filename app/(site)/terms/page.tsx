@@ -464,7 +464,7 @@ export default function TermsPage() {
           </p>
           <ul className="longform-list">
             <li>
-              <strong>Monthly Plan:</strong> $19.99 CAD per month, before
+              <strong>Monthly Plan:</strong> $18.99 CAD per month, before
               applicable taxes.
             </li>
             <li>

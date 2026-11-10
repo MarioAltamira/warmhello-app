@@ -339,9 +339,9 @@ function UpgradeToAnnualCard({
 
   const currencySymbol = billingCurrency === "USD" ? "$" : "CA$";
   const perYear = billingCurrency === "USD" ? "144.00" : "180.00";
-  const equivMonthly = billingCurrency === "USD" ? "11.99" : "15.00";
-  const currentMonthly = billingCurrency === "USD" ? "14.99" : "19.99";
-  const savings = "20";
+  const equivMonthly = billingCurrency === "USD" ? "12.00" : "15.00";
+  const currentMonthly = billingCurrency === "USD" ? "14.99" : "18.99";
+  const savings = billingCurrency === "USD" ? "20" : "21";
 
   async function handleUpgrade() {
     if (step === 1) {

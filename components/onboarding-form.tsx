@@ -675,13 +675,13 @@ export function OnboardingForm({
                 value: "USD" as BillingCurrency,
                 label: "🇺🇸 United States",
                 price: "USD $14.99 / month",
-                detail: "Or USD $144.00 per year (save ~20% · approx. $11.99/month)",
+                detail: "Or USD $144.00 per year (save ~20% · approx. $12.00/month)",
               },
               {
                 value: "CAD" as BillingCurrency,
                 label: "🇨🇦 Canada",
-                price: "CAD $19.99 / month",
-                detail: "Or CAD $180.00 per year (save ~20% · approx. $14.99/month)",
+                price: "CAD $18.99 / month",
+                detail: "Or CAD $180.00 per year (save ~21% · approx. $15.00/month)",
               },
             ].map((option) => {
               const selected = form.billingCurrency === option.value;
